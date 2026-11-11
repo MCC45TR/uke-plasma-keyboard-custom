@@ -928,7 +928,6 @@ InputPanelWindow {
         // as it is and the vertical one is anchored to the bottom edge, so a
         // size change (a row of suggestions appearing, Shift changing the layout)
         // makes the panel grow upwards instead of moving it under the finger.
-        z: PlasmaKeyboard.Laptop.active && !root.useNativePc ? 2 : 0
         x: PlasmaKeyboard.Laptop.active ? laptopDeck.x+laptopDeck.imeRect.x : floating ? (floatingX < 0 ? (root.width - width) / 2 : floatingX) : (root.width / 2) - (width / 2)
         y: PlasmaKeyboard.Laptop.active ? laptopDeck.y+laptopDeck.imeRect.y : floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
 

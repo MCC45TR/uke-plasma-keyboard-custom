@@ -234,3 +234,15 @@ exclusion or refresh ownership. Complex IME surfaces are raised into the deck's
 allocated keyboard region instead of being hidden behind its background.
 Native compilation, dynamic transitions, touch, focus and physical use are
 pending. The original Fedora StatusNotifierItem/Qt Widgets providers are used.
+
+## COPR 11310276 — duplicate QML property rejected
+
+The three workers rejected a duplicate `z` declaration in the main QML
+component. No complete test run, RPM or installation was accepted. The duplicate
+is removed; the existing foreground order already keeps the language input
+panel above the deck. All tests remain required.
+
+A read-only query of the running24 kernel/session reports the disabled DSI-1
+panel advertising 3200×2136 at30 and60 Hz, alongside48/50/90/120/144 Hz. UPower
+reports a present, closed lid. These are advertised modes and an ineligible
+closed-panel state, not actual refresh, VRR, touch or visual qualification.
