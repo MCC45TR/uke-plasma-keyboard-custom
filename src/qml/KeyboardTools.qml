@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
@@ -9,13 +10,32 @@ Flow {
     objectName: "ukeToolbar"
     property var target
     property real perMm: Keyboard.Laptop.pixelsPerMm
+    property var popupAreaItem: null
+    property rect panelBounds: Qt.rect(0,0,0,0)
+    readonly property real windowHeight: Window.window?Window.window.height:root.height
+    readonly property real windowWidth: Window.window?Window.window.width:root.width
+    function popupTop(height){
+        if(popupAreaItem)return popupAreaItem.mapToItem(root,0,0).y;
+        const origin=root.mapToItem(null,0,0).y;
+        if(panelBounds.y>=height+perMm)return panelBounds.y-height-perMm-origin;
+        const bottom=panelBounds.y+panelBounds.height;
+        if(windowHeight-bottom>=height+perMm)return bottom+perMm-origin;
+        return Math.max(0,Math.min(windowHeight-height,panelBounds.y-height))-origin;
+    }
+    function popupLeft(width){
+        if(popupAreaItem)return popupAreaItem.mapToItem(root,0,0).x+(popupAreaItem.width-width)/2;
+        const origin=root.mapToItem(null,0,0).x;
+        return Math.max(-origin,Math.min(0,windowWidth-width-origin));
+    }
     readonly property var localEditor: emojiPopup.opened ? search : null
     spacing: perMm
     function openTool(name) {
-        if(name==="clipboard")clipboardPopup.open();
-        else if(name==="emoji")emojiPopup.open();
-        else Keyboard.Laptop.tool(name);
+        if(name==="clipboard"){emojiPopup.close();if(clipboardPopup.opened)clipboardPopup.close();else clipboardPopup.open();}
+        else if(name==="emoji"){clipboardPopup.close();if(emojiPopup.opened)emojiPopup.close();else emojiPopup.open();}
+        else{clipboardPopup.close();emojiPopup.close();Keyboard.Laptop.tool(name);}
     }
+    function fits(popup){const p=root.mapToItem(null,popup.x,popup.y);return p.x>=-0.1&&p.y>=-0.1&&p.x+popup.width<=windowWidth+0.1&&p.y+popup.height<=windowHeight+0.1;}
+    readonly property bool popupsFit: fits(emojiPopup)&&fits(clipboardPopup)
     Repeater {
         model: Keyboard.Laptop.options.toolbar
         delegate: RowLayout {
@@ -49,16 +69,22 @@ Flow {
     }
     QQC2.Popup {
         id: clipboardPopup
+        closePolicy: QQC2.Popup.CloseOnEscape
         onClosed: {if(root.target)root.target.forceActiveFocus();}
-        y: parent.height
-        width: Math.min(root.width,100*root.perMm)
-        height: Math.min(70*root.perMm,550)
+        y: root.popupTop(height)
+        x: root.popupLeft(width)
+        width: Math.min(root.width,100*root.perMm,root.popupAreaItem?root.popupAreaItem.width:root.windowWidth)
+        height: Math.min(70*root.perMm,550,root.popupAreaItem?root.popupAreaItem.height:root.windowHeight)
         focus: false
         contentItem: QQC2.ScrollView {
             clip: true
             ColumnLayout {
                 width: clipboardPopup.availableWidth
-                QQC2.Label { text: i18nd("uke-plasma-keyboard-custom", "Clipboard"); font.bold: true; }
+                RowLayout {
+                    Layout.fillWidth:true
+                    QQC2.Label { Layout.fillWidth:true;text: i18nd("uke-plasma-keyboard-custom", "Clipboard"); font.bold: true; }
+                    QQC2.ToolButton {icon.name:"window-close";Accessible.name:i18nd("uke-plasma-keyboard-custom","Close");onClicked:clipboardPopup.close();}
+                }
                 Repeater {
                     model: clipboardPopup.opened&&root.target?root.target.clipboardHistory.pinnedTexts:[]
                     delegate: RowLayout {
@@ -83,12 +109,20 @@ Flow {
     }
     QQC2.Popup {
         id: emojiPopup
+        closePolicy: QQC2.Popup.CloseOnEscape
+        onOpened: search.forceActiveFocus()
         onClosed: {if(root.target)root.target.forceActiveFocus();}
-        y: parent.height
-        width: Math.min(root.width,110*root.perMm)
-        height: Math.min(80*root.perMm,600)
+        y: root.popupTop(height)
+        x: root.popupLeft(width)
+        width: Math.min(root.width,110*root.perMm,root.popupAreaItem?root.popupAreaItem.width:root.windowWidth)
+        height: Math.min(80*root.perMm,600,root.popupAreaItem?root.popupAreaItem.height:root.windowHeight)
         focus: false
         contentItem: ColumnLayout {
+            RowLayout {
+                Layout.fillWidth:true
+                QQC2.Label {Layout.fillWidth:true;text:i18nd("uke-plasma-keyboard-custom","Emoji");font.bold:true;}
+                QQC2.ToolButton {icon.name:"window-close";Accessible.name:i18nd("uke-plasma-keyboard-custom","Close");onClicked:emojiPopup.close();}
+            }
             QQC2.TextField {
                 id: search
                 Layout.fillWidth: true

@@ -301,3 +301,6 @@ msgstr "Dizüstü modunu aç"
 
 msgid "Dynamic mode opens from the tray by default. Drag its handle to move it. It leaves pointer movement, window placement and refresh settings under desktop control."
 msgstr "Dinamik mod varsayılan olarak tepsiden açılır. Tutamacını sürükleyerek taşıyın. İmleç hareketi, pencere yerleşimi ve yenileme ayarları masaüstünün denetiminde kalır."
+
+msgid "Close"
+msgstr "Kapat"

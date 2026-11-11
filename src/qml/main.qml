@@ -24,6 +24,7 @@ InputPanelWindow {
     color: 'transparent'
 
     readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && (PlasmaKeyboard.Laptop.active || PlasmaKeyboard.Laptop.options.normalPcLayout) && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
+    readonly property var localEditor: PlasmaKeyboard.Laptop.active?(laptopDeck?laptopDeck.localEditor:null):(normalTools?normalTools.localEditor:null)
     function keyPosition(letter) {
         if(!root.visible || !root.active || !inputPanel.keyboard)return Qt.point(-1,-1);
         const keys=swipeInput.buildKeyMap();
@@ -120,6 +121,7 @@ InputPanelWindow {
     //! word being typed, with the typo it may have; "next" — the word that may
     //! follow the previous one) and how much of it would be added to the text.
     readonly property var predictions: {
+        if(root.localEditor)return [];
         if (swipeAlternatives.length > 0) {
             return swipeAlternatives.map(word => ({
                 "text": word,
@@ -177,7 +179,7 @@ InputPanelWindow {
     function updatePredictions() {
         // Fail closed first: no suggestions at all in sensitive/locked contexts,
         // when predictive text is disabled, or while swipe alternatives are shown.
-        if (!root.visible || !thing.predictionActive || !PlasmaKeyboard.Laptop.dictionaryAvailable || !PlasmaKeyboardSettings.predictiveTextEnabled || swipeAlternatives.length > 0) {
+        if (root.localEditor || !root.visible || !thing.predictionActive || !PlasmaKeyboard.Laptop.dictionaryAvailable || !PlasmaKeyboardSettings.predictiveTextEnabled || swipeAlternatives.length > 0) {
             predictor.cancel();
             return;
         }
@@ -192,6 +194,9 @@ InputPanelWindow {
     Connections {
         target: thing
         function onPredictionTargetChanged() {
+            if(swipeInput)swipeInput.cancel();
+            if(editingTouch)editingTouch.end();
+            root.swipeAlternatives=[];
             root.updatePredictions();
         }
         function onPredictionPrefixChanged() {
@@ -1488,6 +1493,8 @@ InputPanelWindow {
 
         KeyboardTools {
             id: normalTools
+            onLocalEditorChanged: {root.swipeAlternatives=[];root.updatePredictions();}
+            panelBounds: Qt.rect(panelWrapper.x,panelWrapper.y,panelWrapper.width,panelWrapper.height)
             visible: !PlasmaKeyboard.Laptop.active
             target: thing
             width: parent.width
@@ -1702,6 +1709,7 @@ InputPanelWindow {
     // путь уходит в C++-движок (src/swipekb) и лучшее слово вставляется в поле.
     LaptopDeck {
         id: laptopDeck
+        onLocalEditorChanged: {root.swipeAlternatives=[];root.updatePredictions();}
         width: PlasmaKeyboard.Laptop.dynamicActive?root.width*PlasmaKeyboard.Laptop.options.dynamicWidthPercent/100:root.width
         height: PlasmaKeyboard.Laptop.dynamicActive?root.height*PlasmaKeyboard.Laptop.options.dynamicHeightPercent/100:root.height
         x: (root.width-width)/2
@@ -1766,10 +1774,12 @@ InputPanelWindow {
         //! The words the last swipe may have spelled, best first.
         property var alternatives: []
         property double startTime: 0
+        property var editor: null
+        property bool editorWasLocal: false
 
         //! Whether a gesture can become a swipe at all: the language has a word
         //! list, swipe typing is on, and the keys are not covered by voice mode.
-        readonly property bool available: !root.voiceMode && !root.useNativePc
+        readonly property bool available: root.auxiliaryUiAllowed && !root.voiceMode && !root.useNativePc
             && PlasmaKeyboardSettings.swipeTypingEnabled
             && swipeController.supports(inputPanel.InputContext.locale)
 
@@ -1815,6 +1825,7 @@ InputPanelWindow {
         }
 
         function begin(tp) {
+            editor=root.localEditor;editorWasLocal=!!editor;
             keyMap = buildKeyMap();
             const area = inputPanel.keyboard ? inputPanel.keyboard.keyboardInputArea : null;
             if (!area || !tp) {
@@ -1868,7 +1879,9 @@ InputPanelWindow {
             swipeTrail.requestPaint();
         }
 
+        function cancel(){dragging=false;points=[];trailPoints=[];startKey=null;if(swipeTrail)swipeTrail.requestPaint();}
         function end() {
+            if(!root.auxiliaryUiAllowed){cancel();return;}
             if (!dragging) {
                 points = [];
                 startKey = null;
@@ -1885,17 +1898,18 @@ InputPanelWindow {
                 return;
             }
             const locale = inputPanel.InputContext.locale;
-            const context = thing.predictionContext ? [thing.predictionContext] : [];
+            const context = !editorWasLocal&&thing.predictionContext ? [thing.predictionContext] : [];
             const words = swipeController.recognize(locale, trace, keyMap, context, 5);
             if (words.length === 0) {
                 console.log("SWIPE no word, locale=" + locale + " points=" + trace.length);
                 return;
             }
             let word = words[0];
-            if (InputContext.shiftActive || InputContext.capsLockActive || thing.atSentenceStart()) {
+            if (InputContext.shiftActive || InputContext.capsLockActive || (!editorWasLocal&&thing.atSentenceStart())) {
                 word = word[0].toUpperCase() + word.slice(1);
             }
             alternatives = words.slice(1, 5);
+            if(editorWasLocal){if(editor)editor.insert(editor.cursorPosition,word+" ");return;}
             // Заменяет начатое слово (если оно есть) и добавляет пробел; запоминает
             // вставленное, чтобы альтернатива могла его заменить.
             thing.commitSwipeWord(word);
@@ -1914,8 +1928,12 @@ InputPanelWindow {
         property real started: 0
         property int previousStep: 0
         property bool moved: false
+        property var editor: null
+        property bool editorWasLocal: false
         function begin(point){
             code=0;previousStep=0;moved=false;
+            editor=PlasmaKeyboard.Laptop.active?laptopDeck.localEditor:normalTools.localEditor;
+            editorWasLocal=!!editor;
             if(!point||root.useNativePc||root.voiceMode)return;
             const area=inputPanel.keyboard.keyboardInputArea;
             for(const candidate of [Qt.Key_Space,Qt.Key_Backspace]){
@@ -1928,6 +1946,7 @@ InputPanelWindow {
         }
         function move(point){
             if(!code||!point||(!moved&&Date.now()-started>=550))return;
+            if(editorWasLocal&&!editor){inputPanel.InputContext.inputEngine.virtualKeyCancel();inputPanel.keyboard.keyboardInputArea.reset();code=0;return;}
             const dx=(point.x-startX)/PlasmaKeyboard.Laptop.pixelsPerMm;
             const step=code===Qt.Key_Space?Math.trunc(dx/2):Math.max(previousStep,Math.floor(Math.max(0,-dx)/5));
             if(step===previousStep)return;
@@ -1936,8 +1955,8 @@ InputPanelWindow {
                 inputPanel.keyboard.keyboardInputArea.reset();
                 Qt.inputMethod.commit();moved=true;
             }
-            if(code===Qt.Key_Space)thing.editCursor(step-previousStep);
-            else thing.deleteWordGesture(step-previousStep);
+            if(code===Qt.Key_Space)thing.editCursor(step-previousStep,editor);
+            else thing.deleteWordGesture(step-previousStep,editor);
             previousStep=step;
         }
         function end(){code=0;moved=false;}
@@ -1966,7 +1985,7 @@ InputPanelWindow {
             panelDrag.enabled = panelWrapper.floating;
         }
         function onCanceled(touchPoints) {
-            swipeInput.end();
+            swipeInput.cancel();
             editingTouch.end();
             panelDrag.enabled = panelWrapper.floating;
         }

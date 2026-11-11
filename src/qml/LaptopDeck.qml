@@ -12,10 +12,12 @@ Rectangle {
     property bool useNative: true
     property real perMm: Keyboard.Laptop.pixelsPerMm
     property var predictions: []
+    readonly property var localEditor: tools.localEditor
     signal swipeAccepted(var words)
     signal predictionChosen(string text)
     function keyGeometry(code) { return pc.keyGeometry(code); }
     readonly property bool toolbarFits: tools.childrenRect.width<=tools.width+0.1
+    readonly property bool toolbarPopupsFit: tools.popupsFit
     readonly property rect imeRect: Qt.rect(imePlaceholder.x+deck.perMm,imePlaceholder.y+deck.perMm,imePlaceholder.width,imePlaceholder.height)
     color: Kirigami.Theme.backgroundColor
     border.color: Kirigami.Theme.disabledTextColor
@@ -37,7 +39,7 @@ Rectangle {
                 onTranslationChanged:if(active){deck.x=Math.max(0,Math.min(deck.parent.width-deck.width,startX+translation.x));deck.y=Math.max(0,Math.min(deck.parent.height-deck.height,startY+translation.y));}
             }
         }
-        KeyboardTools { id: tools; Layout.fillWidth:true; target:deck.inputTarget; perMm:deck.perMm; }
+        KeyboardTools { id: tools; Layout.fillWidth:true; target:deck.inputTarget; perMm:deck.perMm; popupAreaItem: pad; }
         Rectangle {
             visible: Keyboard.Laptop.options.calibrationRuler
             Layout.alignment: Qt.AlignHCenter
@@ -84,6 +86,7 @@ Rectangle {
             opacity:0
         }
         Touchpad {
+            id: pad
             Layout.fillHeight: true
             Layout.minimumHeight: 15*deck.perMm
             Layout.preferredHeight: Keyboard.Laptop.options.touchpadHeightMm*deck.perMm

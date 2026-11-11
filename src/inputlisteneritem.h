@@ -9,6 +9,7 @@
 #pragma once
 
 #include "focusededitabletracker.h"
+#include "editingtext.h"
 #include "sessionlockstate.h"
 #include "touchholdwatcher.h"
 #include <QQuickItem>
@@ -151,8 +152,8 @@ public:
      * keyboard. Used by the gamepad handler to emit e.g. Backspace/Space.
      */
     Q_INVOKABLE void sendKeyEvent(int key, const QString &text);
-    Q_INVOKABLE void editCursor(int steps) { m_input.editCursor(steps); }
-    Q_INVOKABLE void deleteWordGesture(int count) { m_input.deleteWords(count); }
+    Q_INVOKABLE void editCursor(int steps,QObject *editor=nullptr) { if(editor)UkeKeyboard::editLocalText(editor,steps,false);else m_input.editCursor(steps); }
+    Q_INVOKABLE void deleteWordGesture(int count,QObject *editor=nullptr) { if(editor)UkeKeyboard::editLocalText(editor,count,true);else m_input.deleteWords(count); }
 
     /**
      * Inserts @p text into the focused field, as if it had been typed.

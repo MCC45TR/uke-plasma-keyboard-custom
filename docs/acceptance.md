@@ -294,3 +294,27 @@ Caps Lock. Both mobile and PC character previews follow the same opt-in setting.
 New native protocol cases check cursor motion without a space, balanced deletion
 keys, and preservation of synthetic Shift/Caps state. Source checks pass; native
 and physical acceptance of these additions remain pending.
+
+## COPR 11310429 — all application/protocol tests pass; fixture bus fix
+
+All three Fedora aarch64 workers passed27 of28 CTest entries. The complete
+Wayland fixture now passes, including mobile Space dragging without an inserted
+space, balanced word-deletion keys, and restoration of held Shift/Caps state.
+QML geometry/startup, dictionaries and the staged speech-library load pass too.
+The remaining controller test exposed Qt's refusal to defer a same-connection
+local D-Bus call. Its mock backend now owns a separate connection to the private
+bus, matching the application's real cross-process transport. Entry-cancellation
+cases also assert that an actual reply is pending before cancellation. No RPM
+passed the full gate or reached the device.
+
+The next source keeps cursor/word gestures, alternate characters and glide input
+inside an open emoji search editor. Local editing uses Qt text boundaries and
+never falls back to the external input context when a local target is invalid.
+External predictions and learning are suppressed while that editor is active.
+Sensitive/unknown contexts reject glide commits, and cancelled touches discard
+their trace. Toolbar panels have explicit close controls and stay open while the
+user types. Normal mode places panels above/below the keyboard as space permits;
+laptop mode uses the touchpad area so the keys remain accessible. Native QML
+checks add popup viewport bounds; a new native text test covers Unicode cursor
+boundaries, word deletion, selections and invalid local targets. Qualification
+of these additions and physical use remains pending.

@@ -26,7 +26,8 @@ class DeferredBackend final : public QObject, protected QDBusContext {
 public:
     QDBusMessage request;
     int staticBegins=0,dynamicBegins=0,staticEnds=0,dynamicEnds=0,profiles=0;
-    void reply() { QDBusConnection::sessionBus().send(request.createReply(QVariantList{true})); }
+    QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
+    void reply() { server.send(request.createReply(QVariantList{true})); }
 public Q_SLOTS:
     bool BeginStatic(const QString &) {request=message();setDelayedReply(true);++staticBegins;return false;}
     bool BeginDynamic(const QString &) {request=message();setDelayedReply(true);++dynamicBegins;return false;}
@@ -54,8 +55,9 @@ private Q_SLOTS:
         auto bus=QDBusConnection::sessionBus();
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.UPower")));
         QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/UPower"),&m_power));
-        QVERIFY(bus.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
-        QVERIFY(bus.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"),&m_backend,QDBusConnection::ExportAllSlots));
+        QVERIFY(m_backend.server.isConnected());
+        QVERIFY(m_backend.server.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
+        QVERIFY(m_backend.server.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"),&m_backend,QDBusConnection::ExportAllSlots));
     }
     void lateOpenReplyCannotUndoCoverClose() {
         LaptopController controller;
@@ -91,6 +93,7 @@ private Q_SLOTS:
         QFETCH(bool,dynamic);LaptopController controller;eligible(controller,dynamic);
         const int before=m_backend.staticBegins+m_backend.dynamicBegins;
         controller.enter();QTRY_COMPARE(m_backend.staticBegins+m_backend.dynamicBegins,before+1);
+        QVERIFY(controller.m_starting);QVERIFY(!controller.active());
         controller.leave();m_backend.reply();
         QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
         QVERIFY(!controller.active());QVERIFY(!controller.m_starting);

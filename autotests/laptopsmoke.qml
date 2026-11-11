@@ -44,6 +44,7 @@ Kirigami.ApplicationWindow {
             if(mm<=0||mm>=14)return "Portrait did not fit: "+mm;
             if(key.x<0||key.x+key.width>key.viewport+0.1)return "Key outside viewport";
             if(!deck.toolbarFits)return "Toolbar outside viewport";
+            if(!deck.toolbarPopupsFit)return "Toolbar popup outside viewport";
             Keyboard.Laptop.selectLayout(0);
             if(Keyboard.Laptop.keyLabel(16,"")!=="q"||Keyboard.Laptop.keyLabel(23,"")!=="ı")return "Turkish Q labels";
             Keyboard.Laptop.selectLayout(1);

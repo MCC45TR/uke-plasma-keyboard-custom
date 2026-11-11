@@ -289,6 +289,8 @@ add_dependencies(qmlsmoketest uke-plasma-keyboard-custom)
 ecm_add_test(controladaptortest.cpp ../src/laptop/controladaptor.cpp ../src/laptop/controladaptor.h
     TEST_NAME controladaptortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
 target_include_directories(controladaptortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+ecm_add_test(editingtexttest.cpp TEST_NAME editingtexttest LINK_LIBRARIES Qt::Core Qt::Gui Qt::Test)
+target_include_directories(editingtexttest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 ecm_add_test(laptopcontrollertest.cpp
     ../src/laptop/laptopcontroller.cpp ../src/laptop/laptopcontroller.h

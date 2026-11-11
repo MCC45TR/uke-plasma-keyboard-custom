@@ -630,6 +630,7 @@ void InputListenerItem::applyPrediction(const QString &word)
 
 void InputListenerItem::commitSwipeWord(const QString &word)
 {
+    if(!predictionActive()){m_committedSwipe.clear();return;}
     if (word.isEmpty() || !m_input.hasContext()) {
         return;
     }
@@ -649,6 +650,7 @@ void InputListenerItem::commitSwipeWord(const QString &word)
 
 void InputListenerItem::replaceSwipeWord(const QString &word)
 {
+    if(!predictionActive()){m_committedSwipe.clear();return;}
     if (word.isEmpty() || m_committedSwipe.isEmpty() || !m_input.hasContext()) {
         return;
     }
