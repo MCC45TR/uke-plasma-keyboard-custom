@@ -4,12 +4,13 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.uke.plasma.keyboard.lib as Keyboard
-RowLayout {
+Flow {
     id: root
+    objectName: "ukeToolbar"
     property var target
     property real perMm: Keyboard.Laptop.pixelsPerMm
     readonly property var localEditor: emojiPopup.opened ? search : null
-    implicitHeight: 9*perMm
+    implicitHeight: Math.max(9*perMm,childrenRect.height)
     spacing: perMm
     function openTool(name) {
         if(name==="clipboard")clipboardPopup.open();
@@ -21,7 +22,8 @@ RowLayout {
         delegate: RowLayout {
             required property string modelData
             readonly property var tools: modelData==="volume"?[{name:"volume-down",icon:"audio-volume-low"},{name:"mute",icon:"audio-volume-muted"},{name:"volume-up",icon:"audio-volume-high"}]:modelData==="brightness"?[{name:"brightness-down",icon:"brightness-low"},{name:"brightness-up",icon:"brightness-high"}]:modelData==="media"?[{name:"previous",icon:"media-skip-backward"},{name:"play",icon:"media-playback-start"},{name:"next",icon:"media-skip-forward"}]:[{name:modelData,icon:({clipboard:"edit-paste",emoji:"face-smile",language:"input-keyboard",settings:"configure"})[modelData]}]
-            Layout.fillWidth: true
+            width: tools.length*9*root.perMm
+            height: 9*root.perMm
             spacing: 0
             Repeater {
                 model: parent.tools

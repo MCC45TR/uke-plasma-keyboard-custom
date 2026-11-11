@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtMultimedia
 import org.kde.kirigami as Kirigami
 import org.uke.plasma.keyboard
 import org.uke.plasma.keyboard.lib as Keyboard
@@ -17,6 +18,15 @@ Item {
     property real keyHeight: Math.min(Keyboard.Laptop.options.keyHeightMm * perMm, (height - gap * Math.max(0, rowRepeater.count - 1)) / Math.max(1, rowRepeater.count))
     implicitHeight: Keyboard.Laptop.rows.length * Keyboard.Laptop.options.keyHeightMm * perMm + Math.max(0,Keyboard.Laptop.rows.length-1)*gap
     signal swipeAccepted(var words)
+    function feedback() {
+        if(click.item)click.item.play();
+        if(PlasmaKeyboardSettings.vibrationEnabled)Vibration.vibrate(PlasmaKeyboardSettings.vibrationMs,PlasmaKeyboardSettings.vibrationStrength);
+    }
+    Loader {
+        id: click
+        active: keyboard.visible && PlasmaKeyboardSettings.soundEnabled
+        sourceComponent: SoundEffect { source: "qrc:/sounds/keyboard_tick2_quiet.wav"; volume: 1; }
+    }
     function emitKey(code,pressed,caption) {
         if (localEditor && ![29,42,54,56,97,100,125,126].includes(code)) {
             if (!pressed) return;
@@ -66,6 +76,7 @@ Item {
                     delegate: Rectangle {
                         id: keyItem
                         required property var modelData
+                        objectName: "ukeKey_"+code
                         readonly property int code: modelData.code
                         readonly property string caption: { Keyboard.Laptop.keyRevision; return Keyboard.Laptop.keyLabel(code,modelData.dynamic ? "" : modelData.label); }
                         readonly property bool isLatched: { Keyboard.Laptop.keyRevision; return Keyboard.Laptop.latched(code); }
@@ -87,7 +98,7 @@ Item {
                         border.color: Qt.rgba(Kirigami.Theme.textColor.r,Kirigami.Theme.textColor.g,Kirigami.Theme.textColor.b,0.12)
                         Accessible.role: Accessible.Button
                         Accessible.name: caption
-                        Accessible.onPressAction: keyboard.tapKey(code,caption)
+                        Accessible.onPressAction: {keyboard.feedback();keyboard.tapKey(code,caption);}
                         Text {
                             anchors.fill: parent
                             anchors.margins: keyboard.perMm*0.8
@@ -145,6 +156,7 @@ Item {
                             onGestureStarted: gesture => gesture.grab()
                             onPressed: points => {
                                 const p=points[0];keyItem.down=true;keyItem.sent=false;keyItem.moved=false;keyItem.popupUsed=false;
+                                keyboard.feedback();
                                 keyItem.startX=p.x;keyItem.lastStep=0;keyItem.began=Date.now();
                                 const q=keyItem.mapToItem(keyboard,p.x,p.y);keyItem.trace=[{x:q.x,y:q.y,t:0}];
                                 if(!keyItem.deferred){keyItem.sent=true;keyboard.emitKey(keyItem.code,true,keyItem.caption);}

@@ -81,6 +81,8 @@ add_test(NAME mainpolicysourcetest COMMAND ${BASH_EXECUTABLE} ${CMAKE_CURRENT_SO
 
 ecm_add_test(physicalgeometrytest.cpp TEST_NAME physicalgeometrytest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(physicalgeometrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+ecm_add_test(layoutregistrytest.cpp ../src/laptop/layoutregistry.cpp TEST_NAME layoutregistrytest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(layoutregistrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 
 ecm_add_test(keyboardvisibilitystatetest.cpp
     TEST_NAME keyboardvisibilitystatetest
@@ -105,7 +107,7 @@ ecm_add_test(clipboardhistorytest.cpp
     ../src/clipboard/clipboardhistory.cpp
     ../src/sessionlockstate.cpp
     TEST_NAME clipboardhistorytest
-    LINK_LIBRARIES Qt::Core Qt::DBus Qt::Qml Qt::Test
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Qml Qt::Test KF6::ConfigCore
 )
 target_include_directories(clipboardhistorytest BEFORE PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/clipboardtestsupport

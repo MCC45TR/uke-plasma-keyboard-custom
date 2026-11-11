@@ -2,6 +2,7 @@
 #include "laptopcontroller.h"
 #include "controladaptor.h"
 #include "physicalgeometry.h"
+#include "layoutregistry.h"
 #include "protocol.h"
 #include "sessionlockstate.h"
 #include "prediction/hunspelldictionary.h"
@@ -41,37 +42,7 @@ bool modifier(uint code) { return code==KEY_LEFTSHIFT||code==KEY_RIGHTSHIFT||cod
 QDBusMessage layoutCall(const QString &method,const QVariantList &args={}) {
  auto m=QDBusMessage::createMethodCall(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),method);m.setArguments(args);return m;
 }
-QString countryLocale(const QString &layout) {
- static const QHash<QString,QString> special{{"us","en_US"},{"gb","en_GB"},{"tr","tr_TR"},{"jp","ja_JP"},{"kr","ko_KR"},{"cn","zh_CN"},{"tw","zh_TW"},{"ara","ar_SA"},{"il","he_IL"},{"ir","fa_IR"},{"ua","uk_UA"},{"gr","el_GR"},{"latam","es_MX"}};
- if(special.contains(layout))return special.value(layout);
- return QLocale(layout).name();
-}
-QVariantList registry(const QString &wanted, bool variants) {
- QFile file(QStringLiteral("/usr/share/X11/xkb/rules/evdev.xml"));
- if(!file.open(QIODevice::ReadOnly))file.setFileName(QStringLiteral("/usr/share/X11/xkb/rules/base.xml"));
- if(!file.isOpen()&&!file.open(QIODevice::ReadOnly))return {};
- QXmlStreamReader xml(&file); QVariantList result; QString currentLayout, name,description; bool inLayout=false,inVariant=false,inConfig=false;
- while(!xml.atEnd()) {
-  xml.readNext();
-  if(xml.isStartElement()) {
-   const auto tag=xml.name();
-   if(tag==QLatin1String("layout")){inLayout=true;currentLayout.clear();}
-   else if(inLayout&&tag==QLatin1String("variant")){inVariant=true;}
-   else if(inLayout&&tag==QLatin1String("configItem")){inConfig=true;name.clear();description.clear();}
-   else if(inConfig&&tag==QLatin1String("name"))name=xml.readElementText();
-   else if(inConfig&&tag==QLatin1String("description"))description=xml.readElementText();
-  } else if(xml.isEndElement()) {
-   const auto tag=xml.name();
-   if(tag==QLatin1String("configItem")&&inConfig){
-    if(!inVariant)currentLayout=name;
-    if((!variants&&!inVariant)||(variants&&inVariant&&currentLayout==wanted))result.append(QVariantMap{{"code",name},{"label",description}});
-    inConfig=false;
-   } else if(tag==QLatin1String("variant"))inVariant=false;
-   else if(tag==QLatin1String("layout"))inLayout=false;
-  }
- }
- return result;
-}
+
 }
 LaptopController *LaptopController::s_instance=nullptr;
 LaptopController *LaptopController::instance(){return s_instance;}
@@ -90,7 +61,7 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  const QString config=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
  m_files.addPath(config);
  if(QFile::exists(QStringLiteral("/usr/share/hunspell")))m_files.addPath(QStringLiteral("/usr/share/hunspell"));
- connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this]{reload();loadLayouts();Q_EMIT layoutChanged();});
+ connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this](const QString &path){reload();loadLayouts();if(path==QLatin1String("/usr/share/hunspell"))Q_EMIT layoutChanged();});
  m_bus.connect(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),QStringLiteral("layoutChanged"),this,SLOT(systemLayout(uint)));
  auto *lock=SessionLockState::instance();
  connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked)leave();else if(!m_ready&&!m_preferencesOnly&&!qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))connectBackend();Q_EMIT stateChanged();});
@@ -182,7 +153,7 @@ QVariantMap LaptopController::options()const{return m_options;}
 void LaptopController::reload(){
  const auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->reparseConfiguration();const auto g=config->group(QStringLiteral("Laptop"));auto next=defaults();
  for(auto i=next.begin();i!=next.end();++i)i.value()=g.readEntry(i.key(),i.value());
- if(next!=m_options){m_options=next;Q_EMIT optionsChanged();Q_EMIT layoutChanged();Q_EMIT stateChanged();}
+ if(next!=m_options){const bool syncChanged=!m_options.isEmpty()&&m_options.value("syncLayout")!=next.value("syncLayout");m_options=next;if(syncChanged&&!m_layoutCodes.isEmpty()){releaseAll();m_layoutCodes.clear();loadLayouts();}Q_EMIT optionsChanged();Q_EMIT layoutChanged();Q_EMIT stateChanged();}
 }
 void LaptopController::setOption(const QString&name,const QVariant&value){
  const auto d=defaults();if(!d.contains(name))return;QVariant v=value;
@@ -204,10 +175,15 @@ double LaptopController::pixelsPerMm()const{
 void LaptopController::loadLayouts(){
  const auto c=KSharedConfig::openConfig(QStringLiteral("kxkbrc"));c->reparseConfiguration();const auto g=c->group(QStringLiteral("Layout"));
  auto codes=g.readEntry(QStringLiteral("LayoutList"),QStringList{});auto variants=g.readEntry(QStringLiteral("VariantList"),QStringList{});
- if(codes.isEmpty()){QString code=QLocale::system().name().section('_',0,0);if(code==QLatin1String("en")||code==QLatin1String("C"))code=QStringLiteral("us");codes={code};}
+ if(!m_options.value("syncLayout").toBool()){
+  const auto own=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"))->group(QStringLiteral("Laptop"));
+  codes=own.readEntry(QStringLiteral("VirtualLayoutList"),codes);variants=own.readEntry(QStringLiteral("VirtualVariantList"),variants);
+  m_layoutIndex=own.readEntry(QStringLiteral("IndependentLayout"),0);
+ }
+ if(codes.isEmpty())codes={UkeKeyboard::LayoutRegistry::system().defaultLayout()};
  if(codes==m_layoutCodes&&variants==m_variants&&!m_layouts.isEmpty())return;
  m_layoutCodes=codes;m_variants=variants;m_layouts.clear();const auto all=allLayouts();
- for(int i=0;i<codes.size();i++){QString title=codes[i];for(const auto&v:all){const auto m=v.toMap();if(m.value("code")==codes[i])title=m.value("label").toString();}if(!variants.value(i).isEmpty())title+=QStringLiteral(" (%1)").arg(variants[i]);m_layouts.append(QVariantMap{{"code",codes[i]},{"variant",variants.value(i)},{"locale",countryLocale(codes[i])},{"label",title}});}
+ for(int i=0;i<codes.size();i++){QString title=codes[i];for(const auto&v:all){const auto m=v.toMap();if(m.value("code")==codes[i])title=m.value("label").toString();}if(!variants.value(i).isEmpty())title+=QStringLiteral(" (%1)").arg(variants[i]);m_layouts.append(QVariantMap{{"code",codes[i]},{"variant",variants.value(i)},{"locale",UkeKeyboard::LayoutRegistry::system().locale(codes[i],variants.value(i))},{"label",title}});}
  m_layoutIndex=std::clamp(m_layoutIndex,0,int(codes.size())-1);rebuildKeymap();
  auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(layoutCall(QStringLiteral("getLayout"))),this);
  connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<uint>r=*call;if(!r.isError())systemLayout(r.value());call->deleteLater();});
@@ -232,21 +208,26 @@ void LaptopController::syncLocks(bool caps,bool num,bool scroll){m_caps=caps;m_n
 bool LaptopController::latched(uint code)const{return code==KEY_CAPSLOCK?m_caps:code==KEY_SCROLLLOCK?m_scroll:m_latched.contains(code)||m_lockedKeys.contains(code);}
 bool LaptopController::modifierActive()const{const auto keys=m_held|m_latched;return std::any_of(keys.begin(),keys.end(),modifier);}
 QString LaptopController::layoutName()const{return m_layouts.value(m_layoutIndex).toMap().value("label").toString();}
-QString LaptopController::locale()const{return countryLocale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")));}
-bool LaptopController::complexLayout()const{return QStringList{"jp","kr","cn","tw","th"}.contains(m_layoutCodes.value(m_layoutIndex));}
+QString LaptopController::locale()const{return UkeKeyboard::LayoutRegistry::system().locale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")),m_variants.value(m_layoutIndex));}
+bool LaptopController::complexLayout()const{const auto language=QLocale(locale()).language();return language==QLocale::Japanese||language==QLocale::Korean||language==QLocale::Chinese||language==QLocale::Thai;}
 bool LaptopController::dictionaryAvailable()const{
  return HunspellDictionary::hasDictionaryFiles(locale());
 }
 QString LaptopController::dictionaryPackage()const{return QStringLiteral("hunspell-%1").arg(locale().section('_',0,0));}
-void LaptopController::systemLayout(uint index){if(index>=uint(m_layoutCodes.size())||int(index)==m_layoutIndex)return;m_layoutIndex=int(index);releaseAll();rebuildKeymap();}
-void LaptopController::selectLayout(int index){if(index<0||index>=m_layoutCodes.size())return;releaseAll();m_layoutIndex=index;rebuildKeymap();if(m_options.value("syncLayout").toBool())m_bus.asyncCall(layoutCall(QStringLiteral("setLayout"),{uint(index)}));}
+void LaptopController::systemLayout(uint index){if(!m_options.value("syncLayout").toBool()||index>=uint(m_layoutCodes.size())||int(index)==m_layoutIndex)return;m_layoutIndex=int(index);releaseAll();rebuildKeymap();}
+void LaptopController::selectLayout(int index){if(index<0||index>=m_layoutCodes.size())return;releaseAll();m_layoutIndex=index;rebuildKeymap();if(m_options.value("syncLayout").toBool())m_bus.asyncCall(layoutCall(QStringLiteral("setLayout"),{uint(index)}));else{auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->group(QStringLiteral("Laptop")).writeEntry(QStringLiteral("IndependentLayout"),index);config->sync();}}
 void LaptopController::nextLayout(){selectLayout((m_layoutIndex+1)%std::max(1,int(m_layoutCodes.size())));}
-QVariantList LaptopController::allLayouts()const{return registry({},false);}
-QVariantList LaptopController::variants(const QString&code)const{return registry(code,true);}
+QVariantList LaptopController::allLayouts()const{return UkeKeyboard::LayoutRegistry::system().layouts();}
+QVariantList LaptopController::variants(const QString&code)const{return UkeKeyboard::LayoutRegistry::system().variants(code);}
 void LaptopController::addLayout(const QString&layout,const QString&variant){
  bool found=false;for(const auto&v:allLayouts())if(v.toMap().value("code")==layout)found=true;if(!found)return;
  if(!variant.isEmpty()){found=false;for(const auto&v:variants(layout))if(v.toMap().value("code")==variant)found=true;if(!found)return;}
  if(m_layoutCodes.size()>=4)return;
+ if(!m_options.value("syncLayout").toBool()){
+  auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));auto group=config->group(QStringLiteral("Laptop"));auto codes=m_layoutCodes;auto variants=m_variants;
+  while(variants.size()<codes.size())variants.append(QString());codes.append(layout);variants.append(variant);
+  group.writeEntry(QStringLiteral("VirtualLayoutList"),codes);group.writeEntry(QStringLiteral("VirtualVariantList"),variants);config->sync();loadLayouts();return;
+ }
  auto c=KSharedConfig::openConfig(QStringLiteral("kxkbrc"));auto g=c->group(QStringLiteral("Layout"));auto codes=m_layoutCodes;auto vars=m_variants;while(vars.size()<codes.size())vars.append(QString());codes.append(layout);vars.append(variant);
  g.writeEntry(QStringLiteral("Use"),true,KConfig::Notify);g.writeEntry(QStringLiteral("LayoutList"),codes,KConfig::Notify);g.writeEntry(QStringLiteral("VariantList"),vars,KConfig::Notify);c->sync();
  auto signal=QDBusMessage::createSignal(QStringLiteral("/Layouts"),QStringLiteral("org.kde.keyboard"),QStringLiteral("reloadConfig"));m_bus.send(signal);loadLayouts();
@@ -293,7 +274,7 @@ void LaptopController::key(uint code,bool pressed){
 void LaptopController::tap(uint code){key(code,true);key(code,false);}
 void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingChanged();}m_typingTimer.start();}
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
-void LaptopController::deleteWords(int count){if(count<=0)return;setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++)tap(KEY_BACKSPACE);setRawKey(KEY_LEFTCTRL,false);}
+void LaptopController::deleteWords(int count){if(count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++)tap(KEY_BACKSPACE);if(temporary)setRawKey(KEY_LEFTCTRL,false);}
 void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
 void LaptopController::button(uint code,bool pressed){backendCall(QStringLiteral("Button"),{code,pressed});}

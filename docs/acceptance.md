@@ -89,3 +89,20 @@ own file lookup without loading dictionaries on the GUI thread. Turkish strings
 are supplied for the new UI. A second QML smoke scene instantiates the actual
 keyboard and touchpad alongside the existing settings-startup case. These are
 pending native tests, not physical acceptance.
+
+## COPR 11309866 — clipboard test dependency closure
+
+The application and native integration passed their earlier compilation errors.
+The retained clipboard test then exposed its missing QtGui include/link closure
+following the new clipboard notification connection; its target now links QtGui
+and KF6 ConfigCore. Tests are retained. No completed RPM was published.
+
+The next source resolves locale metadata from the installed XKB registry rather
+than confusing country-layout IDs with ISO language IDs. Native regression
+cases cover Brazil, Slovenia, Serbia, multilingual Belgium, Turkish Q/F, variant
+overrides and malformed registries. Independent virtual-language mode now owns
+its private layout list and selection without following or rewriting Plasma's
+physical layout. The QML smoke scene checks actual key geometry at1×/2.65× and
+portrait fitting instead of testing an unused fitting helper. The toolbar wraps
+in a narrow viewport. Optional native-PC click/haptic feedback remains disabled
+by default and is loaded only when enabled. All new native results are pending.

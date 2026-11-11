@@ -54,3 +54,11 @@ The original dictionaries remain optional Fedora providers. Clipboard history
 follows Klipper and is refreshed on notifications, not periodic queries. Explicit
 pins are stored in per-user keyboard configuration; sensitive fields cannot
 read or change pins. Entered text is never logged.
+
+Layout language/territory metadata comes from the original installed
+`xkeyboard-config` registry, with variant overrides. XKB country codes are never
+assumed to be ISO language codes. Qt's original
+[QLocale language and territory APIs](https://doc.qt.io/qt-6/qlocale.html#codeToLanguage)
+resolve the registry identifiers. Physical XKB keymaps retain their exact layout
+and variant independently of the available Qt IME locale. When synchronization
+is off, the virtual layout list and selection live only in keyboard preferences.

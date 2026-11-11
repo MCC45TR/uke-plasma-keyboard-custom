@@ -26,6 +26,9 @@ private Q_SLOTS:
   QVERIFY2(!output.contains("Cannot assign to non-existent"),output.constData());
   QVERIFY2(!output.contains("ReferenceError:"),output.constData());
   QVERIFY2(!output.contains("TypeError:"),output.constData());
+  QVERIFY2(!output.contains("Binding loop detected"),output.constData());
+  QVERIFY2(!output.contains("UKE_QML_FAILURE"),output.constData());
+  if(!scene.isEmpty())QVERIFY2(output.contains("UKE_QML_GEOMETRY_PASS"),output.constData());
   process.terminate();if(!process.waitForFinished(2000)){process.kill();process.waitForFinished();}
  }
 };
