@@ -25,3 +25,14 @@ The tablet currently has its cover closed and internal panel disabled. That is
 an ineligible static-mode case, not permission to enable the panel or to claim
 successful touch/keyboard acceptance. Original kernel and boot selection remain
 outside this package's delivery scope.
+
+## COPR 11309616 — source worker failure
+
+Source `20a2d674feed5eca42c6b63659dcd08ac0202eeb`. The source worker checked out
+the exact revision and invoked the reviewed Makefile, then failed because its
+minimal chroot did not contain `git`. No native compilation or binary RPM was
+produced. The recipe now installs its explicit source tools with native DNF5.
+The package-definition API also requires its actual `package_name` form field;
+that producer was created as 3281444 after HTTP 400 responses, without replaying
+an ambiguous operation. GitHub Actions is disabled: the token lacks workflow
+scope and no SSH identity is available. Native builds remain COPR-only.
