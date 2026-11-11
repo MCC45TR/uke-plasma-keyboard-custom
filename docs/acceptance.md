@@ -266,3 +266,15 @@ entries and dynamic mode's lack of refresh ownership. A staged speech-library
 load check needs no model. RPM filtering now hides only private SONAME needs;
 normal system-library requirements remain generated. These additions are pending
 COPR qualification and are not physical-test claims.
+
+## Original-provider idle baseline
+
+12 November, before installing the fork: the original Fedora plasma-keyboard
+6.8.2-1.fc46 process stayed alive across a bounded30.02-second read-only sample.
+No process CPU ticks accrued; PSS was81,093 KiB, RSS157,344 KiB, with17 threads.
+The lid remained closed and the internal panel disabled. These process counters
+are a comparison baseline, not a hardware-wakeup or Uke-keyboard result.
+
+The Fedora45 result log for11310318 was subsequently read successfully: it too
+passed26 of27 CTest entries and12 of13 protocol cases, with only the navigation
+probe failure. No test was removed and no RPM was delivered from that candidate.
