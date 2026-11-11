@@ -22,7 +22,7 @@ InputPanelWindow {
     width: Screen.width
     color: 'transparent'
 
-    readonly property bool useNativePc: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
+    readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
     Connections {
         target: PlasmaKeyboard.Laptop
         function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=PlasmaKeyboard.Laptop.locale; }

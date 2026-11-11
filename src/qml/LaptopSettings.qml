@@ -44,13 +44,7 @@ Kirigami.ApplicationWindow {
                 QQC2.Slider {Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom", "Touchpad width:");from:30;to:100;stepSize:1;value:Keyboard.Laptop.options.touchpadWidthPercent;onMoved:Keyboard.Laptop.setOption("touchpadWidthPercent",Math.round(value));}
                 QQC2.Slider {Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom", "Pointer speed:");from:0.2;to:4;value:Keyboard.Laptop.options.pointerSpeed;onMoved:Keyboard.Laptop.setOption("pointerSpeed",value);}
             }
-            Rectangle {
-                Layout.preferredWidth:50*Keyboard.Laptop.pixelsPerMm
-                Layout.preferredHeight:8*Keyboard.Laptop.pixelsPerMm
-                border.color:Kirigami.Theme.textColor
-                color:Kirigami.Theme.alternateBackgroundColor
-                QQC2.Label {anchors.centerIn:parent;text:i18nd("uke-plasma-keyboard-custom", "50 mm calibration ruler");}
-            }
+            QQC2.CheckBox {text:i18nd("uke-plasma-keyboard-custom", "Show a 50 mm calibration ruler on the tablet in laptop mode");checked:Keyboard.Laptop.options.calibrationRuler;onToggled:Keyboard.Laptop.setOption("calibrationRuler",checked);}
             QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Measure the ruler on the tablet panel. If its length is wrong, enter the visible panel width and height in millimetres. Keys adapt to rotation and fit smaller screens.");}
             Repeater {
                 model:[{key:"functionRow",label:i18nd("uke-plasma-keyboard-custom", "F1–F12 row")},{key:"modifierRow",label:i18nd("uke-plasma-keyboard-custom", "Ctrl / Alt / Meta region")},{key:"arrowRow",label:i18nd("uke-plasma-keyboard-custom", "Arrow keys")},{key:"navigationRow",label:i18nd("uke-plasma-keyboard-custom", "Home / End / Page Up / Page Down / Insert / Delete")},{key:"systemRow",label:i18nd("uke-plasma-keyboard-custom", "Print Screen / Scroll Lock / Pause")},{key:"nativePcLayout",label:i18nd("uke-plasma-keyboard-custom", "Use dynamic PC layout (language engines remain available)")},{key:"touchpadFullWidth",label:i18nd("uke-plasma-keyboard-custom", "Use the entire bottom area as touchpad")},{key:"leftButton",label:i18nd("uke-plasma-keyboard-custom", "Show left-click button")},{key:"middleButton",label:i18nd("uke-plasma-keyboard-custom", "Show middle-click button")},{key:"rightButton",label:i18nd("uke-plasma-keyboard-custom", "Show right-click button")},{key:"naturalScroll",label:i18nd("uke-plasma-keyboard-custom", "Natural scrolling")},{key:"palmGuard",label:i18nd("uke-plasma-keyboard-custom", "Short accidental-touch protection while typing")},{key:"spaceGesture",label:i18nd("uke-plasma-keyboard-custom", "Slide on Space to move the text cursor")},{key:"deleteGesture",label:i18nd("uke-plasma-keyboard-custom", "Slide left on Backspace to delete words")},{key:"keyPreview",label:i18nd("uke-plasma-keyboard-custom", "Show character preview bubbles")},{key:"syncLayout",label:i18nd("uke-plasma-keyboard-custom", "Synchronize input layout with Plasma (never the interface language)")}]
@@ -76,7 +70,7 @@ Kirigami.ApplicationWindow {
                 delegate: RowLayout {
                     required property string modelData
                     readonly property int position:Keyboard.Laptop.options.toolbar.indexOf(modelData)
-                    QQC2.CheckBox {text:modelData;checked:parent.position>=0;onToggled:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);if(checked&&n<0)items.push(modelData);else if(!checked&&n>=0)items.splice(n,1);Keyboard.Laptop.setOption("toolbar",items);}}
+                    QQC2.CheckBox {text:Keyboard.Laptop.toolLabel(modelData);checked:parent.position>=0;onToggled:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);if(checked&&n<0)items.push(modelData);else if(!checked&&n>=0)items.splice(n,1);Keyboard.Laptop.setOption("toolbar",items);}}
                     QQC2.ToolButton {text:"↑";enabled:parent.position>0;onClicked:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);[items[n-1],items[n]]=[items[n],items[n-1]];Keyboard.Laptop.setOption("toolbar",items);}}
                     QQC2.ToolButton {text:"↓";enabled:parent.position>=0&&parent.position<Keyboard.Laptop.options.toolbar.length-1;onClicked:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);[items[n+1],items[n]]=[items[n],items[n+1]];Keyboard.Laptop.setOption("toolbar",items);}}
                 }

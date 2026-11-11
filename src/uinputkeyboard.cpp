@@ -5,6 +5,6 @@
 #include <QDBusPendingCall>
 UinputKeyboard::UinputKeyboard(QObject *parent):QObject(parent){}
 UinputKeyboard::~UinputKeyboard()=default;
-bool UinputKeyboard::isValid()const{return LaptopController::instance()&&LaptopController::instance()->backendReady();}
+bool UinputKeyboard::isValid()const{return LaptopController::instance()&&LaptopController::instance()->nativeInputAllowed();}
 void UinputKeyboard::pressKey(int code){if(isValid())LaptopController::instance()->backendCall(QStringLiteral("Key"),{uint(code),true});}
 void UinputKeyboard::releaseKey(int code){if(isValid())LaptopController::instance()->backendCall(QStringLiteral("Key"),{uint(code),false});}

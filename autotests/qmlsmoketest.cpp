@@ -20,7 +20,14 @@ private Q_SLOTS:
   process.start(QStringLiteral(PLASMA_KEYBOARD_BINARY_PATH),{QStringLiteral("--preferences")});
   QVERIFY(process.waitForStarted());
   const bool exited=process.waitForFinished(2000);const QByteArray output=process.readAll();
-  QVERIFY2(!exited,output.constData());
+  if(exited&&process.exitStatus()==QProcess::CrashExit){
+   QProcess trace;trace.setProcessEnvironment(env);trace.setProcessChannelMode(QProcess::MergedChannels);
+   trace.start(QStringLiteral("gdb"),{QStringLiteral("-q"),QStringLiteral("-nx"),QStringLiteral("-batch"),QStringLiteral("-iex"),QStringLiteral("set auto-load off"),QStringLiteral("-iex"),QStringLiteral("set debuginfod enabled off"),QStringLiteral("-ex"),QStringLiteral("run"),QStringLiteral("-ex"),QStringLiteral("thread apply all bt 12"),QStringLiteral("--args"),QStringLiteral(PLASMA_KEYBOARD_BINARY_PATH),QStringLiteral("--preferences")});
+   if(!trace.waitForFinished(20000)){trace.kill();trace.waitForFinished();}
+   qWarning().noquote()<<QString::fromUtf8(trace.readAll());
+  }
+  const QString diagnosis=QStringLiteral("Exit code %1, status %2: %3").arg(process.exitCode()).arg(int(process.exitStatus())).arg(QString::fromUtf8(output));
+  QVERIFY2(!exited,qPrintable(diagnosis));
   QVERIFY2(!output.contains("failed to load component"),output.constData());
   QVERIFY2(!output.contains("is not a type"),output.constData());
   QVERIFY2(!output.contains("Cannot assign to non-existent"),output.constData());

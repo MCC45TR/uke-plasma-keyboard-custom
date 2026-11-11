@@ -217,3 +217,45 @@ msgstr "Dikte"
 
 msgid "Hide keyboard"
 msgstr "Klavyeyi gizle"
+
+msgid "Volume"
+msgstr "Ses"
+
+msgid "Brightness"
+msgstr "Parlaklık"
+
+msgid "Media"
+msgstr "Medya"
+
+msgid "Volume down"
+msgstr "Sesi azalt"
+
+msgid "Volume up"
+msgstr "Sesi artır"
+
+msgid "Mute"
+msgstr "Sesi kapat"
+
+msgid "Decrease brightness"
+msgstr "Parlaklığı azalt"
+
+msgid "Increase brightness"
+msgstr "Parlaklığı artır"
+
+msgid "Previous track"
+msgstr "Önceki parça"
+
+msgid "Play or pause"
+msgstr "Oynat veya duraklat"
+
+msgid "Next track"
+msgstr "Sonraki parça"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Input language"
+msgstr "Giriş dili"
+
+msgid "Show a 50 mm calibration ruler on the tablet in laptop mode"
+msgstr "Dizüstü modunda tablet üzerinde 50 mm kalibrasyon cetveli göster"

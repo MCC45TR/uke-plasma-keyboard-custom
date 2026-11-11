@@ -1284,7 +1284,7 @@ int main(int argc, char **argv)
             });
         }
     });
-    view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/kde/plasma/keyboard/custom/main.qml")));
+    view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/main.qml")));
 
 #ifdef Q_OS_UNIX
     /**

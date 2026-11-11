@@ -62,3 +62,14 @@ assumed to be ISO language codes. Qt's original
 resolve the registry identifiers. Physical XKB keymaps retain their exact layout
 and variant independently of the available Qt IME locale. When synchronization
 is off, the virtual layout list and selection live only in keyboard preferences.
+
+The control adaptor uses Qt's documented
+[trailing QDBusMessage parameter](https://doc.qt.io/qt-6/qdbusdeclaringslots.html)
+to authenticate callers; QDBusContext is not mixed with QDBusAbstractAdaptor.
+The KWin factory checks the running original KWin version before constructing
+private-API objects. It refuses a mismatch instead of pinning or downgrading the
+desktop. Native touch forwarding is adapted from KWin's GPL ForwardInputFilter
+at the same reviewed revision (`src/input.cpp`, `src/wayland/seat.h`), and is
+restricted to the selected keyboard's surface during static mode. Lock state is
+checked before forwarding; global touchscreen gestures do not also process
+keyboard/pad contacts. Native pad gestures use KWin's usual gesture pipeline.

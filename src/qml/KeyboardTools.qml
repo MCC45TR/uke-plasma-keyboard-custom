@@ -10,7 +10,6 @@ Flow {
     property var target
     property real perMm: Keyboard.Laptop.pixelsPerMm
     readonly property var localEditor: emojiPopup.opened ? search : null
-    implicitHeight: Math.max(9*perMm,childrenRect.height)
     spacing: perMm
     function openTool(name) {
         if(name==="clipboard")clipboardPopup.open();
@@ -35,8 +34,8 @@ Flow {
                     icon.width: Math.round(4*root.perMm)
                     icon.height: Math.round(4*root.perMm)
                     focusPolicy: Qt.NoFocus
-                    Accessible.name: modelData.name
-                    QQC2.ToolTip.text: modelData.name
+                    Accessible.name: Keyboard.Laptop.toolLabel(modelData.name)
+                    QQC2.ToolTip.text: Keyboard.Laptop.toolLabel(modelData.name)
                     QQC2.ToolTip.visible: hovered
                     enabled: (modelData.name!=="clipboard"&&modelData.name!=="emoji"&&modelData.name!=="settings") || (root.target&&root.target.auxiliaryUiAllowed)
                     onClicked: root.openTool(modelData.name)

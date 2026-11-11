@@ -25,6 +25,7 @@ class LaptopController final : public QObject {
     Q_PROPERTY(bool active READ active NOTIFY stateChanged)
     Q_PROPERTY(bool available READ available NOTIFY stateChanged)
     Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
+    Q_PROPERTY(bool nativeInputAllowed READ nativeInputAllowed NOTIFY stateChanged)
     Q_PROPERTY(QString reason READ reason NOTIFY stateChanged)
     Q_PROPERTY(QScreen *tabletScreen READ tabletScreen NOTIFY stateChanged)
     Q_PROPERTY(double pixelsPerMm READ pixelsPerMm NOTIFY stateChanged)
@@ -46,6 +47,7 @@ public:
     bool active() const { return m_active; }
     bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed; }
     bool backendReady() const { return m_ready; }
+    bool nativeInputAllowed() const { return m_ready && !m_locked; }
     QString reason() const { return m_reason; }
     QScreen *tabletScreen() const { return m_screen; }
     double pixelsPerMm() const;
@@ -85,6 +87,7 @@ public:
     Q_INVOKABLE QVariantList variants(const QString &layout) const;
     Q_INVOKABLE void openPreferences();
     Q_INVOKABLE void tool(const QString &name);
+    Q_INVOKABLE QString toolLabel(const QString &name) const;
     Q_INVOKABLE void requestTopology();
     Q_INVOKABLE QVariantMap status() const;
     Q_INVOKABLE QVariantList emojiMatches(const QString &query) const;

@@ -106,3 +106,23 @@ physical layout. The QML smoke scene checks actual key geometry at1×/2.65× and
 portrait fitting instead of testing an unused fitting helper. The toolbar wraps
 in a narrow viewport. Optional native-PC click/haptic feedback remains disabled
 by default and is loaded only when enabled. All new native results are pending.
+
+## COPR 11309883 — native build complete, surface startup failure
+
+All three original Fedora aarch64 environments compiled and staged the app and
+plugin. Each passed21 of22 retained tests, including XKB metadata, clipboard,
+lock/content policy, predictions, dictionaries and speech/swipe engines. Settings
+startup passed. The keyboard/touchpad smoke scene exited early without output;
+the package correctly failed its check gate. No installable RPM was accepted.
+The next test reports process exit status and requests a native crash trace on
+COPR only, with debugger auto-loading and network symbol lookup disabled.
+
+Source review also corrected the main QML resource URI, replaced unsupported
+QDBusContext use in an adaptor with the documented trailing message parameter,
+and added positive/negative caller-routing checks. A KWin version guard runs
+before constructing the native integration. Static touchscreen delivery to the
+keyboard's own surface bypasses global touchscreen gestures, so the virtual pad
+alone supplies three/four-finger actions. Lock exits/cancels native input and
+uses the inherited input-method path. Physical gesture/focus/lock acceptance is
+still pending. The on-tablet ruler and original theme/font/outline settings are
+connected to the native PC surface; none is a physical measurement receipt.

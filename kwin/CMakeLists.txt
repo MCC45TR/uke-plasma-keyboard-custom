@@ -1,7 +1,11 @@
 # SPDX-License-Identifier: BSD-2-Clause
-find_package(KWin REQUIRED COMPONENTS kwin)
+find_package(KWin 6.8 REQUIRED COMPONENTS kwin)
+if(NOT KWin_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+")
+    message(FATAL_ERROR "The KWin development package must expose its version")
+endif()
 kcoreaddons_add_plugin(uke_keyboard_backend INSTALL_NAMESPACE "kwin/plugins")
 target_sources(uke_keyboard_backend PRIVATE backend.cpp refreshguard.cpp)
+target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_BUILD_VERSION="${KWin_VERSION}")
 target_include_directories(uke_keyboard_backend PRIVATE ../src/laptop)
 target_link_libraries(uke_keyboard_backend PRIVATE KWin::kwin Qt::DBus KF6::ConfigCore KF6::Screen)
 if(KWin_VERSION VERSION_GREATER_EQUAL 6.8)

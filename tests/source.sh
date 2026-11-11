@@ -11,6 +11,8 @@ grep -q 'name="uke-plasma-keyboard-customrc"' src/plasmakeyboardsettings.kcfg
 grep -q 'PluginFactory_iid' kwin/backend.cpp
 grep -q 'KEY_POWER' kwin/backend.cpp
 grep -q 'QDBusServiceWatcher' kwin/backend.cpp
+grep -q 'qrc:/qt/qml/org/uke/plasma/keyboard/main.qml' src/main.cpp
+if grep -RIn 'org/kde/plasma/keyboard/custom' src kcm kwin; then exit 1; fi
 bash -n packaging/copr/prepare-source.sh
 bash autotests/mainpolicysourcetest.sh
 printf 'Source and packaging guards passed\n'

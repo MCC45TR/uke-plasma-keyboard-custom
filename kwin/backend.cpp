@@ -3,6 +3,7 @@
 // device pattern follows KDE's buttonrebinds plugin (David Redondo, GPL).
 #include "protocol.h"
 #include "refreshguard.h"
+#include "versionguard.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
 #include <core/session.h>
@@ -12,6 +13,7 @@
 #include <plugin.h>
 #include <pointer_input.h>
 #include <wayland_server.h>
+#include <wayland/seat.h>
 #include <window.h>
 #include <workspace.h>
 #include <KConfigGroup>
@@ -26,6 +28,7 @@
 #include <QPointer>
 #include <QSet>
 #include <QVariantMap>
+#include <QCoreApplication>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -75,7 +78,7 @@ class Backend final : public Plugin, protected QDBusContext, public InputEventFi
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
 public:
-    Backend() : InputEventFilter(InputFilterOrder::ScreenEdge), m_bus(QDBusConnection::sessionBus()),
+    Backend() : InputEventFilter(InputFilterOrder::LockScreen), m_bus(QDBusConnection::sessionBus()),
         m_watcher(this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);})
     {
         if (!m_bus.registerService(QLatin1String(UkeKeyboard::service))) return;
@@ -115,10 +118,39 @@ public:
         m_bus.unregisterObject(QLatin1String(UkeKeyboard::path));
         m_bus.unregisterService(QLatin1String(UkeKeyboard::service));
     }
-    bool touchDown(TouchDownEvent *event) override { m_touches[event->id]=event->pos; relayTouch(0,event->id,event->pos); return false; }
-    bool touchMotion(TouchMotionEvent *event) override { m_touches[event->id]=event->pos; relayTouch(1,event->id,event->pos); return false; }
-    bool touchUp(TouchUpEvent *event) override { relayTouch(2,event->id,m_touches.take(event->id)); return false; }
-    bool touchCancel() override { relayTouch(3,0,{});m_touches.clear();return false; }
+    bool touchDown(TouchDownEvent *event) override {
+        m_touches[event->id]=event->pos;relayTouch(0,event->id,event->pos);
+        if(!m_active||locked()||!tablet()||!rectangle(tablet()->geometry()).contains(event->pos))return false;
+        auto *window=input()->findToplevel(event->pos);
+        if(!window||uint(window->pid())!=m_clientPid||!window->surface())return false;
+        // Forward only the keyboard's own surface before the global touchscreen
+        // gesture filter. Three/four-finger actions come from the virtual pad;
+        // ordinary multi-finger typing must not also switch desktops.
+        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);
+        auto *point=seat->notifyTouchDown(window->surface(),window->bufferGeometry().topLeft(),event->id,event->pos);
+        if(!point)return false;
+        connect(window,&Window::bufferGeometryChanged,point,[window,point]{point->setSurfacePosition(window->bufferGeometry().topLeft());});
+        m_directTouches.insert(event->id);m_directFrame=true;return true;
+    }
+    bool touchMotion(TouchMotionEvent *event) override {
+        m_touches[event->id]=event->pos;relayTouch(1,event->id,event->pos);
+        if(locked()){endStatic();release();return false;}
+        if(m_cancelledTouches.contains(event->id))return true;
+        if(!m_directTouches.contains(event->id))return false;
+        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchMotion(event->id,event->pos);m_directFrame=true;return true;
+    }
+    bool touchUp(TouchUpEvent *event) override {
+        relayTouch(2,event->id,m_touches.take(event->id));
+        if(locked()){endStatic();release();return false;}
+        if(m_cancelledTouches.remove(event->id))return true;
+        if(!m_directTouches.remove(event->id))return false;
+        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchUp(event->id);m_directFrame=true;return true;
+    }
+    bool touchFrame() override {if(!std::exchange(m_directFrame,false))return !m_cancelledTouches.isEmpty();waylandServer()->seat()->notifyTouchFrame();return true;}
+    bool touchCancel() override {
+        relayTouch(3,0,{});m_touches.clear();const bool consumed=!m_directTouches.isEmpty()||!m_cancelledTouches.isEmpty();
+        if(!m_directTouches.isEmpty())waylandServer()->seat()->notifyTouchCancel();m_directTouches.clear();m_cancelledTouches.clear();m_directFrame=false;return consumed;
+    }
     bool pointerMotion(PointerMotionEvent *event) override {
         if (!m_active || m_warping) return false;
         if (locked()) { endStatic(); return false; }
@@ -319,6 +351,9 @@ private:
         Q_EMIT StaticChanged(false);
     }
     void release() {
+        if(!m_directTouches.isEmpty()){
+            waylandServer()->seat()->notifyTouchCancel();m_cancelledTouches.unite(std::exchange(m_directTouches,{}));m_directFrame=false;
+        }
         const auto keys=std::exchange(m_keys,{});
         const auto buttons=std::exchange(m_buttons,{});
         for(uint k:keys) Q_EMIT m_device.keyChanged(k,KeyboardKeyState::Released,now(),&m_device);
@@ -350,6 +385,8 @@ private:
     bool m_active=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;
     QSet<uint> m_keys,m_buttons;
     QHash<int,QPointF>m_touches;
+    QSet<int>m_directTouches,m_cancelledTouches;
+    bool m_directFrame=false;
     QHash<Window *,Saved> m_saved;
 };
 }
@@ -359,6 +396,12 @@ class KWIN_EXPORT UkeKeyboardFactory final : public KWin::PluginFactory {
     Q_PLUGIN_METADATA(IID PluginFactory_iid FILE "metadata.json")
     Q_INTERFACES(KWin::PluginFactory)
 public:
-    std::unique_ptr<KWin::Plugin> create() const override { return std::make_unique<Backend>(); }
+    std::unique_ptr<KWin::Plugin> create() const override {
+        if (!UkeKeyboard::compatibleKWin(QCoreApplication::applicationVersion(), QStringLiteral(UKE_KWIN_BUILD_VERSION))) {
+            qWarning("Uke keyboard: rebuild the integration for the running KWin version");
+            return {};
+        }
+        return std::make_unique<Backend>();
+    }
 };
 #include "backend.moc"

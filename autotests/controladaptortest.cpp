@@ -4,6 +4,8 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusPendingReply>
+#include <QDBusConnectionInterface>
+#include <unistd.h>
 class InputParent:public QObject{
  Q_OBJECT
 public:
@@ -13,6 +15,20 @@ public:
 class ControlAdaptorTest:public QObject{
  Q_OBJECT
 private Q_SLOTS:
+ void callerMessageIsDelivered(){
+  QObject target;int toggles=0;auto server=QDBusConnection::sessionBus();
+  auto client=QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("uke-control-test-client"));QVERIFY(client.isConnected());
+  const auto sender=client.baseService();
+  KeyboardControlAdaptor adaptor(&target,[]{return QVariantMap{};},[&]{++toggles;},[&](const QDBusConnection&bus,const QDBusMessage&request){
+   if(request.service()!=sender||request.member()!=QLatin1String("toggle")||!request.arguments().isEmpty())return false;
+   const auto uid=bus.interface()->serviceUid(request.service());return uid.isValid()&&uid.value()==getuid();
+  });
+  QVERIFY(adaptor.publish(server,QStringLiteral("/MessageProbe")));
+  auto message=QDBusMessage::createMethodCall(server.baseService(),QStringLiteral("/MessageProbe"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("toggle"));
+  QDBusPendingReply<bool> reply=client.asyncCall(message);QTRY_VERIFY(reply.isFinished());QVERIFY(!reply.isError());QVERIFY(reply.value());QCOMPARE(toggles,1);
+  QDBusPendingReply<bool> denied=server.asyncCall(message);QTRY_VERIFY(denied.isFinished());QVERIFY(!denied.isError());QVERIFY(!denied.value());QCOMPARE(toggles,1);
+  server.unregisterObject(QStringLiteral("/MessageProbe"));QDBusConnection::disconnectFromBus(QStringLiteral("uke-control-test-client"));
+ }
  void parentInputIsNotExported(){
   InputParent target;int toggles=0;
   KeyboardControlAdaptor adaptor(&target,[]{return QVariantMap{{QStringLiteral("active"),false}};},[&]{++toggles;});

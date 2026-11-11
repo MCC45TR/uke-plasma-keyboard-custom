@@ -73,13 +73,16 @@ Item {
                 Repeater {
                     id: keysRepeater
                     model: row.modelData
-                    delegate: Rectangle {
+                    delegate: Kirigami.ShadowedRectangle {
                         id: keyItem
                         required property var modelData
                         objectName: "ukeKey_"+code
                         readonly property int code: modelData.code
                         readonly property string caption: { Keyboard.Laptop.keyRevision; return Keyboard.Laptop.keyLabel(code,modelData.dynamic ? "" : modelData.label); }
                         readonly property bool isLatched: { Keyboard.Laptop.keyRevision; return Keyboard.Laptop.latched(code); }
+                        readonly property string category: modelData.modifier||code===58?"modifier":code===28?"accent":(code>=2&&code<=13)?"digit":(code===14||(code>=59&&code<=88)||code>=99)?"function":"normal"
+                        readonly property var outline: Keyboard.Theme.current.keyOutlineFor(category)
+                        readonly property real shadowStrength: Keyboard.Theme.current.keyShadowFor(category)
                         property bool down: false
                         property bool sent: false
                         property bool moved: false
@@ -92,10 +95,13 @@ Item {
                         readonly property bool deferred: letter || code===57 || code===14
                         width: Math.max(1, (row.width-Math.max(0,row.modelData.length-1)*row.spacing)/row.units*modelData.units)
                         height: row.height
-                        radius: Math.min(4,keyboard.perMm)
-                        color: down ? Kirigami.Theme.highlightColor : (isLatched ? Keyboard.BreezeConstants.latchedKeyBackgroundColor : Keyboard.BreezeConstants.normalKeyBackgroundColor)
-                        border.width: 1
-                        border.color: Qt.rgba(Kirigami.Theme.textColor.r,Kirigami.Theme.textColor.g,Kirigami.Theme.textColor.b,0.12)
+                        radius: Math.min(height/4,Keyboard.BreezeConstants.buttonRadius)
+                        color: down ? Keyboard.Theme.current.keyColorFor(category,"pressed") : (isLatched ? Keyboard.Theme.current.categoryActiveColorFor(category) : Keyboard.Theme.current.keyColorFor(category,"normal"))
+                        border.width: outline.width
+                        border.color: outline.color
+                        shadow.size: 3*shadowStrength
+                        shadow.yOffset: shadowStrength
+                        shadow.color: Qt.rgba(0,0,0,0.2*shadowStrength)
                         Accessible.role: Accessible.Button
                         Accessible.name: caption
                         Accessible.onPressAction: {keyboard.feedback();keyboard.tapKey(code,caption);}
@@ -103,7 +109,8 @@ Item {
                             anchors.fill: parent
                             anchors.margins: keyboard.perMm*0.8
                             text: keyItem.caption
-                            color: keyItem.down ? Kirigami.Theme.highlightedTextColor : Keyboard.BreezeConstants.keyTextColor
+                            color: Keyboard.Theme.current.keyTextColorFor(keyItem.category)
+                            font.family: Keyboard.BreezeConstants.fontFamily
                             font.pixelSize: Math.max(7,Math.min(parent.height*0.36,keyboard.perMm*3.4))
                             font.bold: keyItem.modelData.modifier
                             horizontalAlignment: Text.AlignHCenter

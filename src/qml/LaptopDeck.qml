@@ -20,6 +20,15 @@ Rectangle {
         anchors.margins: deck.perMm
         spacing: deck.perMm*0.8
         KeyboardTools { id: tools; Layout.fillWidth:true; target:deck.inputTarget; perMm:deck.perMm; }
+        Rectangle {
+            visible: Keyboard.Laptop.options.calibrationRuler
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: 50*deck.perMm
+            Layout.preferredHeight: 6*deck.perMm
+            color: Kirigami.Theme.alternateBackgroundColor
+            border.color: Kirigami.Theme.textColor
+            Text {anchors.centerIn:parent;text:"50 mm";font.pixelSize:3*deck.perMm;color:Kirigami.Theme.textColor;}
+        }
         RowLayout {
             Layout.fillWidth: true
             visible: deck.inputTarget&&deck.inputTarget.auxiliaryUiAllowed

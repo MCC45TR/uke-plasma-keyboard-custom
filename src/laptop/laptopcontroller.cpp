@@ -51,7 +51,7 @@ QVariantMap LaptopController::defaults() {
  {"touchpadWidthPercent",60},{"touchpadFullWidth",false},{"pointerSpeed",1.3},{"naturalScroll",true},{"palmGuard",true},
  {"leftButton",false},{"middleButton",false},{"rightButton",false},{"functionRow",true},{"modifierRow",true},{"arrowRow",true},
  {"navigationRow",true},{"systemRow",true},{"nativePcLayout",true},{"spaceGesture",true},{"deleteGesture",true},
- {"keyPreview",false},{"refreshProfile",QStringLiteral("keep")},{"physicalWidthMm",0.0},{"physicalHeightMm",0.0},
+ {"keyPreview",false},{"calibrationRuler",false},{"refreshProfile",QStringLiteral("keep")},{"physicalWidthMm",0.0},{"physicalHeightMm",0.0},
  {"syncLayout",true},{"toolbar",QStringList{"volume","brightness","media","clipboard","emoji","language","settings"}}};
 }
 LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusConnection::sessionBus()),m_files(this),m_xkb(xkb_context_new(XKB_CONTEXT_NO_FLAGS)) {
@@ -64,7 +64,7 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this](const QString &path){reload();loadLayouts();if(path==QLatin1String("/usr/share/hunspell"))Q_EMIT layoutChanged();});
  m_bus.connect(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),QStringLiteral("layoutChanged"),this,SLOT(systemLayout(uint)));
  auto *lock=SessionLockState::instance();
- connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked)leave();else if(!m_ready&&!m_preferencesOnly&&!qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))connectBackend();Q_EMIT stateChanged();});
+ connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked){leave();releaseAll();}else if(!m_ready&&!m_preferencesOnly&&!qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))connectBackend();Q_EMIT stateChanged();});
  m_locked=!lock->isKnown()||lock->isLocked();
  m_preferencesOnly=QCoreApplication::arguments().contains(QStringLiteral("--preferences"));
  if(m_preferencesOnly){
@@ -282,6 +282,10 @@ void LaptopController::scroll(double x,double y){const double sign=m_options.val
 void LaptopController::swipe(int fingers,int phase,double x,double y){backendCall(QStringLiteral("Swipe"),{fingers,phase,x,y});}
 void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendCall(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
 void LaptopController::openPreferences(){Q_EMIT preferencesRequested();}
+QString LaptopController::toolLabel(const QString&name)const{
+ const QHash<QString,const char*> labels{{"volume",I18N_NOOP("Volume")},{"brightness",I18N_NOOP("Brightness")},{"media",I18N_NOOP("Media")},{"volume-down",I18N_NOOP("Volume down")},{"volume-up",I18N_NOOP("Volume up")},{"mute",I18N_NOOP("Mute")},{"brightness-down",I18N_NOOP("Decrease brightness")},{"brightness-up",I18N_NOOP("Increase brightness")},{"previous",I18N_NOOP("Previous track")},{"play",I18N_NOOP("Play or pause")},{"next",I18N_NOOP("Next track")},{"clipboard",I18N_NOOP("Clipboard")},{"emoji",I18N_NOOP("Emoji")},{"language",I18N_NOOP("Input language")},{"settings",I18N_NOOP("Keyboard settings")}};
+ return labels.contains(name)?i18nd("uke-plasma-keyboard-custom",labels.value(name)):name;
+}
 void LaptopController::tool(const QString&name){
  const QHash<QString,uint> keys{{"volume-down",KEY_VOLUMEDOWN},{"volume-up",KEY_VOLUMEUP},{"mute",KEY_MUTE},{"brightness-down",KEY_BRIGHTNESSDOWN},{"brightness-up",KEY_BRIGHTNESSUP},{"play",KEY_PLAYPAUSE},{"previous",KEY_PREVIOUSSONG},{"next",KEY_NEXTSONG}};
  if(keys.contains(name)){tap(keys.value(name));return;}
