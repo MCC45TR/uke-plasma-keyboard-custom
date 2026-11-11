@@ -393,7 +393,8 @@ public:
         m_keyboard = window;
         if (auto *laptop = LaptopController::instance()) {
             connect(laptop,&LaptopController::stateChanged,this,[this,laptop]{
-                if (!m_keyboard || m_staticApplied == laptop->active()) return;
+                if (!m_keyboard) return;
+                if(m_staticApplied==laptop->active()){if(laptop->active())applyPanelLayout();return;}
                 m_staticApplied = laptop->active();
                 m_outputRelocationTimer.stop();
                 m_keyboard->setProperty("ukeStaticTransition",true);

@@ -114,6 +114,10 @@ private Q_SLOTS:
         GigaamEngine gigaam;
         QCOMPARE(gigaam.id(), QStringLiteral("gigaam"));
         QVERIFY(!gigaam.displayName().isEmpty());
+        if(qEnvironmentVariableIsSet("UKE_REQUIRE_TRANSCRIBE")){
+            QString reason;
+            QVERIFY2(gigaam.isAvailable(&reason),qPrintable(reason));
+        }
         QVERIFY(!gigaam.hasModel());
     }
 

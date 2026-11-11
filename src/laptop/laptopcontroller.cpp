@@ -79,9 +79,9 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  adaptor->publish(m_bus,QStringLiteral("/Laptop"));
  auto system=QDBusConnection::systemBus();
  system.connect(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("PropertiesChanged"),this,SLOT(propertiesChanged(QString,QVariantMap,QStringList)));
- auto lid=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("GetAll"));lid<<QStringLiteral("org.freedesktop.UPower");
- auto *lidWatcher=new QDBusPendingCallWatcher(system.asyncCall(lid),this);
- connect(lidWatcher,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap> reply=*w;if(!reply.isError()){const auto p=reply.value();m_lidClosed=p.value("LidIsPresent").toBool()&&p.value("LidIsClosed").toBool();updateTopology();}w->deleteLater();});
+ auto *powerWatcher=new QDBusServiceWatcher(QStringLiteral("org.freedesktop.UPower"),system,QDBusServiceWatcher::WatchForOwnerChange,this);
+ connect(powerWatcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString&owner){++m_lidGeneration;m_lidClosed=true;updateTopology();if(!owner.isEmpty())queryLid();});
+ queryLid();
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("StaticChanged"),this,SLOT(backendStatic(bool)));
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("DynamicChanged"),this,SLOT(backendDynamic(bool)));
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("ProfileError"),this,SLOT(profileError(QString)));
@@ -93,10 +93,26 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
  requestTopology();
  connect(KScreen::ConfigMonitor::instance(),&KScreen::ConfigMonitor::configurationChanged,this,&LaptopController::updateTopology);
- connect(qGuiApp,&QGuiApplication::screenAdded,this,[this]{updateTopology();});
+ const auto watchScreen=[this](QScreen *screen){
+  connect(screen,&QScreen::geometryChanged,this,[this]{if(m_active)releaseAll();Q_EMIT stateChanged();});
+  connect(screen,&QScreen::physicalSizeChanged,this,[this]{Q_EMIT stateChanged();});
+ };
+ for(auto *screen:qGuiApp->screens())watchScreen(screen);
+ connect(qGuiApp,&QGuiApplication::screenAdded,this,[this,watchScreen](QScreen *screen){watchScreen(screen);updateTopology();});
  connect(qGuiApp,&QGuiApplication::screenRemoved,this,[this]{updateTopology();});
 }
 LaptopController::~LaptopController(){leave();releaseAll();if(s_instance==this)s_instance=nullptr;}
+void LaptopController::queryLid(){
+ const auto generation=++m_lidGeneration;
+ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("GetAll"));request<<QStringLiteral("org.freedesktop.UPower");
+ auto *watcher=new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(request),this);
+ connect(watcher,&QDBusPendingCallWatcher::finished,this,[this,generation](auto *call){
+  QDBusPendingReply<QVariantMap> reply=*call;call->deleteLater();if(generation!=m_lidGeneration||reply.isError())return;
+  const auto properties=reply.value();
+  if(!properties.contains("LidIsPresent")||!properties.contains("LidIsClosed"))return;
+  m_lidClosed=properties.value("LidIsPresent").toBool()&&properties.value("LidIsClosed").toBool();updateTopology();
+ });
+}
 void LaptopController::connectBackend(){
  auto *w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Attach")),this);
  connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool> reply=*call;m_ready=!reply.isError()&&reply.value();if(!m_ready)m_reason=i18nd("uke-plasma-keyboard-custom", "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");else{auto*locks=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Locks")),this);connect(locks,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap>r=*w;if(!r.isError()){const auto p=r.value();syncLocks(p.value("caps").toBool(),p.value("num").toBool(),p.value("scroll").toBool());}w->deleteLater();});}updateTopology();call->deleteLater();});
@@ -136,8 +152,10 @@ void LaptopController::updateTopology(){
  if((m_active||m_starting)&&!available())leave();
  Q_EMIT stateChanged();
 }
-void LaptopController::propertiesChanged(const QString &iface,const QVariantMap&changed,const QStringList&){
- if(iface==QLatin1String("org.freedesktop.UPower")&&changed.contains("LidIsClosed")){m_lidClosed=changed.value("LidIsClosed").toBool();updateTopology();}
+void LaptopController::propertiesChanged(const QString &iface,const QVariantMap&changed,const QStringList&invalidated){
+ if(iface!=QLatin1String("org.freedesktop.UPower"))return;
+ if(changed.contains("LidIsClosed")){++m_lidGeneration;m_lidClosed=changed.value("LidIsClosed").toBool();updateTopology();}
+ else if(changed.contains("LidIsPresent")||invalidated.contains(QStringLiteral("LidIsClosed"))||invalidated.contains(QStringLiteral("LidIsPresent"))){m_lidClosed=true;updateTopology();queryLid();}
 }
 void LaptopController::toggle(){if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("toggle")));return;}if(m_active)leave();else enter();}
 void LaptopController::enter(){

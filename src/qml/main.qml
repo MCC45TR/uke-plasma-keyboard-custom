@@ -30,7 +30,7 @@ InputPanelWindow {
         for(const key of keys)if(key.letter===letter)return Qt.point(key.x,key.y);
         return Qt.point(-1,-1);
     }
-    function navigationLabel(){const key=inputPanel.keyboard?inputPanel.keyboard.activeKey:null;return key&&key.text?key.text:"";}
+    function navigationLabel(){const key=highlightedKey();return key&&key.text?key.text:"";}
     Connections {
         target: PlasmaKeyboard.Laptop
         function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }

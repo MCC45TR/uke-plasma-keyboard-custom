@@ -246,3 +246,23 @@ A read-only query of the running24 kernel/session reports the disabled DSI-1
 panel advertising 3200×2136 at30 and60 Hz, alongside48/50/90/120/144 Hz. UPower
 reports a present, closed lid. These are advertised modes and an ineligible
 closed-panel state, not actual refresh, VRR, touch or visual qualification.
+
+## COPR 11310318 — touch and Italian alternatives pass
+
+All three aarch64 native builds completed. Rawhide and Fedora44 passed26 of27
+CTest entries; the retained protocol entry passed12 of13 cases with no skips.
+Touching the rendered Q and Italian grave-first alternates now pass. The remaining
+navigation check read `activeKey`, which is transient, instead of Qt's actual
+navigation-highlight item. The probe now uses the same highlighted-key accessor
+as the existing gamepad UI; the X-commit and no-arrow/Return-leak assertions stay.
+Fedora45 reached terminal failure too; its result-log read temporarily returned
+HTTP503 and needs a retry. No RPM or installation was accepted.
+
+The next source also rejects stale initial lid replies after a close event,
+handles lost/invalidated UPower state conservatively, and updates dimensions on
+screen geometry/physical-size events. New native controller tests use private
+session/system buses to exercise reply ordering, unknown cover metadata, cancelled
+entries and dynamic mode's lack of refresh ownership. A staged speech-library
+load check needs no model. RPM filtering now hides only private SONAME needs;
+normal system-library requirements remain generated. These additions are pending
+COPR qualification and are not physical-test claims.

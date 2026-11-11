@@ -113,7 +113,9 @@ private Q_SLOTS:
     void profileError(const QString &reason);
     void syncLocks(bool caps,bool num,bool scroll);
 private:
+    friend class LaptopControllerTest;
     void connectBackend();
+    void queryLid();
     void updateTopology();
     void loadLayouts();
     void rebuildKeymap();
@@ -136,6 +138,7 @@ private:
     bool m_active=false,m_ready=false,m_available=false,m_locked=true,m_lidClosed=true,m_typing=false;
     bool m_dynamic=false,m_textFocused=false,m_starting=false;
     uint m_transition=0;
+    uint m_lidGeneration=0;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;

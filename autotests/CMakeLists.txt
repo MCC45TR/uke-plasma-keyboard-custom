@@ -289,3 +289,16 @@ add_dependencies(qmlsmoketest uke-plasma-keyboard-custom)
 ecm_add_test(controladaptortest.cpp ../src/laptop/controladaptor.cpp ../src/laptop/controladaptor.h
     TEST_NAME controladaptortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
 target_include_directories(controladaptortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+
+ecm_add_test(laptopcontrollertest.cpp
+    ../src/laptop/laptopcontroller.cpp ../src/laptop/laptopcontroller.h
+    ../src/laptop/controladaptor.cpp ../src/laptop/controladaptor.h
+    ../src/laptop/layoutregistry.cpp ../src/sessionlockstate.cpp
+    ../src/prediction/hunspelldictionary.cpp ../src/prediction/wordlookup.cpp
+    TEST_NAME laptopcontrollertest
+    LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Test KF6::ConfigCore KF6::I18n KF6::Screen PkgConfig::XKBCommon)
+target_include_directories(laptopcontrollertest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+if(DBUS_RUN_SESSION)
+    set_target_properties(laptopcontrollertest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
+    set_tests_properties(laptopcontrollertest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;PLASMA_KEYBOARD_TEST_MODE=1;QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
+endif()
