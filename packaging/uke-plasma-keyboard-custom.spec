@@ -3,14 +3,14 @@
 %global __requires_exclude_from ^%{_libdir}/%{name}/.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 8%{?dist}
+Release: 9%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
 Source0: %{name}-%{version}.tar.xz
 Source1: https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.3.tar.gz#/whisper.cpp-1.9.3.tar.gz
 Source2: https://github.com/handy-computer/transcribe.cpp/archive/5bb2deb2a4afb1fd50534ecb51cfcb521ef94944.tar.gz#/transcribe.cpp-5bb2deb2a4afb1fd50534ecb51cfcb521ef94944.tar.gz
-BuildRequires: gcc-c++ cmake ninja-build extra-cmake-modules gettext git-core bash
+BuildRequires: gcc-c++ cmake ninja-build extra-cmake-modules gettext git-core bash nodejs
 BuildRequires: cmake(Qt6Core) cmake(Qt6Gui) cmake(Qt6Qml) cmake(Qt6Quick) cmake(Qt6DBus)
 BuildRequires: cmake(Qt6Multimedia) cmake(Qt6Network) cmake(Qt6Concurrent) cmake(Qt6Test)
 BuildRequires: cmake(Qt6VirtualKeyboard) cmake(Qt6WaylandClient) cmake(Qt6WaylandCompositor)

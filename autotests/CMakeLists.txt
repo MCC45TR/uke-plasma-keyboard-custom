@@ -75,6 +75,7 @@ target_compile_definitions(layoutshiftqttest PRIVATE LAYOUT_SHIFT_SOURCE_DIR="${
 find_program(NODE_EXECUTABLE NAMES node nodejs)
 if(NODE_EXECUTABLE)
     add_test(NAME layoutshifttest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/layoutshifttest.mjs)
+    add_test(NAME localeresolvertest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/localeresolvertest.mjs)
 endif()
 
 add_test(NAME mainpolicysourcetest COMMAND ${BASH_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/mainpolicysourcetest.sh)

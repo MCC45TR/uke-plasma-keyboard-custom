@@ -968,6 +968,7 @@ private:
 #include <KSignalHandler>
 #include <signal.h>
 #include <unistd.h>
+#include <cstdio>
 #endif
 
 int main(int argc, char **argv)
@@ -1002,7 +1003,13 @@ int main(int argc, char **argv)
         KLocalization::setupLocalizedContext(&settings);
         const QString scene = qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE")
             ? qEnvironmentVariable("UKE_KEYBOARD_TEST_SCENE") : QString();
+        if(!scene.isEmpty()) {
+            QObject::connect(&settings,&QQmlEngine::warnings,&application,[](const QList<QQmlError>&errors){for(const auto&error:errors)std::fprintf(stderr,"QML scene: %s\n",qPrintable(error.toString()));});
+            QObject::connect(&application,&QGuiApplication::lastWindowClosed,&application,[]{std::fprintf(stderr,"QML scene: last window closed\n");});
+            std::fprintf(stderr,"QML scene: loading test fixture\n");
+        }
         settings.load(scene.isEmpty() ? QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/LaptopSettings.qml")) : QUrl::fromLocalFile(scene));
+        if(!scene.isEmpty())std::fprintf(stderr,"QML scene: %lld root objects\n",static_cast<long long>(settings.rootObjects().size()));
         return settings.rootObjects().isEmpty()?1:application.exec();
     }
 

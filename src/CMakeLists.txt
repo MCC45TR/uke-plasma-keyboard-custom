@@ -253,6 +253,7 @@ ecm_add_qml_module(uke-plasma-keyboard-custom
 
 ecm_target_qml_sources(uke-plasma-keyboard-custom SOURCES
     qml/main.qml
+    qml/LocaleResolver.js
     qml/LaptopDeck.qml
     qml/PcKeyboard.qml
     qml/Touchpad.qml

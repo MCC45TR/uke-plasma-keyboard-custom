@@ -15,6 +15,7 @@ import org.uke.plasma.keyboard
 import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 import org.kde.kirigami as Kirigami
+import "LocaleResolver.js" as LocaleResolver
 
 InputPanelWindow {
     id: root
@@ -25,7 +26,7 @@ InputPanelWindow {
     readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
     Connections {
         target: PlasmaKeyboard.Laptop
-        function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=PlasmaKeyboard.Laptop.locale; }
+        function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }
     }
     // The style sizes the panel from the screen size, but as a QtObject its own
     // Screen attached property does not follow this window (see style.qml).
@@ -167,7 +168,7 @@ InputPanelWindow {
             return;
         }
         predictor.request(thing.predictionPrefix, thing.predictionContext,
-                          inputPanel.InputContext.locale,
+                          root.useNativePc?PlasmaKeyboard.Laptop.locale:inputPanel.InputContext.locale,
                           PlasmaKeyboardSettings.predictiveSuggestionCount,
                           PlasmaKeyboardSettings.predictiveMinPrefixLength,
                           PlasmaKeyboardSettings.predictiveTypoCorrectionEnabled,
@@ -1550,7 +1551,7 @@ InputPanelWindow {
                     locales = [locale];
                 }
                 const selected=PlasmaKeyboard.Laptop.layouts.map(layout=>layout.locale);
-                locales=Array.from(new Set(locales.concat(selected).concat([PlasmaKeyboard.Laptop.locale])));
+                locales=LocaleResolver.forImes(locales.concat(selected).concat([PlasmaKeyboard.Laptop.locale]),VirtualKeyboardSettings.availableLocales);
                 VirtualKeyboardSettings.activeLocales = locales;
 
                 // Qt checks VirtualKeyboardSettings.locale before the locale the

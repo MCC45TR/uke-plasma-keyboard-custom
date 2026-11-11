@@ -2,6 +2,7 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 import org.uke.plasma.keyboard
+import org.uke.plasma.keyboard.lib as Keyboard
 Kirigami.ApplicationWindow {
     id: window
     width: 1000
@@ -54,6 +55,14 @@ Kirigami.ApplicationWindow {
                 if(point.x<0||point.x+key.width>deck.width+0.1)console.error("UKE_QML_FAILURE: key outside viewport");
                 const toolbar=window.findKey(deck,"ukeToolbar");
                 if(!toolbar||toolbar.childrenRect.width>toolbar.width+0.1)console.error("UKE_QML_FAILURE: toolbar outside viewport");
+                Keyboard.Laptop.selectLayout(0);
+                if(Keyboard.Laptop.keyLabel(16,"")!=="q"||Keyboard.Laptop.keyLabel(23,"")!=="ı")console.error("UKE_QML_FAILURE: Turkish Q labels");
+                Keyboard.Laptop.selectLayout(1);
+                if(Keyboard.Laptop.keyLabel(16,"")!=="f")console.error("UKE_QML_FAILURE: Turkish F variant");
+                Keyboard.Laptop.selectLayout(2);
+                if(Keyboard.Laptop.keyLabel(16,"")!=="q")console.error("UKE_QML_FAILURE: English label");
+                Keyboard.Laptop.selectLayout(3);
+                if(Keyboard.Laptop.keyLabel(16,"")!=="ض")console.error("UKE_QML_FAILURE: Arabic label");
                 console.log("UKE_QML_GEOMETRY_PASS");stop();
             }
             ++step;

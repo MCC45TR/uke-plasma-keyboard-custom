@@ -126,3 +126,20 @@ alone supplies three/four-finger actions. Lock exits/cancels native input and
 uses the inherited input-method path. Physical gesture/focus/lock acceptance is
 still pending. The on-tablet ruler and original theme/font/outline settings are
 connected to the native PC surface; none is a physical measurement receipt.
+
+## COPR 11309924 — translation-marker compile failure
+
+All three builds rejected a deprecated translation marker that is disabled by
+the project's KF6 compatibility settings. Tool labels now call i18nd directly.
+The keyboard-surface diagnostic did not run, so its earlier failure remains
+open. No RPM or installation was accepted. Diagnostic output now also records
+QML loader warnings, root-object count and last-window closure for the isolated
+test fixture; no entered or clipboard text is involved.
+
+The next source preserves the native predictor's actual XKB language while
+resolving the installed Qt IME's historical locale names. Source JS checks pass
+175 inherited Shift/Caps/release cases plus locale-alias/deduplication cases;
+these are not native Qt or physical tests. The remote scene will additionally
+check production TR Q/F, English and Arabic key labels with a private kxkbrc.
+Asynchronous window configure acknowledgements update restoration ownership
+only when the requested geometry is actually reached.

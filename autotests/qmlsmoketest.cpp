@@ -2,6 +2,7 @@
 #include <QtTest>
 #include <QProcess>
 #include <QTemporaryDir>
+#include <QFile>
 #include "mockinputmethodcompositor_config.h"
 class QmlSmokeTest:public QObject {
  Q_OBJECT
@@ -10,6 +11,8 @@ private Q_SLOTS:
  void preferencesLoad(){
   QFETCH(QString,scene);
   QTemporaryDir directory;QVERIFY(directory.isValid());
+  QFile layouts(directory.path()+QStringLiteral("/kxkbrc"));QVERIFY(layouts.open(QIODevice::WriteOnly));
+  layouts.write("[Layout]\nUse=true\nLayoutList=tr,tr,us,ara\nVariantList=,f,,\n");layouts.close();
   QProcess process;auto env=QProcessEnvironment::systemEnvironment();
   env.insert(QStringLiteral("XDG_CONFIG_HOME"),directory.path());
   env.insert(QStringLiteral("QT_QPA_PLATFORM"),QStringLiteral("offscreen"));

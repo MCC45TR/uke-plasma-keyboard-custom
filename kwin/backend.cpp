@@ -274,7 +274,7 @@ private:
         signal<<phase<<id<<(position.x()-area.x())/std::max(1.0,area.width())<<(position.y()-area.y())/std::max(1.0,area.height())<<8.0/std::max(60,mm.width())<<8.0/std::max(60,mm.height());
         m_bus.send(signal);
     }
-    struct Saved { QPointer<OutputType> output; QRectF before; QRectF moved; };
+    struct Saved { QPointer<OutputType> output; QRectF before; QRectF moved; QRectF requested; };
     bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked() || !kwinApp()->session() || !kwinApp()->session()->isActive(); }
     bool authorized(bool requireUnlocked = true) {
         const bool own = calledFromDBus() && !m_client.isEmpty() && message().service() == m_client;
@@ -311,7 +311,11 @@ private:
         return best;
     }
     void observe(Window *w) {
-        connect(w, &Window::frameGeometryChanged, this, [this,w] { moveAway(w); });
+        connect(w, &Window::frameGeometryChanged, this, [this,w] {
+            auto saved=m_saved.find(w);
+            if(saved!=m_saved.end()&&rectangle(w->frameGeometry())==saved->requested)saved->moved=saved->requested;
+            moveAway(w);
+        });
         connect(w, &Window::outputChanged, this, [this,w] { moveAway(w); });
         moveAway(w);
     }
@@ -331,6 +335,7 @@ private:
         moved.setSize(QSizeF(std::min(moved.width(),area.width()),std::min(moved.height(),area.height())));
         moved.moveLeft(std::clamp(moved.x(),area.left(),area.right()-moved.width()));
         moved.moveTop(std::clamp(moved.y(),area.top(),area.bottom()-moved.height()));
+        m_saved[w].requested=moved;
         w->moveResize(WindowRect(moved));
         m_saved[w].moved = rectangle(w->frameGeometry());
         m_moving = false;
