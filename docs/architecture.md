@@ -91,3 +91,15 @@ panel without changing desktop geometry. A bounded entry-generation check stops
 late asynchronous replies from reopening a surface after lock/leave/topology
 changes. Tray control uses the distribution's original
 [KStatusNotifierItem](https://api.kde.org/kstatusnotifieritem.html), with no polling.
+
+Mobile editing gestures use the inherited input-method-v1 context and original
+Qt keyboard components. Qt's virtualKeyPress defers the actual click until
+release/repeat; cancelling it before the drag therefore avoids an extra space
+or delete. A temporary client-scoped Ctrl sequence restores the exact serialized
+XKB depressed/latched/locked/layout state afterwards. No raw input grant or Qt
+fork is required. This behavior was checked against Qt Virtual Keyboard's6.12
+`src/components/Keyboard.qml`, `SpaceKey.qml` and
+`src/virtualkeyboard/qvirtualkeyboardinputengine.cpp` on12 November2026.
+The reviewed Qt Virtual Keyboard6.12 branch revision was
+`ee95ac1db05f6b1a5ef8b309f81e47bbe1a497f8`; its original Qt/GPL license headers
+remain with the reference source. Only the keyboard's own integration changes.

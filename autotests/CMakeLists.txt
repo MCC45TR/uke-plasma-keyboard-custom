@@ -298,6 +298,7 @@ ecm_add_test(laptopcontrollertest.cpp
     TEST_NAME laptopcontrollertest
     LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Test KF6::ConfigCore KF6::I18n KF6::Screen PkgConfig::XKBCommon)
 target_include_directories(laptopcontrollertest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+target_compile_options(laptopcontrollertest PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)
 if(DBUS_RUN_SESSION)
     set_target_properties(laptopcontrollertest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
     set_tests_properties(laptopcontrollertest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;PLASMA_KEYBOARD_TEST_MODE=1;QT_QPA_PLATFORM=offscreen" TIMEOUT 30)

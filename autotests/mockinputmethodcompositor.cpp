@@ -109,6 +109,10 @@ public:
     {
         return m_keymapped;
     }
+    void sendModifierState(uint32_t depressed,uint32_t latched,uint32_t locked,uint32_t group)
+    {
+        send_modifiers(++m_serial,depressed,latched,locked,group);
+    }
 
     /**
      * Sets an updated XKB keymap built from the given layout and variant.
@@ -217,6 +221,7 @@ Q_SIGNALS:
     void commitStringChanged(const QString &commitString);
     void keysymReceived(uint32_t sym, uint32_t state);
     void keyReceived(uint32_t key, uint32_t state);
+    void modifiersReceived(uint32_t depressed,uint32_t latched,uint32_t locked,uint32_t group);
 
 protected:
     void zwp_input_method_context_v1_destroy(Resource *resource) override
@@ -290,6 +295,7 @@ protected:
         Q_UNUSED(resource);
         Q_UNUSED(serial);
         xkb_state_update_mask(m_xkbState.get(), mods_depressed, mods_latched, mods_locked, 0, 0, group);
+        Q_EMIT modifiersReceived(mods_depressed,mods_latched,mods_locked,group);
     }
 
 private:
@@ -736,6 +742,7 @@ private Q_SLOTS:
      */
     void cleanup()
     {
+        if(m_inputMethod&&m_inputMethod->context()&&m_inputMethod->context()->keyboard())m_inputMethod->context()->keyboard()->sendModifierState(0,0,0,0);
         QTest::qWait(RUNNING_IN_CI ? 200 : 20);
         wl_display_flush_clients(m_compositor->display());
         QTest::qWait(RUNNING_IN_CI ? 100 : 20);
@@ -842,6 +849,51 @@ private Q_SLOTS:
         QVERIFY(commitStringSpy.count() || commitStringSpy.wait());
         QCOMPARE(commitStringSpy.count(), 1);
         QCOMPARE(commitStringSpy.first().first().toString(), QStringLiteral("q"));
+    }
+
+    QPointF editingPosition(const QString &name)const
+    {
+        QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));
+        if(!file.open(QIODevice::ReadOnly))return {-1,-1};
+        const auto object=QJsonDocument::fromJson(file.readAll()).object();
+        return {object.value(name+QStringLiteral("X")).toDouble(-1),object.value(name+QStringLiteral("Y")).toDouble(-1)};
+    }
+    void dragInputPanel(const QPointF &start,double distance)
+    {
+        auto *surface=m_inputPanel->surface();QVERIFY(surface);
+        m_seat->sendTouchPointPressed(surface,0,start);m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(30);
+        for(int step=1;step<=3;++step){m_seat->sendTouchPointMoved(surface,0,start+QPointF(distance*step/3,0));m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());QTest::qWait(30);}
+        m_seat->sendTouchPointReleased(surface,0,start+QPointF(distance,0));m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(150);
+    }
+    void testSpaceDragMovesCursorWithoutSpace()
+    {
+        const auto point=editingPosition(QStringLiteral("space"));QVERIFY(point.x()>0&&point.y()>0);
+        QSignalSpy commits(m_inputMethod->context(),&InputMethodContext::commitStringChanged);
+        QSignalSpy keys(m_inputMethod->context(),&InputMethodContext::keysymReceived);
+        dragInputPanel(point,30);
+        QTRY_VERIFY(!keys.isEmpty());
+        for(const auto &key:keys)QCOMPARE(key[0].toUInt(),uint(XKB_KEY_Right));
+        QCOMPARE(keys.size()%2,0);QVERIFY(commits.isEmpty());
+    }
+    void testBackspaceDragDeletesWordAndRestoresModifiers()
+    {
+        const auto point=editingPosition(QStringLiteral("backspace"));QVERIFY(point.x()>0&&point.y()>0);
+        // US fixture: Shift depressed, Caps locked. The temporary Ctrl must
+        // preserve both and restore exactly this state after deletion.
+        m_inputMethod->context()->keyboard()->sendModifierState(1,0,2,0);
+        wl_display_flush_clients(m_compositor->display());QTest::qWait(100);
+        QSignalSpy keys(m_inputMethod->context(),&InputMethodContext::keyReceived);
+        QSignalSpy symbols(m_inputMethod->context(),&InputMethodContext::keysymReceived);
+        QSignalSpy modifiers(m_inputMethod->context(),&InputMethodContext::modifiersReceived);
+        dragInputPanel(point,-30);
+        QTRY_VERIFY(keys.size()>=2);
+        for(int i=0;i<keys.size();++i){QCOMPARE(keys[i][0].toUInt(),uint(KEY_BACKSPACE));QCOMPARE(keys[i][1].toUInt(),uint(i%2==0?WL_KEYBOARD_KEY_STATE_PRESSED:WL_KEYBOARD_KEY_STATE_RELEASED));}
+        QCOMPARE(keys.size()%2,0);QVERIFY(symbols.isEmpty());
+        QTRY_VERIFY(modifiers.size()>=2);
+        QCOMPARE(modifiers.first()[0].toUInt(),5u);QCOMPARE(modifiers.last()[0].toUInt(),1u);
+        QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
     }
 
     void testKeyboardNavigationCommitsCharacter()

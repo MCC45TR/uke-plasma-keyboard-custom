@@ -31,6 +31,13 @@ InputPanelWindow {
         return Qt.point(-1,-1);
     }
     function navigationLabel(){const key=highlightedKey();return key&&key.text?key.text:"";}
+    function editingKey(code){
+        if(!inputPanel.keyboard)return null;
+        const stack=[inputPanel.keyboard];
+        while(stack.length){const item=stack.pop();for(let i=0;i<item.children.length;++i)stack.push(item.children[i]);if(item.visible&&item.enabled&&item.key===code&&item.width>0&&item.height>0)return item;}
+        return null;
+    }
+    function editingKeyPosition(code){const key=editingKey(code);return key?key.mapToItem(null,key.width/2,key.height/2):Qt.point(-1,-1);}
     Connections {
         target: PlasmaKeyboard.Laptop
         function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }
@@ -1900,28 +1907,67 @@ InputPanelWindow {
         }
     }
 
+    QtObject {
+        id: editingTouch
+        property int code: 0
+        property real startX: 0
+        property real started: 0
+        property int previousStep: 0
+        property bool moved: false
+        function begin(point){
+            code=0;previousStep=0;moved=false;
+            if(!point||root.useNativePc||root.voiceMode)return;
+            const area=inputPanel.keyboard.keyboardInputArea;
+            for(const candidate of [Qt.Key_Space,Qt.Key_Backspace]){
+                if(candidate===Qt.Key_Space&&!PlasmaKeyboard.Laptop.options.spaceGesture)continue;
+                if(candidate===Qt.Key_Backspace&&!PlasmaKeyboard.Laptop.options.deleteGesture)continue;
+                const key=root.editingKey(candidate);if(!key)continue;
+                const p=area.mapToItem(key,point.x,point.y);
+                if(p.x>=0&&p.y>=0&&p.x<key.width&&p.y<key.height){code=candidate;startX=point.x;started=Date.now();return;}
+            }
+        }
+        function move(point){
+            if(!code||!point||(!moved&&Date.now()-started>=550))return;
+            const dx=(point.x-startX)/PlasmaKeyboard.Laptop.pixelsPerMm;
+            const step=code===Qt.Key_Space?Math.trunc(dx/2):Math.max(previousStep,Math.floor(Math.max(0,-dx)/5));
+            if(step===previousStep)return;
+            if(!moved){
+                inputPanel.InputContext.inputEngine.virtualKeyCancel();
+                inputPanel.keyboard.keyboardInputArea.reset();
+                Qt.inputMethod.commit();moved=true;
+            }
+            if(code===Qt.Key_Space)thing.editCursor(step-previousStep);
+            else thing.deleteWordGesture(step-previousStep);
+            previousStep=step;
+        }
+        function end(){code=0;moved=false;}
+    }
     Connections {
         target: inputPanel.keyboard ? inputPanel.keyboard.keyboardInputArea : null
         function onPressed(touchPoints) {
             swipeInput.begin(touchPoints.length > 0 ? touchPoints[0] : null);
+            editingTouch.begin(touchPoints.length>0?touchPoints[0]:null);
             // In the floating mode the whole panel can be dragged around. A
             // gesture that starts on a letter is a swipe, not a drag: without
             // this the window follows the finger and the swipe never happens.
-            if (swipeInput.startKey !== null) {
+            if (swipeInput.startKey !== null || editingTouch.code!==0) {
                 panelDrag.enabled = false;
             }
         }
         function onUpdated(touchPoints) {
             if (touchPoints.length > 0) {
+                editingTouch.move(touchPoints[0]);
                 swipeInput.move(touchPoints[0]);
             }
         }
         function onReleased(touchPoints) {
             swipeInput.end();
+            editingTouch.end();
             panelDrag.enabled = panelWrapper.floating;
         }
         function onCanceled(touchPoints) {
             swipeInput.end();
+            editingTouch.end();
             panelDrag.enabled = panelWrapper.floating;
         }
     }

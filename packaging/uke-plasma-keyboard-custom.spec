@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 15%{?dist}
+Release: 16%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -95,8 +95,9 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
-* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-15
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-16
 - Add a movable laptop panel with manual tray and optional focus activation.
+- Support mobile and PC cursor/word-deletion gestures with optional key previews.
 - Guard asynchronous cover and entry changes and preserve system ELF dependencies.
 - Require the complete native protocol, QML and library-loading checks in COPR.
 

@@ -151,6 +151,8 @@ public:
      * keyboard. Used by the gamepad handler to emit e.g. Backspace/Space.
      */
     Q_INVOKABLE void sendKeyEvent(int key, const QString &text);
+    Q_INVOKABLE void editCursor(int steps) { m_input.editCursor(steps); }
+    Q_INVOKABLE void deleteWordGesture(int count) { m_input.deleteWords(count); }
 
     /**
      * Inserts @p text into the focused field, as if it had been typed.

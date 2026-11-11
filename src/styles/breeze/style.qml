@@ -678,6 +678,7 @@ KeyboardStyle {
 
     characterPreviewMargin: 0
     characterPreviewDelegate: Item {
+        visible: PlasmaKeyboard.Laptop.options.keyPreview
         property string text
         property string flickLeft
         property string flickTop

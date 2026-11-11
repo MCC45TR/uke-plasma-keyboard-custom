@@ -239,6 +239,15 @@ void Keyboard::keyboard_key(uint32_t serial, uint32_t time, uint32_t key, uint32
     }
 }
 
+std::array<uint32_t,4> Keyboard::modifierState() const
+{
+    if(!mXkbState)return {};
+    return {xkb_state_serialize_mods(mXkbState.get(),XKB_STATE_MODS_DEPRESSED),
+            xkb_state_serialize_mods(mXkbState.get(),XKB_STATE_MODS_LATCHED),
+            xkb_state_serialize_mods(mXkbState.get(),XKB_STATE_MODS_LOCKED),
+            xkb_state_serialize_layout(mXkbState.get(),XKB_STATE_LAYOUT_EFFECTIVE)};
+}
+
 void Keyboard::keyboard_modifiers(uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
     xkb_state_update_mask(mXkbState.get(), mods_depressed, mods_latched, mods_locked, 0, 0, group);

@@ -10,6 +10,10 @@
 #include "inputmethod_p.h"
 
 #include <QStringList>
+#include <QDateTime>
+#include <algorithm>
+#include <cstdlib>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 #include <xkbcommon/xkbcommon-names.h>
 
@@ -153,6 +157,25 @@ void InputPlugin::keysym(uint timestamp, uint sym, KeyState state, uint modifier
         return;
     }
     m_context->keysym(m_context->m_latestSerial, timestamp, sym, state, modifiers);
+}
+
+void InputPlugin::editCursor(int steps)
+{
+    if(!m_context)return;
+    const auto symbol=steps<0?XKB_KEY_Left:XKB_KEY_Right;
+    const auto time=uint32_t(QDateTime::currentMSecsSinceEpoch());
+    for(int i=0;i<std::abs(std::clamp(steps,-32,32));++i){keysym(time,symbol,Pressed,0);keysym(time,symbol,Released,0);}
+}
+
+void InputPlugin::deleteWords(int count)
+{
+    if(!m_context||!m_keyboard||count<=0)return;
+    const auto code=keycodeForKeysym(XKB_KEY_BackSpace),control=controlMask();
+    if(!code||!control)return;
+    const auto original=m_keyboard->modifierState();
+    sendModifiers(original[0]|control,original[1],original[2],original[3]);
+    for(int i=0;i<std::min(count,32);++i){key(Pressed,code);key(Released,code);}
+    sendModifiers(original[0],original[1],original[2],original[3]);
 }
 
 void InputPlugin::key(KeyState state, quint32 scancode)

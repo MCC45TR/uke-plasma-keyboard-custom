@@ -1359,8 +1359,14 @@ int main(int argc, char **argv)
                 if(!position.canConvert<QPointF>())return;
                 const auto point=position.toPointF();if(point.x()<=0||point.y()<=0)return;
                 QVariant label;QMetaObject::invokeMethod(root,"navigationLabel",Q_RETURN_ARG(QVariant,label));
+                QJsonObject geometry{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()},{QStringLiteral("navigation"),label.toString()}};
+                for(const auto &entry:{std::pair{QStringLiteral("space"),int(Qt::Key_Space)},std::pair{QStringLiteral("backspace"),int(Qt::Key_Backspace)}}){
+                    QVariant value;
+                    QMetaObject::invokeMethod(root,"editingKeyPosition",Q_RETURN_ARG(QVariant,value),Q_ARG(QVariant,QVariant(entry.second)));
+                    const auto position=value.toPointF();geometry.insert(entry.first+QStringLiteral("X"),position.x());geometry.insert(entry.first+QStringLiteral("Y"),position.y());
+                }
                 QSaveFile file(path);if(!file.open(QIODevice::WriteOnly))return;
-                file.write(QJsonDocument(QJsonObject{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()},{QStringLiteral("navigation"),label.toString()}}).toJson());
+                file.write(QJsonDocument(geometry).toJson());
                 file.commit();
             });
             probe->start();

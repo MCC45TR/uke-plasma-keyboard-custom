@@ -278,3 +278,19 @@ are a comparison baseline, not a hardware-wakeup or Uke-keyboard result.
 The Fedora45 result log for11310318 was subsequently read successfully: it too
 passed26 of27 CTest entries and12 of13 protocol cases, with only the navigation
 probe failure. No test was removed and no RPM was delivered from that candidate.
+
+## COPR 11310359 — controller test compiler flags
+
+All three workers failed while compiling the new controller test. That target
+had not inherited the production application's UTF-8 string-conversion compiler
+options. It now uses the same options; its runtime assertions and private-bus
+isolation remain required. No complete test run, RPM or installation was accepted.
+
+The next source closes a normal-mode feature gap: mobile Qt keyboard layouts now
+also support Space cursor dragging and left-Backspace word deletion. They cancel
+the original pending key before emitting editing commands. Word deletion saves
+and restores the compositor's complete modifier state, including held Shift and
+Caps Lock. Both mobile and PC character previews follow the same opt-in setting.
+New native protocol cases check cursor motion without a space, balanced deletion
+keys, and preservation of synthetic Shift/Caps state. Source checks pass; native
+and physical acceptance of these additions remain pending.

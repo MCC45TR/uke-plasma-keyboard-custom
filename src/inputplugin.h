@@ -77,6 +77,8 @@ public:
         Repeated = 2
     };
     void keysym(uint timestamp, uint sym, KeyState state, uint modifiers);
+    void editCursor(int steps);
+    void deleteWords(int count);
     void key(KeyState state, quint32 scancode);
 
     /**

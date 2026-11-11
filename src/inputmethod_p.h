@@ -12,6 +12,7 @@
 #include <QtWaylandClient/QWaylandClientExtensionTemplate>
 
 #include <memory>
+#include <array>
 #include <qwayland-input-method-unstable-v1.h>
 #include <qwayland-wayland.h>
 
@@ -105,6 +106,7 @@ public:
      * Returns the modifier mask for the modifier named @p name (e.g. "Control").
      */
     uint32_t modifierMask(const char *name) const;
+    std::array<uint32_t,4> modifierState() const;
 
 Q_SIGNALS:
     void keyPressed(QKeyEvent *keyEvent);
