@@ -267,17 +267,18 @@ void LaptopController::key(uint code,bool pressed){
    else if(m_latched.contains(code)&&time-m_tapTimes.value(code)<400){m_lockedKeys.insert(code);}
    else if(m_latched.remove(code)){setRawKey(code,false);}
    else{m_latched.insert(code);m_tapTimes[code]=time;}
-  }else{setRawKey(code,false);const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);}}
+  }else{setRawKey(code,false);consumeLatched();}
  }
  ++m_revision;Q_EMIT keyStateChanged();
 }
 void LaptopController::tap(uint code){key(code,true);key(code,false);}
 void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingChanged();}m_typingTimer.start();}
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
-void LaptopController::deleteWords(int count){if(count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++)tap(KEY_BACKSPACE);if(temporary)setRawKey(KEY_LEFTCTRL,false);}
+bool LaptopController::consumeLatched(){bool changed=false;const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);changed=true;}return changed;}
+void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);consumeLatched();markTyping();++m_revision;Q_EMIT keyStateChanged();}
 void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
-void LaptopController::button(uint code,bool pressed){backendCall(QStringLiteral("Button"),{code,pressed});}
+void LaptopController::button(uint code,bool pressed){if(pressed&&!nativeInputAllowed())return;backendCall(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
 void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
 void LaptopController::swipe(int fingers,int phase,double x,double y){backendCall(QStringLiteral("Swipe"),{fingers,phase,x,y});}
 void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendCall(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}

@@ -14,6 +14,8 @@ Rectangle {
     property var predictions: []
     signal swipeAccepted(var words)
     signal predictionChosen(string text)
+    function keyGeometry(code) { return pc.keyGeometry(code); }
+    readonly property bool toolbarFits: tools.childrenRect.width<=tools.width+0.1
     color: Kirigami.Theme.backgroundColor
     ColumnLayout {
         anchors.fill: parent

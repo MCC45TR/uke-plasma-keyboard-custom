@@ -18,6 +18,17 @@ Item {
     property real keyHeight: Math.min(Keyboard.Laptop.options.keyHeightMm * perMm, (height - gap * Math.max(0, rowRepeater.count - 1)) / Math.max(1, rowRepeater.count))
     implicitHeight: Keyboard.Laptop.rows.length * Keyboard.Laptop.options.keyHeightMm * perMm + Math.max(0,Keyboard.Laptop.rows.length-1)*gap
     signal swipeAccepted(var words)
+    function keyGeometry(code) {
+        for(let r=0;r<rowRepeater.count;r++){
+            const row=rowRepeater.itemAt(r);
+            if(!row)continue;
+            for(let k=0;k<row.keys.count;k++){
+                const key=row.keys.itemAt(k);
+                if(key&&key.code===code){const p=key.mapToItem(keyboard,0,0);return {width:key.width,x:p.x,viewport:keyboard.width};}
+            }
+        }
+        return null;
+    }
     function feedback() {
         if(click.item)click.item.play();
         if(PlasmaKeyboardSettings.vibrationEnabled)Vibration.vibrate(PlasmaKeyboardSettings.vibrationMs,PlasmaKeyboardSettings.vibrationStrength);

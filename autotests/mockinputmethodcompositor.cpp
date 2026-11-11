@@ -529,13 +529,15 @@ public:
 private Q_SLOTS:
     void initTestCase()
     {
-        // create a temporary folder for test configs
-        if (!m_home.isValid() || !qputenv("HOME", qPrintable(m_home.path()))) {
-            qFatal("Couldn't create temporary home folder for the test");
+        // Keep test configuration/data separate without changing HOME.
+        if (!m_home.isValid()) {
+            qFatal("Couldn't create temporary configuration folder for the test");
             return;
         }
 
         qputenv("XDG_CONFIG_HOME", qPrintable(m_home.path() + QStringLiteral("/.config")));
+        qputenv("XDG_DATA_HOME", qPrintable(m_home.path() + QStringLiteral("/.local/share")));
+        qputenv("XDG_CACHE_HOME", qPrintable(m_home.path() + QStringLiteral("/.cache")));
 
         {
             KConfig cfg(QStringLiteral("uke-plasma-keyboard-customrc"));

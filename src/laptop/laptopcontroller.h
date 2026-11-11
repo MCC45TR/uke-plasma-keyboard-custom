@@ -116,6 +116,7 @@ private:
     void updateModifiers();
     void applyLocks();
     void markTyping();
+    bool consumeLatched();
     static QVariantMap defaults();
     static LaptopController *s_instance;
     QDBusConnection m_bus;

@@ -37,7 +37,7 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
 # sending the hotkey to a process that is gone, so the shortcut silently stops
 # working), load its KWin script into the live compositor, and leave a watchdog
 # that restarts the session input method. The flag keeps the binary away.
-set_tests_properties(mockinputmethodcompositor PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_MODE=1")
+set_tests_properties(mockinputmethodcompositor PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_MODE=1" TIMEOUT 120)
 
 # Exercise the production overlay state machine with a recording input facade.
 ecm_add_test(overlaycontrollertest.cpp

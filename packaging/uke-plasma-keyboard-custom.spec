@@ -3,7 +3,7 @@
 %global __requires_exclude_from ^%{_libdir}/%{name}/.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 10%{?dist}
+Release: 11%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -65,8 +65,8 @@ find %{buildroot} -type f \( -name '*.qmltypes' -o -name '*.qmlc' \) -delete
 bash tests/source.sh
 export QML_IMPORT_PATH=%{buildroot}%{_libdir}/qt6/qml XDG_DATA_DIRS=%{buildroot}%{_datadir}:/usr/local/share:/usr/share
 export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 PLASMA_KEYBOARD_TEST_MODE=1
-# The integration test requires EGL hardware. Its omission is not hardware acceptance.
-dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no-tests=error --exclude-regex '^mockinputmethodcompositor$'
+# The protocol fixture uses software rendering and a private Wayland socket.
+dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no-tests=error
 ! find %{buildroot} -type f -name '*.py' | read
 ! find %{buildroot} -type f -name '*plasma-keyboard-touchscreen.rules' | read
 

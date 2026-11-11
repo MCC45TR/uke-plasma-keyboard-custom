@@ -1010,6 +1010,20 @@ int main(int argc, char **argv)
         }
         settings.load(scene.isEmpty() ? QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/LaptopSettings.qml")) : QUrl::fromLocalFile(scene));
         if(!scene.isEmpty())std::fprintf(stderr,"QML scene: %lld root objects\n",static_cast<long long>(settings.rootObjects().size()));
+        if(!scene.isEmpty()&&!settings.rootObjects().isEmpty()) {
+            QPointer<QObject> root=settings.rootObjects().first();
+            auto *driver=new QTimer(&settings);driver->setInterval(150);
+            QObject::connect(driver,&QTimer::timeout,&settings,[root,driver]{
+                QVariant result;
+                if(!root||!QMetaObject::invokeMethod(root,"advanceTest",Q_RETURN_ARG(QVariant,result))){std::fprintf(stderr,"UKE_QML_FAILURE: fixture method unavailable\n");driver->stop();return;}
+                const auto value=result.toString();
+                if(value==QLatin1String("WAIT"))return;
+                if(value==QLatin1String("PASS"))std::fprintf(stderr,"UKE_QML_GEOMETRY_PASS\n");
+                else std::fprintf(stderr,"UKE_QML_FAILURE: %s\n",qPrintable(value));
+                driver->stop();
+            });
+            driver->start();
+        }
         return settings.rootObjects().isEmpty()?1:application.exec();
     }
 

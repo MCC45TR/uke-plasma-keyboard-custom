@@ -164,3 +164,24 @@ Normal mode defaults to the retained phone/tablet layout; the new PC layout is
 the laptop default, with an independent option to use it in normal mode. This
 follows the request to preserve the existing mode alongside the new surface.
 The optional preference question remains answerable without a new code change.
+
+## COPR 11310065 — scene constructs, measurement probe incomplete
+
+All three environments compiled and linked the application/plugin. Rawhide
+passed24 of25 tests, including the expanded clipboard pin/privacy and caller
+routing checks. Settings and the keyboard/pad fixture each constructed a root
+object and stayed running. The scene test failed because its completion marker
+was not captured; this does not establish successful geometry or visual use.
+No RPM passed the package gate or reached the device.
+
+The next probe uses the production key items' geometry directly and a native
+Qt event-loop driver, forcing QML diagnostics to stderr. It still checks scale,
+portrait fit, toolbar bounds and actual TR Q/F/English/Arabic key labels. Child
+processes are stopped before assertions. The previous protocol-fixture exclusion
+was based on an unverified EGL assumption; its source already disables hardware
+integration and requests software rendering. The next recipe runs that retained
+private-Wayland fixture too, with a bounded timeout and isolated XDG data/config.
+
+One-shot modifiers are consumed after deliberate clicks, and multi-word deletion
+holds its temporary Ctrl for the entire operation. Their physical touch/chord
+acceptance remains open. No distribution package was forked or rebuilt here.
