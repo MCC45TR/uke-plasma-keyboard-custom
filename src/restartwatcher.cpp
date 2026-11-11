@@ -15,17 +15,25 @@
 #include <QDBusMessage>
 #include <QDBusVariant>
 #include <QFile>
+#include <QGuiApplication>
+#include <QInputMethod>
 #include <QFileInfo>
 #include <QLockFile>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
+#include <QFileSystemWatcher>
+#include <QSocketNotifier>
+#include <QDBusServiceWatcher>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <memory>
 
 namespace
 {
 //! How often the installed binary is compared with the one this process runs.
-constexpr int s_pollIntervalMs = 30 * 1000;
+
 //! Time KWin gets to tear the old input method down before starting a new one.
 constexpr int s_kwinRestartDelayMs = 1000;
 //! Longest the restart is postponed while the keyboard is on screen.
@@ -33,14 +41,16 @@ constexpr int s_maxDeferMs = 2 * 60 * 1000;
 
 QString kwinInputMethod()
 {
-    const KConfigGroup group(KSharedConfig::openConfig(QStringLiteral("kwinrc")), QStringLiteral("Wayland"));
+    auto config=KSharedConfig::openConfig(QStringLiteral("kwinrc"));
+    config->reparseConfiguration();
+    const KConfigGroup group(config, QStringLiteral("Wayland"));
     return group.readEntry(QStringLiteral("InputMethod"));
 }
 
 bool customInputMethodIsConfigured()
 {
     const QString desktopFile = QFileInfo(kwinInputMethod()).fileName();
-    return desktopFile.startsWith(QStringLiteral("org.kde.plasma.keyboard.custom"));
+    return desktopFile.startsWith(QStringLiteral("org.uke.plasma.keyboard"));
 }
 
 void writeKwinInputMethod(const QString &value)
@@ -111,9 +121,15 @@ RestartWatcher::RestartWatcher(QObject *parent)
     }
 
     m_timer = new QTimer(this);
-    m_timer->setInterval(s_pollIntervalMs);
+    m_timer->setSingleShot(true);
+    m_timer->setInterval(s_maxDeferMs);
     connect(m_timer, &QTimer::timeout, this, &RestartWatcher::checkForUpdate);
-    m_timer->start();
+    auto *files=new QFileSystemWatcher(this);
+    files->addPath(m_binaryPath);
+    files->addPath(QFileInfo(m_binaryPath).absolutePath());
+    connect(files,&QFileSystemWatcher::fileChanged,this,[this,files]{if(QFile::exists(m_binaryPath)&&!files->files().contains(m_binaryPath))files->addPath(m_binaryPath);checkForUpdate();});
+    connect(files,&QFileSystemWatcher::directoryChanged,this,[this,files]{if(QFile::exists(m_binaryPath)&&!files->files().contains(m_binaryPath))files->addPath(m_binaryPath);checkForUpdate();});
+    connect(QGuiApplication::inputMethod(),&QInputMethod::visibleChanged,this,&RestartWatcher::checkForUpdate);
 }
 
 void RestartWatcher::checkForUpdate()
@@ -134,6 +150,7 @@ void RestartWatcher::checkForUpdate()
         m_size = info.size();
         m_restartPending = true;
         m_sinceDetection.start();
+        m_timer->start(s_maxDeferMs);
     }
 
     // Do not pull the keyboard away from under the user's fingers, but do not
@@ -161,43 +178,46 @@ void RestartWatcher::restart()
 
 int runInputMethodWatchdog()
 {
-    const QString runtimeDir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
-    const QString instanceLockPath = runtimeDir + QStringLiteral("/plasma-keyboard-custom.lock");
-    const QString watchdogLockPath = runtimeDir + QStringLiteral("/plasma-keyboard-custom-watchdog.lock");
-
-    // A single watchdog is enough, however many keyboard instances ask for one.
-    QLockFile watchdogLock(watchdogLockPath);
-    watchdogLock.setStaleLockTime(0);
-    if (!watchdogLock.tryLock(0)) {
-        return 0;
-    }
-
-    constexpr int s_checkIntervalMs = 5000;
-    constexpr int s_startGraceMs = 20000;
-
-    for (;;) {
-        if (!customInputMethodIsConfigured()) {
-            // Another virtual keyboard is configured (or virtual keyboards are
-            // disabled), so it is not ours to keep alive.
-            QThread::msleep(s_checkIntervalMs);
-            continue;
+    int count=1;char name[]="uke-keyboard-watchdog";char *arguments[]={name,nullptr};
+    QCoreApplication application(count,arguments);
+    if(!customInputMethodIsConfigured())return 0;
+    const QString runtimeDir=QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+    const QString instancePath=runtimeDir+QStringLiteral("/uke-plasma-keyboard-custom.lock");
+    QLockFile watchdog(runtimeDir+QStringLiteral("/uke-plasma-keyboard-custom-watchdog.lock"));
+    watchdog.setStaleLockTime(0);if(!watchdog.tryLock(0))return 0;
+    QFileSystemWatcher files;
+    const QString configPath=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)+QStringLiteral("/kwinrc");
+    files.addPath(configPath);files.addPath(QFileInfo(configPath).absolutePath());
+    QSocketNotifier *notifier=nullptr;int processFd=-1;qint64 watchedPid=-1;
+    bool restarting=false;
+    std::function<void()> observe;
+    observe=[&] {
+        if(!customInputMethodIsConfigured()){application.quit();return;}
+        QLockFile instance(instancePath);qint64 pid=0;QString host,app;
+        if(!instance.getLockInfo(&pid,&host,&app)||pid<=0){
+            if(!files.directories().contains(runtimeDir))files.addPath(runtimeDir);
+            return;
         }
-
-        QLockFile instanceProbe(instanceLockPath);
-        instanceProbe.setStaleLockTime(0);
-        if (!instanceProbe.tryLock(0)) {
-            // An input method process is running, the global shortcut is
-            // registered by it.
-            QThread::msleep(s_checkIntervalMs);
-            continue;
-        }
-        instanceProbe.unlock();
-
-        // KWin does not start the input method again after it exits, which
-        // would silently take the global shortcut with it. Toggle the setting
-        // so KWin starts a fresh process.
-        qCInfo(PlasmaKeyboard) << "The keyboard is not running, restarting it";
-        restartInputMethod();
-        QThread::msleep(s_startGraceMs);
-    }
+        if(pid==watchedPid)return;
+        if(notifier){delete notifier;notifier=nullptr;}
+        if(processFd>=0)close(processFd);
+        processFd=int(syscall(SYS_pidfd_open,pid,0));
+        if(processFd<0)return;
+        watchedPid=pid;
+        files.removePath(runtimeDir);
+        notifier=new QSocketNotifier(processFd,QSocketNotifier::Read,&application);
+        QObject::connect(notifier,&QSocketNotifier::activated,&application,[&]{
+            notifier->setEnabled(false);watchedPid=-1;
+            if(restarting)return;restarting=true;
+            QTimer::singleShot(1000,&application,[&]{
+                if(customInputMethodIsConfigured())restartInputMethod();
+                restarting=false;observe();
+            });
+        });
+    };
+    QObject::connect(&files,&QFileSystemWatcher::fileChanged,&application,[&]{if(QFile::exists(configPath)&&!files.files().contains(configPath))files.addPath(configPath);observe();});
+    QObject::connect(&files,&QFileSystemWatcher::directoryChanged,&application,[&]{observe();});
+    QDBusServiceWatcher compositor(QStringLiteral("org.kde.KWin"),QDBusConnection::sessionBus(),QDBusServiceWatcher::WatchForUnregistration);
+    QObject::connect(&compositor,&QDBusServiceWatcher::serviceUnregistered,&application,&QCoreApplication::quit);
+    observe();const int result=application.exec();if(processFd>=0)close(processFd);return result;
 }

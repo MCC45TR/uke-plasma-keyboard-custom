@@ -33,7 +33,7 @@ class LanguageEngine;
  * neural swipe model, Russian is decoded by geometry over the Russian word
  * list. The word lists are AOSP .combined files generated at build time from
  * the predictive word lists and installed to
- * <datadir>/plasma-keyboard-custom/swipe/.
+ * <datadir>/uke-plasma-keyboard-custom/swipe/.
  *
  * The engine is not thread-safe; every call happens on the GUI thread and a
  * decode takes a few milliseconds.
@@ -78,7 +78,7 @@ public:
     /**
      * Remembers that @p word was typed, so that the same words are preferred
      * later. Only letters are kept; the words are stored per language in
-     * <datadir>/plasma-keyboard-custom/swipe/learned-<lang>.json.
+     * <datadir>/uke-plasma-keyboard-custom/swipe/learned-<lang>.json.
      *
      * The caller decides whether the field may be remembered at all (password
      * fields are not); this method does not look at the focused field.
@@ -93,7 +93,7 @@ public:
 public Q_SLOTS:
     /**
      * The same recognition, for scripts and tests over D-Bus
-     * (org.kde.plasma.keyboard.custom /SwipeDebug), from one JSON string:
+     * (org.uke.plasma.keyboard /SwipeDebug), from one JSON string:
      * {"trace": [[x, y, t], ...], "keys": [["letter", x, y, w, h], ...]},
      * both in the window's pixels, the keys with their top-left corner, as the
      * engine expects them.

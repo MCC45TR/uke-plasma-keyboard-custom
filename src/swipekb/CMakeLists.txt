@@ -38,40 +38,20 @@ target_compile_options(swipekb_engine PRIVATE -fexceptions)
 # Linked into the keyboard executable, and later into the QML plugin.
 set_target_properties(swipekb_engine PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# The engine's word lists are cut from the predictive word lists at build time
-# (tools/generate-swipe-dictionaries.py): the same FrequencyWords data, the
-# most frequent words only, in the AOSP .combined format the engine reads.
-find_package(Python3 COMPONENTS Interpreter)
+# Native source generator: no interpreter or network access during compilation.
+add_executable(uke-dictionary-tool ../../tools/dictionary-tool.cpp)
+target_link_libraries(uke-dictionary-tool PRIVATE Qt::Core)
 set(_swipe_dictionary_dir ${CMAKE_CURRENT_BINARY_DIR}/dictionaries)
-set(_swipe_dictionary_files "")
-set(_swipe_languages en ru)
-if(Python3_Interpreter_FOUND)
-    foreach(_language IN LISTS _swipe_languages)
-        set(_output ${_swipe_dictionary_dir}/${_language}.combined)
-        add_custom_command(
-            OUTPUT ${_output}
-            COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/generate-swipe-dictionaries.py
-                --data ${PROJECT_SOURCE_DIR}/src/prediction/data
-                --out ${_swipe_dictionary_dir}
-                --langs ${_language}
-                --top 50000
-            DEPENDS ${PROJECT_SOURCE_DIR}/tools/generate-swipe-dictionaries.py
-                ${PROJECT_SOURCE_DIR}/src/prediction/data/${_language}.bin
-            COMMENT "Generating the ${_language} swipe dictionary"
-            VERBATIM
-        )
-        list(APPEND _swipe_dictionary_files ${_output})
-    endforeach()
-    add_custom_target(swipe_dictionaries ALL DEPENDS ${_swipe_dictionary_files})
-    add_dependencies(swipekb_engine swipe_dictionaries)
-else()
-    message(WARNING "Python 3 is missing: the swipe dictionaries will not be generated and swipe typing stays disabled at run time")
-endif()
-
-install(FILES ${_swipe_dictionary_files}
-    DESTINATION ${KDE_INSTALL_DATADIR}/plasma-keyboard-custom/swipe)
-install(FILES
-    model/swipe-model.bin
-    model/NOTICE.md
-    model/FUTO-SWIPE-DATA-LICENSE.txt
-    DESTINATION ${KDE_INSTALL_DATADIR}/plasma-keyboard-custom/swipe)
+set(_swipe_dictionary_files)
+foreach(_language IN ITEMS en ru)
+    set(_output ${_swipe_dictionary_dir}/${_language}.combined)
+    add_custom_command(OUTPUT ${_output}
+        COMMAND uke-dictionary-tool ${PROJECT_SOURCE_DIR}/src/prediction/data/${_language}.bin ${_output} ${_language}
+        DEPENDS uke-dictionary-tool ${PROJECT_SOURCE_DIR}/src/prediction/data/${_language}.bin
+        VERBATIM)
+    list(APPEND _swipe_dictionary_files ${_output})
+endforeach()
+add_custom_target(swipe_dictionaries ALL DEPENDS ${_swipe_dictionary_files})
+add_dependencies(swipekb_engine swipe_dictionaries)
+install(FILES ${_swipe_dictionary_files} model/swipe-model.bin model/NOTICE.md model/FUTO-SWIPE-DATA-LICENSE.txt
+    DESTINATION ${KDE_INSTALL_DATADIR}/uke-plasma-keyboard-custom/swipe)

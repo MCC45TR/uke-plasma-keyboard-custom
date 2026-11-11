@@ -7,9 +7,13 @@
 #include "sessionlockstate.h"
 
 #include <QDBusMessage>
+#include <QGuiApplication>
+#include <QClipboard>
 #include <QDBusPendingCallWatcher>
 #include <QDBusVariant>
 #include <utility>
+#include <KConfigGroup>
+#include <KSharedConfig>
 
 namespace
 {
@@ -17,7 +21,7 @@ constexpr auto service = "org.kde.klipper";
 constexpr auto path = "/klipper";
 constexpr auto interface = "org.kde.klipper.klipper";
 constexpr int maxEntries = 50;
-constexpr int pollIntervalMs = 2000;
+
 
 QDBusMessage request(const QString &method)
 {
@@ -40,8 +44,9 @@ ClipboardHistory::ClipboardHistory(SessionLockState *lockState, const QDBusConne
 {
     Q_ASSERT(m_lockState);
     m_bus.connect(QLatin1String(service), QLatin1String(path), QLatin1String(interface), QStringLiteral("clipboardHistoryUpdated"), this, SLOT(refresh()));
-    m_pollTimer.setInterval(pollIntervalMs);
-    connect(&m_pollTimer, &QTimer::timeout, this, &ClipboardHistory::refresh);
+    if (qobject_cast<QGuiApplication *>(QCoreApplication::instance())) {
+        connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this, &ClipboardHistory::refresh);
+    }
     connect(PlasmaKeyboardSettings::self(), &PlasmaKeyboardSettings::clipboardEnabledChanged, this, &ClipboardHistory::updateEnabled);
     connect(lockState, &SessionLockState::stateChanged, this, &ClipboardHistory::updateEnabled);
     connect(lockState, &QObject::destroyed, this, &ClipboardHistory::updateEnabled);
@@ -123,9 +128,9 @@ void ClipboardHistory::updateEnabled()
         clearLocal();
     } else {
         refresh();
-        m_pollTimer.start();
     }
     Q_EMIT availableChanged();
+    Q_EMIT pinsChanged();
 }
 
 void ClipboardHistory::refresh()
@@ -195,4 +200,19 @@ void ClipboardHistory::publish()
     m_entries = std::exchange(m_pendingEntries, {});
     endResetModel();
     Q_EMIT countChanged();
+}
+
+QStringList ClipboardHistory::pinnedTexts() const {
+ if(!isAvailable())return {};
+ return KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"))->group(QStringLiteral("PinnedClipboard")).readEntry(QStringLiteral("Entries"),QStringList{});
+}
+void ClipboardHistory::pin(int row) {
+ if(!isAvailable())return;
+ const QString text=textAt(row);if(text.isEmpty()||text.size()>65536)return;
+ auto entries=pinnedTexts();if(entries.contains(text)||entries.size()>=20)return;entries.append(text);
+ auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->group(QStringLiteral("PinnedClipboard")).writeEntry(QStringLiteral("Entries"),entries);config->sync();Q_EMIT pinsChanged();
+}
+void ClipboardHistory::unpin(int row) {
+ if(!isAvailable())return;auto entries=pinnedTexts();if(row<0||row>=entries.size())return;entries.removeAt(row);
+ auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->group(QStringLiteral("PinnedClipboard")).writeEntry(QStringLiteral("Entries"),entries);config->sync();Q_EMIT pinsChanged();
 }

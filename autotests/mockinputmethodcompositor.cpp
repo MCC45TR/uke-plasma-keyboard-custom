@@ -538,7 +538,7 @@ private Q_SLOTS:
         qputenv("XDG_CONFIG_HOME", qPrintable(m_home.path() + QStringLiteral("/.config")));
 
         {
-            KConfig cfg(QStringLiteral("plasmakeyboardrc"));
+            KConfig cfg(QStringLiteral("uke-plasma-keyboard-customrc"));
             KConfigGroup grp(&cfg, QStringLiteral("General"));
             grp.writeEntry(QStringLiteral("enabledLocales"), QStringLiteral("it_IT"));
             grp.writeEntry(QStringLiteral("keyboardNavigationEnabled"), true);

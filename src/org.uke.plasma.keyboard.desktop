@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 
 [Desktop Entry]
-Name=plasma-keyboard-custom
-Exec=plasma-keyboard-custom
+Name=Uke Plasma Keyboard Custom
+Name[tr]=Uke Plasma Özel Klavye
+Exec=uke-plasma-keyboard-custom
 Type=Application
 X-KDE-Wayland-VirtualKeyboard=true
 X-KDE-Wayland-Interfaces=kde_lockscreen_overlay_v1

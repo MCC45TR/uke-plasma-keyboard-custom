@@ -25,7 +25,7 @@
 #include <QThread>
 #include <QtConcurrent/QtConcurrentRun>
 
-Q_LOGGING_CATEGORY(lcStt, "org.kde.plasma.keyboard.custom.stt")
+Q_LOGGING_CATEGORY(lcStt, "org.uke.plasma.keyboard.stt")
 
 namespace PlasmaKeyboardStt
 {
@@ -183,7 +183,7 @@ QString SttManager::lastError() const
 void SttManager::startRecording(const QString &keyboardLanguage)
 {
     if (!isEnabled()) {
-        setLastError(i18nd("plasma-keyboard-custom", "The voice input is disabled in the keyboard settings."));
+        setLastError(i18nd("uke-plasma-keyboard-custom", "The voice input is disabled in the keyboard settings."));
         return;
     }
     if (isRecording() || isBusy()) {
@@ -195,7 +195,7 @@ void SttManager::startRecording(const QString &keyboardLanguage)
 
     const QString path = modelPath();
     if (path.isEmpty() || !QFileInfo::exists(path)) {
-        setLastError(i18nd("plasma-keyboard-custom", "No speech recognition model is installed. Download one in the keyboard settings."));
+        setLastError(i18nd("uke-plasma-keyboard-custom", "No speech recognition model is installed. Download one in the keyboard settings."));
         return;
     }
 
@@ -215,7 +215,7 @@ void SttManager::stopRecording()
 
     const QVector<float> samples = m_recorder->stop();
     if (samples.isEmpty()) {
-        setLastError(i18nd("plasma-keyboard-custom", "Nothing was recorded."));
+        setLastError(i18nd("uke-plasma-keyboard-custom", "Nothing was recorded."));
         return;
     }
 

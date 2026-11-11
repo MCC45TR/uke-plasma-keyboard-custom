@@ -6,7 +6,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 /**
  * The voice input mode: while it is on, the keys are replaced by one big
@@ -332,12 +332,12 @@ Item {
                 return root.message;
             }
             if (root.busy) {
-                return i18nd("plasma-keyboard-custom", "Recognising…");
+                return i18nd("uke-plasma-keyboard-custom", "Recognising…");
             }
             if (root.recording) {
-                return i18nd("plasma-keyboard-custom", "Listening… tap to stop");
+                return i18nd("uke-plasma-keyboard-custom", "Listening… tap to stop");
             }
-            return i18nd("plasma-keyboard-custom", "Tap to speak");
+            return i18nd("uke-plasma-keyboard-custom", "Tap to speak");
         }
     }
 

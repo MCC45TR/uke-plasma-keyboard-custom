@@ -4,7 +4,7 @@
 import QtQuick
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom
+import org.uke.plasma.keyboard
 
 QtObject {
     // Filled in by the style

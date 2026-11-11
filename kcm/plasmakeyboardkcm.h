@@ -75,6 +75,7 @@ class PlasmaKeyboardKcm : public KQuickManagedConfigModule
     Q_PROPERTY(QString sttDownloadError READ sttDownloadError NOTIFY sttDownloadErrorChanged)
 
 public:
+    Q_INVOKABLE void openLaptopSettings();
     PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &metaData);
 
     bool soundEnabled() const;

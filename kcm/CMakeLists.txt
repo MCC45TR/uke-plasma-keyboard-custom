@@ -3,11 +3,11 @@
 
 add_definitions(-DQT_NO_KEYWORDS)
 
-kcmutils_add_qml_kcm(kcm_plasmakeyboardcustom)
+kcmutils_add_qml_kcm(kcm_uke_plasma_keyboard_custom)
 
-kconfig_add_kcfg_files(kcm_plasmakeyboardcustom GENERATE_MOC ../src/plasmakeyboardsettings.kcfgc)
+kconfig_add_kcfg_files(kcm_uke_plasma_keyboard_custom GENERATE_MOC ../src/plasmakeyboardsettings.kcfgc)
 
-target_sources(kcm_plasmakeyboardcustom PRIVATE
+target_sources(kcm_uke_plasma_keyboard_custom PRIVATE
     plasmakeyboardkcm.cpp
     plasmakeyboardkcm.h
     sttmodeldownloader.cpp
@@ -19,12 +19,12 @@ target_sources(kcm_plasmakeyboardcustom PRIVATE
     ../src/theme/thememanager.h
 )
 
-target_include_directories(kcm_plasmakeyboardcustom PRIVATE
+target_include_directories(kcm_uke_plasma_keyboard_custom PRIVATE
     ../src/stt
     ../src/theme
 )
 
-target_link_libraries(kcm_plasmakeyboardcustom PRIVATE
+target_link_libraries(kcm_uke_plasma_keyboard_custom PRIVATE
     Qt::Core
     Qt::CorePrivate
     Qt::Gui

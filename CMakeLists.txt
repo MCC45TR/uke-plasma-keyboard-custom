@@ -3,9 +3,9 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_VERSION "6.7.90")
+set(PROJECT_VERSION "0.1.0")
 
-project(plasma-keyboard VERSION ${PROJECT_VERSION})
+project(uke-plasma-keyboard-custom VERSION ${PROJECT_VERSION})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -77,6 +77,8 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     GlobalAccel
 )
 
+find_package(KF6Screen REQUIRED)
+
 find_package(PlasmaQuick ${PROJECT_DEP_VERSION} REQUIRED)
 
 # The visible keyboard window is a wlr-layer-shell surface (so that it stays above
@@ -100,6 +102,7 @@ find_package(WaylandProtocols 1.19 REQUIRED)
 
 add_subdirectory(kcm)
 add_subdirectory(src)
+add_subdirectory(kwin)
 
 # Optional user service for devices where the stock keyboard is preferable on
 # the lock screen. It is installed disabled and can be enabled by the user.
@@ -119,7 +122,7 @@ install(
 
 # Panel widget that toggles the keyboard, for tablets without a hardware
 # keyboard to press the shortcut on.
-install(DIRECTORY plasmoid/org.kde.plasma.keyboard.custom.toggle DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids)
+install(DIRECTORY plasmoid/org.uke.plasma.keyboard.toggle DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids)
 
 if(BUILD_TESTING)
     add_subdirectory(autotests)
@@ -129,15 +132,15 @@ endif()
 # the official package, so ki18n_install(po) (which compiles and installs every
 # po file) cannot be used: the upstream "plasma-keyboard" and
 # "kcm_plasmakeyboard" .mo files would conflict with the official package.
-# Only our own domains are installed: "kcm_plasmakeyboardcustom" (the plugin id
-# of the renamed KCM) and "plasma-keyboard-custom" (the strings this fork adds
+# Only our own domains are installed: "kcm_uke_plasma_keyboard_custom" (the plugin id
+# of the renamed KCM) and "uke-plasma-keyboard-custom" (the strings this fork adds
 # to the application itself, asked for with i18nd()). The rest of the
 # application keeps using the "plasma-keyboard" domain shipped by the official
 # package.
 find_package(Gettext REQUIRED)
 set(_custom_translation_domains
-    kcm_plasmakeyboardcustom
-    plasma-keyboard-custom
+    kcm_uke_plasma_keyboard_custom
+    uke-plasma-keyboard-custom
 )
 set(_custom_mo_files)
 foreach (_domain IN LISTS _custom_translation_domains)
@@ -166,3 +169,7 @@ kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})
 kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+
+# Uke's native implementation uses ordinary UTF-8 Qt string conversions.
+target_compile_options(uke-plasma-keyboard-custom PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)
+target_compile_options(uke_keyboard_backend PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)

@@ -17,7 +17,7 @@
 #include <cmath>
 #include <cstring>
 
-Q_LOGGING_CATEGORY(lcSttAudio, "org.kde.plasma.keyboard.custom.stt.audio")
+Q_LOGGING_CATEGORY(lcSttAudio, "org.uke.plasma.keyboard.stt.audio")
 
 namespace PlasmaKeyboardStt
 {
@@ -61,7 +61,7 @@ bool SttAudioRecorder::start(const QString &deviceId, QString *error)
     }
     if (device.isNull()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "There is no microphone available for the speech recognition.");
+            *error = i18nd("uke-plasma-keyboard-custom", "There is no microphone available for the speech recognition.");
         }
         return false;
     }
@@ -89,7 +89,7 @@ bool SttAudioRecorder::start(const QString &deviceId, QString *error)
     m_io = m_source->start();
     if (!m_io) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot start recording from “%1”.").arg(device.description());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot start recording from “%1”.").arg(device.description());
         }
         m_source->deleteLater();
         m_source = nullptr;
@@ -124,7 +124,7 @@ void SttAudioRecorder::handleReadyRead()
 
     if (!m_limitReported && recordedMs() >= MaximumRecordingMs) {
         m_limitReported = true;
-        Q_EMIT errorOccurred(i18nd("plasma-keyboard-custom", "The recording was stopped: it is limited to %1 seconds.").arg(MaximumRecordingMs / 1000));
+        Q_EMIT errorOccurred(i18nd("uke-plasma-keyboard-custom", "The recording was stopped: it is limited to %1 seconds.").arg(MaximumRecordingMs / 1000));
         // The manager listens to this signal and stops the recording itself.
         m_level = 0;
     }

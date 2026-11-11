@@ -1,10 +1,10 @@
 # Maintainer: mops1k <https://github.com/mops1k>
-pkgname=plasma-keyboard-custom
+pkgname=uke-plasma-keyboard-custom
 pkgver=6.7.90
 pkgrel=3
 pkgdesc="Virtual keyboard for Qt based desktops (custom fork with gamepad support)"
 arch=('x86_64')
-url="https://github.com/mops1k/plasma-keyboard-custom"
+url="https://github.com/mops1k/uke-plasma-keyboard-custom"
 license=('GPL-2.0-or-later')
 # Built against Qt 6.9 (Arch Linux Archive snapshot 2025-07-28) to match
 # SteamOS 3.8, which ships Qt 6.9.1. The binaries carry the Qt_6.9 symbol
@@ -13,7 +13,7 @@ license=('GPL-2.0-or-later')
 # an install on anything older than Qt 6.9. SteamOS 3.7 and older ship Qt 6.7
 # or 6.8 and are no longer supported by this package (build locally there).
 # Ship a single package: without this makepkg also produces a ~9 MB
-# plasma-keyboard-custom-debug package (the Arch default enables debug), which
+# uke-plasma-keyboard-custom-debug package (the Arch default enables debug), which
 # only duplicates the symbols in every release asset and in the pacman
 # repository. The build no longer depends on the local makepkg.conf defaults.
 options=('!debug')

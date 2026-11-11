@@ -6,7 +6,7 @@
 # PlasmaBreeze style of our own package. Qt Virtual Keyboard resolves the style
 # by scanning the QML import paths and would otherwise prefer the
 # system-installed one, which would make the local build show the system style.
-ecm_add_qml_module(breezestyle URI QtQuick.VirtualKeyboard.Styles.PlasmaBreezeCustom GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
+ecm_add_qml_module(breezestyle URI QtQuick.VirtualKeyboard.Styles.UkeBreeze GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
 
 ecm_target_qml_sources(breezestyle SOURCES
     breeze/style.qml

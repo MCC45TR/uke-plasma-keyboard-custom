@@ -8,7 +8,7 @@ import QtQuick
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Components
 import QtQuick.Layouts
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 KeyboardLayout {
 

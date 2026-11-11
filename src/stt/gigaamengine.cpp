@@ -14,7 +14,7 @@
 #include <QLoggingCategory>
 #include <QStringList>
 
-Q_LOGGING_CATEGORY(lcSttGigaam, "org.kde.plasma.keyboard.custom.stt.gigaam")
+Q_LOGGING_CATEGORY(lcSttGigaam, "org.uke.plasma.keyboard.stt.gigaam")
 
 namespace PlasmaKeyboardStt
 {
@@ -134,7 +134,7 @@ bool GigaamEngine::isAvailable(QString *reason) const
         return true;
     }
     if (reason) {
-        *reason = i18nd("plasma-keyboard-custom", "The transcribe.cpp library (libtranscribe) is not installed.");
+        *reason = i18nd("uke-plasma-keyboard-custom", "The transcribe.cpp library (libtranscribe) is not installed.");
     }
     return false;
 }
@@ -146,7 +146,7 @@ bool GigaamEngine::loadModel(const QString &modelPath, QString *error)
     const Api *transcribe = api();
     if (!transcribe) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The transcribe.cpp library (libtranscribe) is not installed.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The transcribe.cpp library (libtranscribe) is not installed.");
         }
         return false;
     }
@@ -154,7 +154,7 @@ bool GigaamEngine::loadModel(const QString &modelPath, QString *error)
     const QFileInfo info(modelPath);
     if (!info.exists() || !info.isFile()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The GigaAM model file does not exist: %1").arg(modelPath);
+            *error = i18nd("uke-plasma-keyboard-custom", "The GigaAM model file does not exist: %1").arg(modelPath);
         }
         return false;
     }
@@ -164,7 +164,7 @@ bool GigaamEngine::loadModel(const QString &modelPath, QString *error)
     const int loadStatus = transcribe->modelLoadFile(QFile::encodeName(info.absoluteFilePath()).constData(), nullptr, &m_model);
     if (loadStatus != 0 || !m_model) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot load the GigaAM model: %1")
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot load the GigaAM model: %1")
                          .arg(transcribe->statusString ? QString::fromUtf8(transcribe->statusString(loadStatus)) : QString::number(loadStatus));
         }
         qCWarning(lcSttGigaam) << "cannot load the GigaAM model" << info.absoluteFilePath() << "status" << loadStatus;
@@ -175,7 +175,7 @@ bool GigaamEngine::loadModel(const QString &modelPath, QString *error)
     const int sessionStatus = transcribe->sessionInit(m_model, nullptr, &m_session);
     if (sessionStatus != 0 || !m_session) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot create the GigaAM session for “%1”.").arg(info.absoluteFilePath());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot create the GigaAM session for “%1”.").arg(info.absoluteFilePath());
         }
         transcribe->modelFree(m_model);
         m_model = nullptr;
@@ -222,7 +222,7 @@ QString GigaamEngine::transcribe(const QVector<float> &samples, const QString &l
     const Api *transcribe = api();
     if (!transcribe || !m_session) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The GigaAM model is not loaded.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The GigaAM model is not loaded.");
         }
         return QString();
     }
@@ -233,7 +233,7 @@ QString GigaamEngine::transcribe(const QVector<float> &samples, const QString &l
     const int status = transcribe->run(m_session, samples.constData(), samples.size(), nullptr);
     if (status != 0) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The GigaAM recognition failed: %1")
+            *error = i18nd("uke-plasma-keyboard-custom", "The GigaAM recognition failed: %1")
                          .arg(transcribe->statusString ? QString::fromUtf8(transcribe->statusString(status)) : QString::number(status));
         }
         qCWarning(lcSttGigaam) << "gigaam recognition failed with status" << status;

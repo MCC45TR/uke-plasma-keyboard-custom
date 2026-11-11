@@ -13,7 +13,7 @@
 #include <QJsonObject>
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(lcSttVosk, "org.kde.plasma.keyboard.custom.stt.vosk")
+Q_LOGGING_CATEGORY(lcSttVosk, "org.uke.plasma.keyboard.stt.vosk")
 
 namespace PlasmaKeyboardStt
 {
@@ -129,7 +129,7 @@ bool VoskEngine::isAvailable(QString *reason) const
         return true;
     }
     if (reason) {
-        *reason = i18nd("plasma-keyboard-custom", "The Vosk library (vosk-api) is not installed.");
+        *reason = i18nd("uke-plasma-keyboard-custom", "The Vosk library (vosk-api) is not installed.");
     }
     return false;
 }
@@ -141,7 +141,7 @@ bool VoskEngine::loadModel(const QString &modelPath, QString *error)
     const Api *vosk = api();
     if (!vosk) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Vosk library (vosk-api) is not installed.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The Vosk library (vosk-api) is not installed.");
         }
         return false;
     }
@@ -149,7 +149,7 @@ bool VoskEngine::loadModel(const QString &modelPath, QString *error)
     const QFileInfo info(modelPath);
     if (!info.exists() || !info.isDir()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Vosk model directory does not exist: %1").arg(modelPath);
+            *error = i18nd("uke-plasma-keyboard-custom", "The Vosk model directory does not exist: %1").arg(modelPath);
         }
         return false;
     }
@@ -157,7 +157,7 @@ bool VoskEngine::loadModel(const QString &modelPath, QString *error)
     m_model = vosk->modelNew(QFile::encodeName(info.absoluteFilePath()).constData());
     if (!m_model) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot load the Vosk model: %1").arg(info.absoluteFilePath());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot load the Vosk model: %1").arg(info.absoluteFilePath());
         }
         qCWarning(lcSttVosk) << "cannot load the vosk model" << info.absoluteFilePath();
         return false;
@@ -166,7 +166,7 @@ bool VoskEngine::loadModel(const QString &modelPath, QString *error)
     m_recognizer = vosk->recognizerNew(m_model, SampleRate);
     if (!m_recognizer) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot create the Vosk recognizer for “%1”.").arg(info.absoluteFilePath());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot create the Vosk recognizer for “%1”.").arg(info.absoluteFilePath());
         }
         vosk->modelFree(m_model);
         m_model = nullptr;
@@ -212,7 +212,7 @@ QString VoskEngine::transcribe(const QVector<float> &samples, const QString &lan
     const Api *vosk = api();
     if (!vosk || !m_recognizer) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Vosk model is not loaded.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The Vosk model is not loaded.");
         }
         return QString();
     }

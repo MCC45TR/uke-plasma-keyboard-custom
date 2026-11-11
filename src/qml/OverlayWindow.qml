@@ -8,7 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-import org.kde.plasma.keyboard.custom
+import org.uke.plasma.keyboard
 
 /**
  * Generic window for overlay popups.

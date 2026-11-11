@@ -6,6 +6,7 @@
 */
 
 #include "plasmakeyboardkcm.h"
+#include <QProcess>
 #include "../src/layoutpathhelper.h"
 #include "../src/stt/sttmodelcatalog.h"
 #include "../src/theme/thememanager.h"
@@ -22,7 +23,7 @@
 #include <QVariantMap>
 #include <qqml.h>
 
-K_PLUGIN_CLASS_WITH_JSON(PlasmaKeyboardKcm, "kcm_plasmakeyboardcustom.json")
+K_PLUGIN_CLASS_WITH_JSON(PlasmaKeyboardKcm, "kcm_uke_plasma_keyboard_custom.json")
 
 PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &metaData)
     : KQuickManagedConfigModule(parent, metaData)
@@ -35,7 +36,7 @@ PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &met
 
     // clang-format off
     qmlRegisterSingletonInstance<PlasmaKeyboardSettings>(
-        "org.kde.plasma.keyboard.custom.settings",
+        "org.uke.plasma.keyboard.settings",
         1,
         0,
         "PlasmaKeyboardSettings",
@@ -49,7 +50,7 @@ PlasmaKeyboardKcm::PlasmaKeyboardKcm(QObject *parent, const KPluginMetaData &met
     m_showKeyboardAction = new QAction(this);
     m_showKeyboardAction->setObjectName(QStringLiteral("show-virtual-keyboard"));
     m_showKeyboardAction->setText(i18n("Show Virtual Keyboard"));
-    m_showKeyboardAction->setProperty("componentName", QStringLiteral("org.kde.plasma.keyboard.custom"));
+    m_showKeyboardAction->setProperty("componentName", QStringLiteral("org.uke.plasma.keyboard"));
     m_showKeyboardAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
 
     // The speech recognition models are downloaded from the settings module.
@@ -206,7 +207,7 @@ QKeySequence PlasmaKeyboardKcm::shortcut() const
 void PlasmaKeyboardKcm::loadShortcut()
 {
     const QList<QKeySequence> shortcuts =
-        KGlobalAccel::self()->globalShortcut(QStringLiteral("org.kde.plasma.keyboard.custom"), QStringLiteral("show-virtual-keyboard"));
+        KGlobalAccel::self()->globalShortcut(QStringLiteral("org.uke.plasma.keyboard"), QStringLiteral("show-virtual-keyboard"));
 
     m_shortcut = shortcuts.isEmpty() ? defaultShortcut() : shortcuts.constFirst();
     if (m_shortcut.isEmpty()) {
@@ -1004,5 +1005,7 @@ void PlasmaKeyboardKcm::refreshSttModels()
 }
 
 #include "plasmakeyboardkcm.moc"
+
+void PlasmaKeyboardKcm::openLaptopSettings(){QProcess::startDetached(QStringLiteral("uke-plasma-keyboard-custom"),{QStringLiteral("--preferences")});}
 
 #include "moc_plasmakeyboardkcm.cpp"

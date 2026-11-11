@@ -14,7 +14,7 @@
 
 #include <whisper.h>
 
-Q_LOGGING_CATEGORY(lcSttWhisper, "org.kde.plasma.keyboard.custom.stt.whisper")
+Q_LOGGING_CATEGORY(lcSttWhisper, "org.uke.plasma.keyboard.stt.whisper")
 
 namespace PlasmaKeyboardStt
 {
@@ -65,7 +65,7 @@ bool WhisperEngine::loadModel(const QString &modelPath, QString *error)
     const QFileInfo info(modelPath);
     if (!info.exists() || !info.isFile()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Whisper model file does not exist: %1").arg(modelPath);
+            *error = i18nd("uke-plasma-keyboard-custom", "The Whisper model file does not exist: %1").arg(modelPath);
         }
         return false;
     }
@@ -76,7 +76,7 @@ bool WhisperEngine::loadModel(const QString &modelPath, QString *error)
     m_context = whisper_init_from_file_with_params(QFile::encodeName(info.absoluteFilePath()).constData(), params);
     if (!m_context) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot load the Whisper model: %1").arg(info.absoluteFilePath());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot load the Whisper model: %1").arg(info.absoluteFilePath());
         }
         qCWarning(lcSttWhisper) << "cannot load the whisper model" << info.absoluteFilePath();
         return false;
@@ -106,7 +106,7 @@ QString WhisperEngine::transcribe(const QVector<float> &samples, const QString &
 {
     if (!m_context) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Whisper model is not loaded.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The Whisper model is not loaded.");
         }
         return QString();
     }
@@ -129,7 +129,7 @@ QString WhisperEngine::transcribe(const QVector<float> &samples, const QString &
     const int result = whisper_full(m_context, params, samples.constData(), samples.size());
     if (result != 0) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Whisper recognition failed (error %1).").arg(result);
+            *error = i18nd("uke-plasma-keyboard-custom", "The Whisper recognition failed (error %1).").arg(result);
         }
         qCWarning(lcSttWhisper) << "whisper_full failed" << result;
         return QString();

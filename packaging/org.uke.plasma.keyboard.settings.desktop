@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Uke Keyboard Settings
+Name[tr]=Uke Klavye Ayarları
+Comment=Configure the tablet keyboard, touchpad and laptop mode
+Exec=uke-plasma-keyboard-custom --preferences
+Icon=input-keyboard-virtual
+Categories=Qt;KDE;Settings;Accessibility;
+StartupNotify=true

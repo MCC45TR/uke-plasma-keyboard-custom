@@ -11,6 +11,7 @@
 #include "keyboardroleprivacy.h"
 #include "keyboardvisibilitystate.h"
 #include "layoutpathhelper.h"
+#include "laptop/laptopcontroller.h"
 #include "logging.h"
 #include "panelstubgeometry.h"
 #include "plasmakeyboardsettings.h"
@@ -149,7 +150,7 @@ QString installWindowRestoreScript()
     if (directory.isEmpty()) {
         directory = QDir::tempPath();
     }
-    directory += QStringLiteral("/plasma-keyboard-custom");
+    directory += QStringLiteral("/uke-plasma-keyboard-custom");
     if (!QDir().mkpath(directory)) {
         qCWarning(PlasmaKeyboard) << "Cannot create" << directory << "for the window geometry restore script";
         return QString();
@@ -387,6 +388,28 @@ public:
     void setKeyboardWindow(QWindow *window)
     {
         m_keyboard = window;
+        if (auto *laptop = LaptopController::instance()) {
+            connect(laptop,&LaptopController::stateChanged,this,[this,laptop]{
+                if (!m_keyboard || m_staticApplied == laptop->active()) return;
+                m_staticApplied = laptop->active();
+                m_outputRelocationTimer.stop();
+                m_keyboard->setProperty("ukeStaticTransition",true);
+                m_keyboard->setVisible(false);
+                m_keyboard->destroy();
+                if (m_staticApplied) {
+                    m_normalScreen=m_keyboard->screen();
+                    m_keyboard->setScreen(laptop->tabletScreen());
+                } else {
+                    m_layerShell->setScreen(nullptr);
+                    m_layerShell->setWantsToBeOnActiveScreen(true);
+                    if(m_normalScreen)m_keyboard->setScreen(m_normalScreen);
+                }
+                applyPanelLayout();
+                m_keyboard->setVisible(m_staticApplied || QGuiApplication::inputMethod()->isVisible());
+                m_keyboard->setProperty("ukeStaticTransition",false);
+                if(m_staticApplied)activateKeyboardWindow(m_keyboard);
+            });
+        }
         syncKeyboardScreen();
         connect(window, &QWindow::screenChanged, this, &KeyboardWindowBridge::syncKeyboardScreen);
         // KWin drives the keyboard through the panel stub and reports it as
@@ -543,6 +566,18 @@ private:
     //! reserves nothing.
     void applyPanelLayout()
     {
+        if (LaptopController::instance() && LaptopController::instance()->active()) {
+            if (m_layerShell) {
+                auto *screen = LaptopController::instance()->tabletScreen();
+                m_layerShell->setScreen(screen);
+                m_layerShell->setWantsToBeOnActiveScreen(false);
+                m_layerShell->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop|LayerShellQt::Window::AnchorBottom|LayerShellQt::Window::AnchorLeft|LayerShellQt::Window::AnchorRight));
+                m_layerShell->setDesiredSize(QSize(0,0));
+                m_layerShell->setExclusiveZone(0);
+                m_layerShell->setMargins(QMargins());
+            }
+            return;
+        }
         if (!m_layerShell) {
             return;
         }
@@ -594,6 +629,7 @@ private:
     //! selection. A mapped immutable role is recreated only after a real move.
     void syncKeyboardScreen()
     {
+        if (LaptopController::instance() && LaptopController::instance()->active()) return;
         if (!m_stub || !m_keyboard || !m_stub->screen()) {
             return;
         }
@@ -642,6 +678,8 @@ private:
     QRect m_panelRect;
     QMargins m_panelInsets;
     bool m_kwinVisible = false;
+    bool m_staticApplied=false;
+    QPointer<QScreen> m_normalScreen;
     /*! Alternates the one pixel input region so that the compositor sees it change. */
     int m_stubMaskOffset = 0;
 };
@@ -953,9 +991,21 @@ int main(int argc, char **argv)
 
     QGuiApplication application(argc, argv);
 
+    if (application.arguments().contains(QStringLiteral("--preferences"))) {
+        application.setApplicationName(QStringLiteral("uke-plasma-keyboard-custom"));
+        application.setDesktopFileName(QStringLiteral("org.uke.plasma.keyboard"));
+        KLocalizedString::setApplicationDomain("uke-plasma-keyboard-custom");
+        LaptopController preferences;
+        qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",&preferences);
+        QQmlApplicationEngine settings;
+        KLocalization::setupLocalizedContext(&settings);
+        settings.load(QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/LaptopSettings.qml")));
+        return settings.rootObjects().isEmpty()?1:application.exec();
+    }
+
     // Only one instance may act as the input method; a stale instance would
     // keep its own (possibly shown) panel around and confuse the compositor.
-    QLockFile instanceLock(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/plasma-keyboard-custom.lock"));
+    QLockFile instanceLock(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/uke-plasma-keyboard-custom.lock"));
     instanceLock.setStaleLockTime(0);
     if (!instanceLock.tryLock(0)) {
         qWarning() << "Another Plasma Keyboard instance is already running, exiting.";
@@ -979,8 +1029,8 @@ int main(int argc, char **argv)
 
     KLocalizedString::setApplicationDomain("plasma-keyboard");
 
-    KAboutData aboutData(QStringLiteral("plasma-keyboard-custom"),
-                         i18n("Plasma Keyboard"),
+    KAboutData aboutData(QStringLiteral("uke-plasma-keyboard-custom"),
+                         i18n("Uke Plasma Keyboard Custom"),
                          QStringLiteral(PLASMA_KEYBOARD_VERSION_STRING),
                          i18n("An on-screen keyboard for Plasma"),
                          KAboutLicense::GPL,
@@ -988,7 +1038,7 @@ int main(int argc, char **argv)
 
     aboutData.addAuthor(i18n("Aleix Pol Gonzalez"), i18n("Author"), QStringLiteral("aleixpol@kde.org"));
     aboutData.setOrganizationDomain("kde.org");
-    aboutData.setDesktopFileName(QStringLiteral("org.kde.plasma.keyboard.custom"));
+    aboutData.setDesktopFileName(QStringLiteral("org.uke.plasma.keyboard"));
     application.setWindowIcon(QIcon::fromTheme(QStringLiteral("input-keyboard-virtual")));
     aboutData.setProgramLogo(application.windowIcon());
 
@@ -999,13 +1049,16 @@ int main(int argc, char **argv)
     auto *showAction = new QAction(&application);
     showAction->setObjectName(QStringLiteral("show-virtual-keyboard"));
     showAction->setText(i18n("Show Virtual Keyboard"));
-    showAction->setProperty("componentName", QStringLiteral("org.kde.plasma.keyboard.custom"));
+    showAction->setProperty("componentName", QStringLiteral("org.uke.plasma.keyboard"));
     showAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
     const QList<QKeySequence> defaultShortcut{QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K)};
     if (!testMode) {
         KGlobalAccel::self()->setDefaultShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
         KGlobalAccel::self()->setShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
     }
+    auto *laptop = new LaptopController(&application);
+    QObject::connect(laptop,&LaptopController::preferencesRequested,&application,[]{ QProcess::startDetached(QCoreApplication::applicationFilePath(),{QStringLiteral("--preferences")}); });
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",laptop);
     auto *keyboardWindowBridge = new KeyboardWindowBridge(&application);
     auto *hotkeyController = new KeyboardHotkeyController(keyboardWindowBridge, &application);
     QObject::connect(showAction, &QAction::triggered, hotkeyController, &KeyboardHotkeyController::showKeyboard);
@@ -1031,22 +1084,22 @@ int main(int argc, char **argv)
     // re-reads the configuration file itself (see SettingsReloader).
 
     // Expose the Ctrl/Alt latch state to the keyboard layouts.
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib", 1, 0, "Modifiers", KeyboardModifiers::instance());
 
     // User themes (import/export/remove and the list of built-in themes).
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "ThemeManager", ThemeManager::instance());
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib", 1, 0, "ThemeManager", ThemeManager::instance());
 
     // The visible keyboard window (layer-shell) and the panel window KWin keeps
     // managing.
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "KeyboardWindow", keyboardWindowBridge);
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib", 1, 0, "KeyboardWindow", keyboardWindowBridge);
 
     // Local speech recognition (voice input). It stays inert until it is enabled
     // in the settings; the keyboard only shows its microphone key when it is.
     auto *sttManager = new SttManager(&application);
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "Stt", sttManager);
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib", 1, 0, "Stt", sttManager);
 
     // Keeps the system keyboard layout in step with the keyboard's language.
-    qmlRegisterSingletonInstance("org.kde.plasma.keyboard.custom.lib", 1, 0, "SystemLayout", new SystemLayoutSync(&application));
+    qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib", 1, 0, "SystemLayout", new SystemLayoutSync(&application));
 
     // KWin still drives the virtual keyboard through the input-panel window: it
     // decides when the keyboard belongs on screen (input mode, focus), reports
@@ -1063,7 +1116,7 @@ int main(int argc, char **argv)
     panelStub.setMask(QRegion(0, 0, 1, 1));
     if (!initInputPanelIntegration(&panelStub, InputPanelRole::Keyboard)) {
         qCCritical(PlasmaKeyboard)
-            << "Cannot run plasma-keyboard-custom standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
+            << "Cannot run uke-plasma-keyboard-custom standalone. You can enable it in Plasma's System Settings app, on the “Virtual Keyboard” page.";
         return 1;
     }
     panelStub.setVisible(true);
@@ -1177,7 +1230,7 @@ int main(int argc, char **argv)
                     // creates a new role on KWin's then-active output. Deferring
                     // this also lets Qt finish its hide/unmap path first.
                     QTimer::singleShot(0, window, [window, authorizeKeyboardRole]() {
-                        if (!window->isVisible()) {
+                        if (!window->isVisible() && !window->property("ukeStaticTransition").toBool() && !(LaptopController::instance() && LaptopController::instance()->active())) {
                             const bool relocate = window->property("plasmaKeyboardRelocateAfterDestroy").toBool();
                             window->setProperty("plasmaKeyboardRelocateAfterDestroy", false);
                             window->destroy();

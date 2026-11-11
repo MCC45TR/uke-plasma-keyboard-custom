@@ -86,7 +86,7 @@ QString SystemLayoutSync::osdMarkerPath()
     if (directory.isEmpty()) {
         directory = QDir::tempPath();
     }
-    return directory + QStringLiteral("/plasma-keyboard-custom/layout-osd-suppressed");
+    return directory + QStringLiteral("/uke-plasma-keyboard-custom/layout-osd-suppressed");
 }
 
 void SystemLayoutSync::suppressLayoutOsd()

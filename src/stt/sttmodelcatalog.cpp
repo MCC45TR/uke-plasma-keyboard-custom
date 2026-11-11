@@ -18,7 +18,7 @@
 #include <QLoggingCategory>
 #include <QStandardPaths>
 
-Q_LOGGING_CATEGORY(lcSttCatalog, "org.kde.plasma.keyboard.custom.stt.catalog")
+Q_LOGGING_CATEGORY(lcSttCatalog, "org.uke.plasma.keyboard.stt.catalog")
 
 namespace PlasmaKeyboardStt
 {
@@ -224,7 +224,7 @@ bool SttModelCatalog::remove(const SttModelEntry &entry, QString *error)
     // settings file in other places.
     if (!QDir::cleanPath(dir).startsWith(QDir::cleanPath(root) + QLatin1Char('/'))) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Refusing to remove “%1”: it is outside the model directory.").arg(dir);
+            *error = i18nd("uke-plasma-keyboard-custom", "Refusing to remove “%1”: it is outside the model directory.").arg(dir);
         }
         return false;
     }
@@ -235,7 +235,7 @@ bool SttModelCatalog::remove(const SttModelEntry &entry, QString *error)
     }
     if (!modelDir.removeRecursively()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot remove “%1”.").arg(dir);
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot remove “%1”.").arg(dir);
         }
         return false;
     }

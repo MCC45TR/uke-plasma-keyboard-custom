@@ -7,11 +7,12 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Settings
 
-import org.kde.plasma.keyboard.custom
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 import org.kde.kirigami as Kirigami
 
@@ -21,6 +22,11 @@ InputPanelWindow {
     width: Screen.width
     color: 'transparent'
 
+    readonly property bool useNativePc: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
+    Connections {
+        target: PlasmaKeyboard.Laptop
+        function onLayoutChanged() { if (PlasmaKeyboard.Laptop.options.syncLayout) VirtualKeyboardSettings.locale=PlasmaKeyboard.Laptop.locale; }
+    }
     // The style sizes the panel from the screen size, but as a QtObject its own
     // Screen attached property does not follow this window (see style.qml).
     // This window is always as large as the screen the keyboard is on.
@@ -758,10 +764,12 @@ InputPanelWindow {
     // Only the panel is interactive while the keyboard is on screen; while it is
     // hidden the window keeps a one pixel region so that clicks reach the windows
     // below it.
-    interactiveRegion: Qt.rect(panelWrapper.x, panelWrapper.y, panelWrapper.width, panelWrapper.height)
+    interactiveRegion: PlasmaKeyboard.Laptop.active ? Qt.rect(0,0,width,height) : Qt.rect(panelWrapper.x,panelWrapper.y,panelWrapper.width,panelWrapper.height)
 
     Kirigami.ShadowedRectangle {
         id: panelWrapper
+        z: 2
+        visible: !PlasmaKeyboard.Laptop.active || !root.useNativePc
 
         LanguagePopup {
             id: languageDialog
@@ -778,7 +786,7 @@ InputPanelWindow {
 
         // Whether the panel takes the full width of the screen. The floating
         // panel is always detached from the edges, so it never fills the width.
-        readonly property bool floating: PlasmaKeyboardSettings.floatingKeyboard
+        readonly property bool floating: PlasmaKeyboardSettings.floatingKeyboard && !PlasmaKeyboard.Laptop.active
         readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth && !floating
 
         //! Position of the floating panel, in window coordinates. A negative
@@ -910,7 +918,7 @@ InputPanelWindow {
         // size change (a row of suggestions appearing, Shift changing the layout)
         // makes the panel grow upwards instead of moving it under the finger.
         x: floating ? (floatingX < 0 ? (root.width - width) / 2 : floatingX) : (root.width / 2) - (width / 2)
-        y: floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
+        y: PlasmaKeyboard.Laptop.active ? (10*PlasmaKeyboard.Laptop.pixelsPerMm) : floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
 
         // A resolution change can leave the panel outside the screen.
         Connections {
@@ -1377,7 +1385,7 @@ InputPanelWindow {
         // height when it is shown, the keyboard itself keeps its size.
         Row {
             id: functionKeyRow
-            visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.showFunctionKeyRow
+            visible: !root.useNativePc && root.auxiliaryUiAllowed && PlasmaKeyboardSettings.showFunctionKeyRow
             // Match the keyboard geometry: five rows fill the keyboard height,
             // and the visible key background is inset by keyBackgroundMargin.
             readonly property var kbdStyle: inputPanel.keyboard.style
@@ -1457,8 +1465,38 @@ InputPanelWindow {
         width: inputPanel.width > 0 ? (inputPanel.width + padding * 2) : 100
         height: inputPanel.height > 0
             ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0) + (suggestionsRow.visible ? suggestionsRow.height : 0))
+            + (!PlasmaKeyboard.Laptop.active ? normalTools.height + normalActions.height : 0)
             : 100
 
+        KeyboardTools {
+            id: normalTools
+            visible: !PlasmaKeyboard.Laptop.active
+            target: thing
+            width: parent.width
+            anchors.bottom: normalActions.top
+        }
+        RowLayout {
+            id: normalActions
+            visible: !PlasmaKeyboard.Laptop.active
+            width: parent.width
+            anchors.bottom: parent.bottom
+            height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
+            QQC2.Button { text: qsTr("Laptop mode"); visible: PlasmaKeyboard.Laptop.available; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
+            QQC2.Button { text: qsTr("Voice"); visible: PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
+            QQC2.Button { text: qsTr("Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
+            Item { Layout.fillWidth: true; }
+            QQC2.ToolButton { icon.name: "configure"; Accessible.name: qsTr("Keyboard settings"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
+            QQC2.ToolButton { icon.name: "go-down"; Accessible.name: qsTr("Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
+        }
+        PcKeyboard {
+            anchors.fill: inputPanel
+            visible: root.useNativePc
+            target: thing
+            recognizer: swipeController
+            localEditor: normalTools.localEditor
+            auxiliaryAllowed: root.auxiliaryUiAllowed
+            onSwipeAccepted: words => root.swipeAlternatives=words
+        }
         InputPanel {
             id: inputPanel
             anchors {
@@ -1478,8 +1516,8 @@ InputPanelWindow {
             // The voice mode hides the keys this way rather than with visible:
             // the panel keeps its size, and a translucent floating panel keeps
             // its translucency.
-            opacity: root.voiceMode ? 0 : 1
-            enabled: !root.voiceMode
+            opacity: root.voiceMode || root.useNativePc ? 0 : 1
+            enabled: !root.voiceMode && !root.useNativePc
             width: {
                 if (!inputPanel.keyboard.style) {
                     return 0;
@@ -1541,7 +1579,7 @@ InputPanelWindow {
             }
 
             Component.onCompleted: {
-                VirtualKeyboardSettings.styleName = "PlasmaBreezeCustom";
+                VirtualKeyboardSettings.styleName = "UkeBreeze";
                 PlasmaKeyboard.Theme.setThemeId(PlasmaKeyboardSettings.theme);
                 // Enable Qt Virtual Keyboard's arrow-key navigation so the
                 // gamepad can move the highlight and activate keys.
@@ -1641,6 +1679,17 @@ InputPanelWindow {
     // тапы и long-press остаются прежними. Жест активируется после выхода за
     // радиус стартовой клавиши, нажатие этой клавиши отменяется, а на отпускании
     // путь уходит в C++-движок (src/swipekb) и лучшее слово вставляется в поле.
+    LaptopDeck {
+        anchors.fill: parent
+        z: 1
+        visible: PlasmaKeyboard.Laptop.active
+        inputTarget: thing
+        recognizer: swipeController
+        useNative: root.useNativePc
+        predictions: root.predictions
+        onSwipeAccepted: words => root.swipeAlternatives=words
+        onPredictionChosen: text => thing.applyPrediction(text)
+    }
     SwipeController {
         id: swipeController
     }
@@ -1686,7 +1735,7 @@ InputPanelWindow {
 
         //! Whether a gesture can become a swipe at all: the language has a word
         //! list, swipe typing is on, and the keys are not covered by voice mode.
-        readonly property bool available: !root.voiceMode
+        readonly property bool available: !root.voiceMode && !root.useNativePc
             && PlasmaKeyboardSettings.swipeTypingEnabled
             && swipeController.supports(inputPanel.InputContext.locale)
 

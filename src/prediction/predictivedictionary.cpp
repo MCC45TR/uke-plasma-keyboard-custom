@@ -15,7 +15,7 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(lcPrediction, "org.kde.plasma.keyboard.custom.prediction")
+Q_LOGGING_CATEGORY(lcPrediction, "org.uke.plasma.keyboard.prediction")
 
 namespace
 {

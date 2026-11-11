@@ -112,15 +112,18 @@ ExternalProject_Add(transcribe_cpp
     LOG_BUILD ON
 )
 
-add_executable(plasma-keyboard-custom)
+add_executable(uke-plasma-keyboard-custom)
 
-ecm_add_qtwayland_client_protocol(plasma-keyboard-custom PROTOCOL ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml BASENAME input-method-unstable-v1)
-ecm_add_qtwayland_client_protocol(plasma-keyboard-custom PROTOCOL ${WaylandProtocols_DATADIR}/unstable/text-input/text-input-unstable-v1.xml BASENAME text-input-unstable-v1)
-ecm_add_qtwayland_client_protocol(plasma-keyboard-custom PROTOCOL "${Wayland_DATADIR}/wayland.xml" BASENAME wayland)
-ecm_add_qtwayland_client_protocol(plasma-keyboard-custom PROTOCOL ${CMAKE_CURRENT_SOURCE_DIR}/wayland/kde-lockscreen-overlay-v1.xml BASENAME kde-lockscreen-overlay-v1)
+ecm_add_qtwayland_client_protocol(uke-plasma-keyboard-custom PROTOCOL ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml BASENAME input-method-unstable-v1)
+ecm_add_qtwayland_client_protocol(uke-plasma-keyboard-custom PROTOCOL ${WaylandProtocols_DATADIR}/unstable/text-input/text-input-unstable-v1.xml BASENAME text-input-unstable-v1)
+ecm_add_qtwayland_client_protocol(uke-plasma-keyboard-custom PROTOCOL "${Wayland_DATADIR}/wayland.xml" BASENAME wayland)
+ecm_add_qtwayland_client_protocol(uke-plasma-keyboard-custom PROTOCOL ${CMAKE_CURRENT_SOURCE_DIR}/wayland/kde-lockscreen-overlay-v1.xml BASENAME kde-lockscreen-overlay-v1)
 
-target_sources(plasma-keyboard-custom PRIVATE
+target_sources(uke-plasma-keyboard-custom PRIVATE
     main.cpp
+    laptop/laptopcontroller.cpp
+    laptop/laptopcontroller.h
+    laptop/physicalgeometry.h
     inputpanelintegration.cpp
     inputpanelintegration.h
     inputpanelrole.h
@@ -214,7 +217,7 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
     qt_add_dbus_interfaces(dbusinterface_SRCS
         dbus/org.sigxcpu.Feedback.Haptic.xml)
 
-    target_sources(plasma-keyboard-custom PRIVATE
+    target_sources(uke-plasma-keyboard-custom PRIVATE
         vibration.cpp
         vibration.h
         vibrationevent.h
@@ -223,31 +226,34 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
 endif()
 
 if(PLASMA_KEYBOARD_SOUND_ENABLED)
-    target_sources(plasma-keyboard-custom PRIVATE
+    target_sources(uke-plasma-keyboard-custom PRIVATE
         soundresources.qrc
     )
 endif()
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../data/70-plasma-keyboard-touchscreen.rules
-        DESTINATION ${KDE_INSTALL_LIBDIR}/udev/rules.d)
 
-ecm_qt_declare_logging_category(plasma-keyboard-custom
+ecm_qt_declare_logging_category(uke-plasma-keyboard-custom
     HEADER logging.h
     IDENTIFIER "PlasmaKeyboard"
-    CATEGORY_NAME "org.kde.plasma.keyboard.custom"
+    CATEGORY_NAME "org.uke.plasma.keyboard"
     DESCRIPTION "Plasma Keyboard"
     DEFAULT_SEVERITY Debug
 )
 
-ecm_add_qml_module(plasma-keyboard-custom
-    URI "org.kde.plasma.keyboard.custom"
+ecm_add_qml_module(uke-plasma-keyboard-custom
+    URI "org.uke.plasma.keyboard"
     GENERATE_PLUGIN_SOURCE
     DEPENDENCIES
     QtQuick
 )
 
-ecm_target_qml_sources(plasma-keyboard-custom SOURCES
+ecm_target_qml_sources(uke-plasma-keyboard-custom SOURCES
     qml/main.qml
+    qml/LaptopDeck.qml
+    qml/PcKeyboard.qml
+    qml/Touchpad.qml
+    qml/LaptopSettings.qml
+    qml/KeyboardTools.qml
     qml/LanguagePopup.qml
     qml/LanguagePopupDelegate.qml
     qml/DiacriticsOverlay.qml
@@ -256,15 +262,15 @@ ecm_target_qml_sources(plasma-keyboard-custom SOURCES
     qml/VoicePanel.qml
     qml/GamepadBadge.qml
 )
-ecm_finalize_qml_module(plasma-keyboard-custom)
+ecm_finalize_qml_module(uke-plasma-keyboard-custom)
 
 # The vendored MIT swipe engine (src/swipekb): swipe recognition over the word
 # lists of the predictive text input. See src/swipekb/README.md.
 add_subdirectory(swipekb)
 
-kconfig_add_kcfg_files(plasma-keyboard-custom GENERATE_MOC plasmakeyboardsettings.kcfgc)
+kconfig_add_kcfg_files(uke-plasma-keyboard-custom GENERATE_MOC plasmakeyboardsettings.kcfgc)
 
-target_include_directories(plasma-keyboard-custom PRIVATE
+target_include_directories(uke-plasma-keyboard-custom PRIVATE
     ${CMAKE_BINARY_DIR}
     # Add directories to include path for QML type registration
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -275,7 +281,7 @@ target_include_directories(plasma-keyboard-custom PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/theme
 )
 
-target_link_libraries(plasma-keyboard-custom
+target_link_libraries(uke-plasma-keyboard-custom
     PRIVATE
     KF6::CoreAddons
     KF6::I18n
@@ -288,6 +294,7 @@ target_link_libraries(plasma-keyboard-custom
     LayerShellQt::Interface
     Plasma::PlasmaQuick
     Qt::DBus
+    KF6::Screen
     Qt::Gui
     Qt::GuiPrivate
     Qt::Multimedia
@@ -305,10 +312,10 @@ target_link_libraries(plasma-keyboard-custom
 # layer-shell-qt (the Arch snapshot used for SteamOS 3.8 ships 6.4.3), so these
 # calls are compiled only where the interface provides them.
 if(LayerShellQt_VERSION VERSION_GREATER_EQUAL 6.5.0)
-    target_compile_definitions(plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_ACTIVATE_ON_SHOW)
+    target_compile_definitions(uke-plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_ACTIVATE_ON_SHOW)
 endif()
 if(LayerShellQt_VERSION VERSION_GREATER_EQUAL 6.6.0)
-    target_compile_definitions(plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_WANTS_ACTIVE_SCREEN)
+    target_compile_definitions(uke-plasma-keyboard-custom PRIVATE HAVE_LAYERSHELLQT_WANTS_ACTIVE_SCREEN)
 endif()
 
 # libhunspell is an optional dependency: the engine loads it while the
@@ -317,16 +324,16 @@ endif()
 # The GigaAM engine loads libtranscribe while it runs and looks for it in the
 # directory the keyboard itself is installed into first: a local build keeps
 # the library in the same prefix, which is not part of the loader search path.
-target_compile_definitions(plasma-keyboard-custom PRIVATE TRANSCRIBE_LIBRARY_DIR="${KDE_INSTALL_FULL_LIBDIR}")
-add_dependencies(plasma-keyboard-custom transcribe_cpp)
+target_compile_definitions(uke-plasma-keyboard-custom PRIVATE TRANSCRIBE_LIBRARY_DIR="${KDE_INSTALL_FULL_LIBDIR}/uke-plasma-keyboard-custom")
+add_dependencies(uke-plasma-keyboard-custom transcribe_cpp)
 
-install(TARGETS plasma-keyboard-custom ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-install(PROGRAMS org.kde.plasma.keyboard.custom.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+install(TARGETS uke-plasma-keyboard-custom ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(PROGRAMS org.uke.plasma.keyboard.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 
 # The transcribe.cpp libraries (libtranscribe and the ggml it carries) belong
 # to the keyboard: they are installed next to the binary.
 install(DIRECTORY ${_transcribe_cpp_install}/${_transcribe_cpp_libdir}/
-    DESTINATION ${KDE_INSTALL_LIBDIR}
+    DESTINATION ${KDE_INSTALL_LIBDIR}/uke-plasma-keyboard-custom
     FILES_MATCHING
     PATTERN "libtranscribe.so*"
     PATTERN "libggml*.so*"
@@ -335,12 +342,12 @@ install(DIRECTORY ${_transcribe_cpp_install}/${_transcribe_cpp_libdir}/
 add_subdirectory(styles)
 add_subdirectory(qmlplugin)
 
-install(DIRECTORY layouts DESTINATION ${CMAKE_INSTALL_PREFIX}/share/plasma/keyboard-custom)
-install(DIRECTORY overlay/diacritics DESTINATION ${CMAKE_INSTALL_PREFIX}/share/plasma/keyboard-custom)
+install(DIRECTORY layouts DESTINATION ${CMAKE_INSTALL_PREFIX}/share/uke-plasma-keyboard-custom)
+install(DIRECTORY overlay/diacritics DESTINATION ${CMAKE_INSTALL_PREFIX}/share/uke-plasma-keyboard-custom)
 
 install(FILES plasmakeyboardsettings.kcfg DESTINATION ${KDE_INSTALL_KCFGDIR} RENAME plasmakeyboardcustomsettings.kcfg)
 
 install(
-    FILES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.plasma.keyboard.custom.metainfo.xml
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/org.uke.plasma.keyboard.metainfo.xml
     DESTINATION ${KDE_INSTALL_METAINFODIR}
 )

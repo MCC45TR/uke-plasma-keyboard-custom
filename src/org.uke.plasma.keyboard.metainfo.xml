@@ -4,7 +4,7 @@
   SPDX-FileCopyrightText: 2025 Aleix Pol Gonzalez <aleixpol@kde.org>
  -->
 <component type="inputmethod">
-  <id>org.kde.plasma.keyboard.custom</id>
+  <id>org.uke.plasma.keyboard</id>
   <name>Plasma Keyboard</name>
   <name xml:lang="ar">لوحة المفاتيح بلازما</name>
   <name xml:lang="bg">Клавиатура на Plasma</name>

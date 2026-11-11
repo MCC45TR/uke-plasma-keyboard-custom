@@ -30,7 +30,7 @@ inline void initLayoutsPath()
         // Loop over all "/usr/share" paths and check if layouts folder exists
         const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
         for (const QString &basePath : locations) {
-            QString layoutsDir = basePath + QStringLiteral("/plasma/keyboard-custom/layouts");
+            QString layoutsDir = basePath + QStringLiteral("/uke-plasma-keyboard-custom/layouts");
 
             // Check if path exists
             if (QDir(layoutsDir).exists()) {

@@ -18,7 +18,7 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(lcHunspell, "org.kde.plasma.keyboard.custom.prediction.hunspell")
+Q_LOGGING_CATEGORY(lcHunspell, "org.uke.plasma.keyboard.prediction.hunspell")
 
 //! The handle libhunspell works with. The library declares it as an opaque
 //! struct, and so does this file: hunspell is loaded while the application

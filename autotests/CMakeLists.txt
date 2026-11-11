@@ -11,7 +11,7 @@ add_test(NAME lockswitchertest COMMAND ${BASH_EXECUTABLE}
 
 file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mockinputmethodcompositor_config.h
-    CONTENT "#pragma once\n#define PLASMA_KEYBOARD_BINARY_PATH \"$<TARGET_FILE:plasma-keyboard-custom>\"\n"
+    CONTENT "#pragma once\n#define PLASMA_KEYBOARD_BINARY_PATH \"$<TARGET_FILE:uke-plasma-keyboard-custom>\"\n"
 )
 
 ecm_add_test(mockinputmethodcompositor.cpp LINK_LIBRARIES
@@ -77,12 +77,10 @@ if(NODE_EXECUTABLE)
     add_test(NAME layoutshifttest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/layoutshifttest.mjs)
 endif()
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-add_test(NAME lockscreenpatchtest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/lockscreenpatchtest.py)
+add_test(NAME mainpolicysourcetest COMMAND ${BASH_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/mainpolicysourcetest.sh)
 
-# main.cpp is not linkable into a unit test, so its layer-shell policy is
-# checked at the source level (a test of LayerShellQt itself proved nothing).
-add_test(NAME mainpolicysourcetest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/mainpolicysourcetest.py)
+ecm_add_test(physicalgeometrytest.cpp TEST_NAME physicalgeometrytest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(physicalgeometrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 
 ecm_add_test(keyboardvisibilitystatetest.cpp
     TEST_NAME keyboardvisibilitystatetest

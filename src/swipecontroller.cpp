@@ -27,7 +27,7 @@
 #include "swipekb/language_engine.hpp"
 #include "swipekb/text.hpp"
 
-Q_LOGGING_CATEGORY(lcSwipe, "org.kde.plasma.keyboard.custom.swipe")
+Q_LOGGING_CATEGORY(lcSwipe, "org.uke.plasma.keyboard.swipe")
 
 namespace
 {
@@ -37,7 +37,7 @@ const QStringList supportedLanguages = {QStringLiteral("en"), QStringLiteral("ru
 
 QString installedPath(const QString &fileName)
 {
-    return QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("plasma-keyboard-custom/swipe/") + fileName);
+    return QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("uke-plasma-keyboard-custom/swipe/") + fileName);
 }
 } // namespace
 
@@ -59,8 +59,8 @@ SwipeController::SwipeController(QObject *parent)
     QDBusConnection bus = QDBusConnection::sessionBus();
     if (bus.isConnected()) {
         bus.registerObject(QStringLiteral("/SwipeDebug"), this, QDBusConnection::ExportAllSlots);
-        if (!bus.registerService(QStringLiteral("org.kde.plasma.keyboard.custom"))) {
-            qCDebug(lcSwipe) << "D-Bus name org.kde.plasma.keyboard.custom is taken; SwipeDebug is on the unique name";
+        if (!bus.registerService(QStringLiteral("org.uke.plasma.keyboard"))) {
+            qCDebug(lcSwipe) << "D-Bus name org.uke.plasma.keyboard is taken; SwipeDebug is on the unique name";
         }
     }
 }
@@ -229,7 +229,7 @@ void SwipeController::reset()
 
 QString SwipeController::learnedPath(const QString &language)
 {
-    const QString directory = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/plasma-keyboard-custom/swipe");
+    const QString directory = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/uke-plasma-keyboard-custom/swipe");
     return directory + QStringLiteral("/learned-") + language + QStringLiteral(".json");
 }
 

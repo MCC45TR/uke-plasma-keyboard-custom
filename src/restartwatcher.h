@@ -16,7 +16,7 @@ class QTimer;
 /**
  * Restarts the keyboard when the binary this process runs from is updated.
  *
- * KWin keeps one plasma-keyboard-custom process running for the whole session,
+ * KWin keeps one uke-plasma-keyboard-custom process running for the whole session,
  * so after a package update that process keeps executing the old code until the
  * session is restarted by hand. This class notices that the file on disk has
  * changed and asks KWin to start the input method again, with the same

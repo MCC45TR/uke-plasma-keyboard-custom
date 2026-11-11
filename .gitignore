@@ -38,3 +38,6 @@ Testing/
 
 # Local session data: plans and downloaded word list sources
 /.dsh/
+
+# COPR source recipe is project code
+!/.copr/Makefile

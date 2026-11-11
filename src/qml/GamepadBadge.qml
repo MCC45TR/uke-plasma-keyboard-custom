@@ -3,7 +3,7 @@
 
 import QtQuick
 
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 /**
  * Small round glyph shown on the buttons a gamepad can reach, the way the key

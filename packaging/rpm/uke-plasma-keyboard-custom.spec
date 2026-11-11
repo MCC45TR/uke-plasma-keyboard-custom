@@ -15,13 +15,13 @@
 # generates that config around the packaged headers instead of patching the
 # project.
 
-Name:           plasma-keyboard-custom
+Name:           uke-plasma-keyboard-custom
 Version:        6.7.90
 Release:        1%{?dist}
 Summary:        Virtual keyboard for Qt based desktops (custom fork with gamepad support)
 
 License:        GPL-2.0-only OR GPL-3.0-only
-URL:            https://github.com/mops1k/plasma-keyboard-custom
+URL:            https://github.com/mops1k/uke-plasma-keyboard-custom
 Source0:        %{name}-%{version}.tar.gz
 # The speech recognition engines (Whisper and Parakeet) are built from
 # whisper.cpp. Its sources come in as a second source instead of being fetched
@@ -155,22 +155,22 @@ mv %{buildroot}%{_libdir}/udev/rules.d/70-plasma-keyboard-touchscreen.rules \
 rmdir -p %{buildroot}%{_libdir}/udev/rules.d 2>/dev/null || true
 
 %check
-desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboard.custom.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/org.uke.plasma.keyboard.desktop
 
 %files
 %license LICENSES/*
 %doc README.md
-%{_bindir}/plasma-keyboard-custom
+%{_bindir}/uke-plasma-keyboard-custom
 %{_libexecdir}/plasma-keyboard-lock-switcher
-%{_datadir}/applications/org.kde.plasma.keyboard.custom.desktop
-%{_datadir}/metainfo/org.kde.plasma.keyboard.custom.metainfo.xml
+%{_datadir}/applications/org.uke.plasma.keyboard.desktop
+%{_datadir}/metainfo/org.uke.plasma.keyboard.metainfo.xml
 %{_datadir}/config.kcfg/plasmakeyboardcustomsettings.kcfg
 %{_datadir}/plasma/keyboard-custom/
 # The swipe word lists are generated at build time and loaded next to the
 # neural model of the swipe engine.
-%{_datadir}/plasma-keyboard-custom/swipe/
-%{_datadir}/plasma/plasmoids/org.kde.plasma.keyboard.custom.toggle/
-%{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/PlasmaBreezeCustom/
+%{_datadir}/uke-plasma-keyboard-custom/swipe/
+%{_datadir}/plasma/plasmoids/org.uke.plasma.keyboard.toggle/
+%{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/UkeBreeze/
 %{_libdir}/qt6/qml/org/kde/plasma/keyboard/custom/
 # The GigaAM engine: libtranscribe and the ggml it carries are loaded by the
 # keyboard while it runs.
@@ -179,13 +179,13 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.kde.plasma.keyboa
 %{_libdir}/libggml-base.so*
 %{_libdir}/libggml-cpu.so*
 %{_prefix}/lib/udev/rules.d/70-plasma-keyboard-touchscreen.rules
-%{_datadir}/locale/*/LC_MESSAGES/kcm_plasmakeyboardcustom.mo
-%{_datadir}/locale/*/LC_MESSAGES/plasma-keyboard-custom.mo
+%{_datadir}/locale/*/LC_MESSAGES/kcm_uke_plasma_keyboard_custom.mo
+%{_datadir}/locale/*/LC_MESSAGES/uke-plasma-keyboard-custom.mo
 %{_userunitdir}/plasma-keyboard-lock-switcher.service
 
 %files -n kcm-%{name}
-%{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_plasmakeyboardcustom.so
-%{_datadir}/applications/kcm_plasmakeyboardcustom.desktop
+%{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_uke_plasma_keyboard_custom.so
+%{_datadir}/applications/kcm_uke_plasma_keyboard_custom.desktop
 
 %changelog
 * Tue Sep 22 2026 Aleksandr Kvintilyanov <bednyj.mops@gmail.com> - 6.7.90-1

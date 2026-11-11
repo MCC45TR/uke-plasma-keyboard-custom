@@ -14,7 +14,7 @@
 
 #include <parakeet.h>
 
-Q_LOGGING_CATEGORY(lcSttParakeet, "org.kde.plasma.keyboard.custom.stt.parakeet")
+Q_LOGGING_CATEGORY(lcSttParakeet, "org.uke.plasma.keyboard.stt.parakeet")
 
 namespace PlasmaKeyboardStt
 {
@@ -68,7 +68,7 @@ bool ParakeetEngine::loadModel(const QString &modelPath, QString *error)
     const QFileInfo info(modelPath);
     if (!info.exists() || !info.isFile()) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Parakeet model file does not exist: %1").arg(modelPath);
+            *error = i18nd("uke-plasma-keyboard-custom", "The Parakeet model file does not exist: %1").arg(modelPath);
         }
         return false;
     }
@@ -79,7 +79,7 @@ bool ParakeetEngine::loadModel(const QString &modelPath, QString *error)
     m_context = parakeet_init_from_file_with_params(QFile::encodeName(info.absoluteFilePath()).constData(), params);
     if (!m_context) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "Cannot load the Parakeet model: %1").arg(info.absoluteFilePath());
+            *error = i18nd("uke-plasma-keyboard-custom", "Cannot load the Parakeet model: %1").arg(info.absoluteFilePath());
         }
         qCWarning(lcSttParakeet) << "cannot load the parakeet model" << info.absoluteFilePath();
         return false;
@@ -112,7 +112,7 @@ QString ParakeetEngine::transcribe(const QVector<float> &samples, const QString 
 
     if (!m_context) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Parakeet model is not loaded.");
+            *error = i18nd("uke-plasma-keyboard-custom", "The Parakeet model is not loaded.");
         }
         return QString();
     }
@@ -126,7 +126,7 @@ QString ParakeetEngine::transcribe(const QVector<float> &samples, const QString 
     const int result = parakeet_full(m_context, params, samples.constData(), samples.size());
     if (result != 0) {
         if (error) {
-            *error = i18nd("plasma-keyboard-custom", "The Parakeet recognition failed (error %1).").arg(result);
+            *error = i18nd("uke-plasma-keyboard-custom", "The Parakeet recognition failed (error %1).").arg(result);
         }
         qCWarning(lcSttParakeet) << "parakeet_full failed" << result;
         return QString();

@@ -11,7 +11,7 @@ import QtQuick.VirtualKeyboard.Settings
 import QtQuick.Templates as T
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 T.Popup {
     id: root

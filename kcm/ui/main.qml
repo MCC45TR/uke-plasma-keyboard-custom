@@ -46,8 +46,9 @@ KCM.AbstractKCM {
         anchors.fill: parent
         currentIndex: tabBar.currentIndex
 
-        LocaleSelectorListView {
-            id: list
+        ColumnLayout {
+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode, touchpad and physical key sizing"); onClicked: kcm.openLaptopSettings(); }
+            LocaleSelectorListView { id: list; Layout.fillWidth: true; Layout.fillHeight: true; }
         }
 
         SettingsFormPage {

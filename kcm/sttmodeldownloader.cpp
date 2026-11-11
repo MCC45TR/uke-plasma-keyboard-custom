@@ -17,7 +17,7 @@
 
 #include <QtCore/private/qzipreader_p.h>
 
-Q_LOGGING_CATEGORY(lcSttDownload, "org.kde.plasma.keyboard.custom.stt.download")
+Q_LOGGING_CATEGORY(lcSttDownload, "org.uke.plasma.keyboard.stt.download")
 
 namespace PlasmaKeyboardStt
 {
@@ -75,7 +75,7 @@ void SttModelDownloader::start(const SttModelEntry &entry)
 
     QNetworkRequest request{QUrl(entry.url)};
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("plasma-keyboard-custom"));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("uke-plasma-keyboard-custom"));
     m_reply = m_manager.get(request);
 
     connect(m_reply, &QNetworkReply::readyRead, this, &SttModelDownloader::handleReadyRead);

@@ -24,6 +24,7 @@ class ClipboardHistory : public QAbstractListModel
     QML_UNCREATABLE("ClipboardHistory is created in C++ and passed to QML.")
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool available READ isAvailable NOTIFY availableChanged)
+    Q_PROPERTY(QStringList pinnedTexts READ pinnedTexts NOTIFY pinsChanged)
 
 public:
     enum Role {
@@ -41,10 +42,14 @@ public:
     void setAccessAllowed(bool allowed);
     Q_INVOKABLE QString textAt(int row) const;
     Q_INVOKABLE void clear();
+    QStringList pinnedTexts() const;
+    Q_INVOKABLE void pin(int row);
+    Q_INVOKABLE void unpin(int row);
 
 Q_SIGNALS:
     void countChanged();
     void availableChanged();
+    void pinsChanged();
 
 private Q_SLOTS:
     void refresh();

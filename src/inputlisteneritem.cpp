@@ -7,6 +7,7 @@
 */
 
 #include "inputlisteneritem.h"
+#include "laptop/laptopcontroller.h"
 #include "clipboard/clipboardhistory.h"
 #include "inputmethod_p.h"
 #include "logging.h"
@@ -433,10 +434,11 @@ InputListenerItem::InputListenerItem()
             m_touchHold.disarm();
             m_longPressNeedsHitTest = false;
         }
-        window()->setVisible(visible);
+        window()->setVisible(visible || (LaptopController::instance() && LaptopController::instance()->active()));
     });
 
     connect(&m_input, &InputPlugin::keyPressed, this, [this](QKeyEvent *keyEvent) {
+        if (LaptopController::instance() && LaptopController::instance()->options().value("nativePcLayout").toBool() && LaptopController::instance()->backendReady() && !LaptopController::instance()->complexLayout()) return;
         // qCDebug(PlasmaKeyboard) << "keyPressed. keycode:" << keyEvent->key() << "text:" << keyEvent->text() << "modifiers:" << keyEvent->modifiers();
 
         // Delegate to overlay controller for diacritics/emoji/text expansion
@@ -464,6 +466,7 @@ InputListenerItem::InputListenerItem()
         }
     });
     connect(&m_input, &InputPlugin::keyReleased, this, [this](QKeyEvent *keyEvent) {
+        if (LaptopController::instance() && LaptopController::instance()->options().value("nativePcLayout").toBool() && LaptopController::instance()->backendReady() && !LaptopController::instance()->complexLayout()) return;
         // qCDebug(PlasmaKeyboard) << "keyReleased. keycode:" << keyEvent->key() << "text:" << keyEvent->text();
 
         // Let the overlay controller handle release events (e.g. diacritics, emoji)

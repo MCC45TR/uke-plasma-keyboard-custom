@@ -4,8 +4,8 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: plasma-keyboard-custom\n"
-"Report-Msgid-Bugs-To: https://github.com/mops1k/plasma-keyboard-custom\n"
+"Project-Id-Version: uke-plasma-keyboard-custom\n"
+"Report-Msgid-Bugs-To: https://github.com/mops1k/uke-plasma-keyboard-custom\n"
 "PO-Revision-Date: 2026-09-22 17:30+0300\n"
 "Last-Translator: Aleksandr Kvintilyanov <bednyj.mops@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"

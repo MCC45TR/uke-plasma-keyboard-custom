@@ -6,8 +6,8 @@ import QtQuick.VirtualKeyboard
 import QtQuick.VirtualKeyboard.Components
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 /**
  * Key that switches the keyboard between the docked panel at the bottom of the

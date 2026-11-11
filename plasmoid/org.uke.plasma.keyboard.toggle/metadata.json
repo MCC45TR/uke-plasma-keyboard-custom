@@ -7,15 +7,15 @@
             }
         ],
         "Category": "Utilities",
-        "Description": "Show or hide the plasma-keyboard-custom on-screen keyboard",
-        "Description[uk]": "Показати або приховати екранну клавіатуру plasma-keyboard-custom",
+        "Description": "Show or hide the uke-plasma-keyboard-custom on-screen keyboard",
+        "Description[uk]": "Показати або приховати екранну клавіатуру uke-plasma-keyboard-custom",
         "Icon": "input-keyboard-virtual",
-        "Id": "org.kde.plasma.keyboard.custom.toggle",
+        "Id": "org.uke.plasma.keyboard.toggle",
         "License": "GPL-2.0-or-later",
         "Name": "Virtual Keyboard (custom)",
         "Name[uk]": "Екранна клавіатура (custom)",
         "Version": "1.0",
-        "Website": "https://github.com/mops1k/plasma-keyboard-custom"
+        "Website": "https://github.com/mops1k/uke-plasma-keyboard-custom"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

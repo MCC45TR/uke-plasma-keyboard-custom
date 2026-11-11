@@ -3,10 +3,10 @@
 # SPDX-FileCopyrightText: 2026 Plasma Keyboard contributors
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# Install or update plasma-keyboard-custom from a GitHub release, without
+# Install or update uke-plasma-keyboard-custom from a GitHub release, without
 # setting up a package repository first:
 #
-#   curl -fsSL https://raw.githubusercontent.com/mops1k/plasma-keyboard-custom/master/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/mops1k/uke-plasma-keyboard-custom/master/install.sh | sh
 #
 # Options are passed after "sh -s --", for example:
 #
@@ -29,8 +29,8 @@
 
 set -eu
 
-repo=mops1k/plasma-keyboard-custom
-binary=/usr/bin/plasma-keyboard-custom
+repo=mops1k/uke-plasma-keyboard-custom
+binary=/usr/bin/uke-plasma-keyboard-custom
 
 tag=
 overwrite=0
@@ -61,10 +61,10 @@ while [ $# -gt 0 ]; do
         ;;
     -h | --help)
         cat <<'EOF'
-Install or update plasma-keyboard-custom from a GitHub release.
+Install or update uke-plasma-keyboard-custom from a GitHub release.
 
 Usage:
-  curl -fsSL https://raw.githubusercontent.com/mops1k/plasma-keyboard-custom/master/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/mops1k/uke-plasma-keyboard-custom/master/install.sh | sh
   curl -fsSL ... | sh -s -- [options]
 
 Options:
@@ -76,7 +76,7 @@ Options:
   -h, --help     this text
 
 The keyboard is installed with pacman, so it can be removed with
-"sudo pacman -R plasma-keyboard-custom" and upgraded from the pacman
+"sudo pacman -R uke-plasma-keyboard-custom" and upgraded from the pacman
 repository described in the README.
 
 On SteamOS the read-only filesystem is disabled for the installation and
@@ -137,7 +137,7 @@ trap 'reenable_readonly; rm -rf "$tmp"' EXIT
 # the match on a digit.
 file=
 if curl -fsSLo "$tmp/SHA256SUMS" "$base/SHA256SUMS" 2>/dev/null; then
-    file=$(awk '/^[0-9a-f]+ +plasma-keyboard-custom-[0-9][^ ]*\.pkg\.tar\.zst$/ {print $2}' "$tmp/SHA256SUMS" | head -n1)
+    file=$(awk '/^[0-9a-f]+ +uke-plasma-keyboard-custom-[0-9][^ ]*\.pkg\.tar\.zst$/ {print $2}' "$tmp/SHA256SUMS" | head -n1)
     if [ -z "$file" ]; then
         echo "error: $base/SHA256SUMS does not list a package" >&2
         exit 1
@@ -148,7 +148,7 @@ if curl -fsSLo "$tmp/SHA256SUMS" "$base/SHA256SUMS" 2>/dev/null; then
 else
     # Releases before the checksum asset existed: fall back to the asset list.
     echo "This release has no SHA256SUMS, reading the asset list instead."
-    url=$(curl -fsSL "https://api.github.com/repos/$repo/releases/tags/$tag" | grep -o "https://[^\"]*/plasma-keyboard-custom-[0-9][^\"]*\.pkg\.tar\.zst" | head -n1)
+    url=$(curl -fsSL "https://api.github.com/repos/$repo/releases/tags/$tag" | grep -o "https://[^\"]*/uke-plasma-keyboard-custom-[0-9][^\"]*\.pkg\.tar\.zst" | head -n1)
     if [ -z "$url" ]; then
         echo "error: $tag has no package to install" >&2
         exit 1
@@ -158,7 +158,7 @@ else
     curl -fsSLo "$tmp/$file" "$url"
 fi
 
-version=${file#plasma-keyboard-custom-}
+version=${file#uke-plasma-keyboard-custom-}
 version=${version%-x86_64.pkg.tar.zst}
 
 if [ "$dry_run" = 1 ]; then
@@ -195,7 +195,7 @@ EOF
     exit 1
 fi
 
-echo "Installed plasma-keyboard-custom $version."
+echo "Installed uke-plasma-keyboard-custom $version."
 
 if [ "$restart" = 0 ]; then
     exit 0

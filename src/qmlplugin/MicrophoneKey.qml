@@ -7,8 +7,8 @@ import QtQuick.VirtualKeyboard.Components
 import QtQuick.Window
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.keyboard.custom
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 /**
  * Microphone key that sits to the right of the space bar and opens the voice

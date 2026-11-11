@@ -147,11 +147,7 @@ GamepadHandler::GamepadHandler(QObject *parent)
                                           SLOT(onKWinPropertiesChanged(QString, QVariantMap, QStringList)));
     refreshFromKWin();
 
-    // Safety net in case the PropertiesChanged signal is not delivered.
-    m_kwinPollTimer = new QTimer(this);
-    m_kwinPollTimer->setInterval(1000);
-    connect(m_kwinPollTimer, &QTimer::timeout, this, &GamepadHandler::refreshFromKWin);
-    m_kwinPollTimer->start();
+    // Visibility follows KWin signals; no healthy-idle polling.
 }
 
 void GamepadHandler::onKWinPropertiesChanged(const QString &interfaceName, const QVariantMap &changed, const QStringList &invalidated)

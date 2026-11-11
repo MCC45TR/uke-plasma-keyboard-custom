@@ -121,7 +121,7 @@ msgstr "Проверка нажатий"
 msgid "General"
 msgstr "Общие"
 
-# Translations added by the plasma-keyboard-custom fork
+# Translations added by the uke-plasma-keyboard-custom fork
 
 #: main_handset.qml:180 main_mediacenter.qml:188
 msgid "Alternate characters"

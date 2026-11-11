@@ -31,12 +31,12 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(dirname "$script_dir")
 
 out_dir=${SHOTS_OUT:-$repo_root/.dsh/tmp/landing/raw}
-kb_bin=${KB_BIN:-$HOME/.local/bin/plasma-keyboard-custom}
+kb_bin=${KB_BIN:-$HOME/.local/bin/uke-plasma-keyboard-custom}
 kcm_plugin_path=${KCM_PLUGIN_PATH:-$HOME/.local/lib/plugins}
 screen_width=${SCREEN_WIDTH:-1920}
 screen_height=${SCREEN_HEIGHT:-1200}
 runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
-settings_file=${KB_SETTINGS_FILE:-$HOME/.config/plasmakeyboardrc}
+settings_file=${KB_SETTINGS_FILE:-$HOME/.config/uke-plasma-keyboard-customrc}
 settings_backup=$out_dir/settings-backup
 
 export DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$runtime_dir/bus}
@@ -70,7 +70,7 @@ cmd_restore() {
 cmd_set() {
     [ $# -ge 2 ] || die "set needs KEY VALUE pairs"
     while [ $# -gt 0 ]; do
-        kwriteconfig6 --file plasmakeyboardrc --group General --key "$1" "$2"
+        kwriteconfig6 --file uke-plasma-keyboard-customrc --group General --key "$1" "$2"
         log "General/$1 = $2"
         shift 2
     done
@@ -139,7 +139,7 @@ cmd_kcm() {
     done
     [ -n "$out" ] || die "kcm needs an output path"
 
-    QT_PLUGIN_PATH="$kcm_plugin_path" setsid kcmshell6 kcm_plasmakeyboardcustom \
+    QT_PLUGIN_PATH="$kcm_plugin_path" setsid kcmshell6 kcm_uke_plasma_keyboard_custom \
         >"$out_dir/kcm.log" 2>&1 </dev/null &
     sleep 9
     local point
@@ -148,7 +148,7 @@ cmd_kcm() {
         sleep 1
     done
     cmd_shot "$out" --crop "${crop_geometry:-full}"
-    pkill -f 'kcmshell6 kcm_plasmakeyboardcustom' >/dev/null 2>&1 || true
+    pkill -f 'kcmshell6 kcm_uke_plasma_keyboard_custom' >/dev/null 2>&1 || true
 }
 
 usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }

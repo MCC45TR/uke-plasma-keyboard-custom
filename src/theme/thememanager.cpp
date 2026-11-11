@@ -713,7 +713,7 @@ QObject *ThemeManager::themeSingleton() const
     if (!m_engine) {
         return nullptr;
     }
-    const QJSValue theme = m_engine->singletonInstance<QJSValue>("org.kde.plasma.keyboard.custom.lib", "Theme");
+    const QJSValue theme = m_engine->singletonInstance<QJSValue>("org.uke.plasma.keyboard.lib", "Theme");
     if (theme.isUndefined() || theme.isNull()) {
         return nullptr;
     }

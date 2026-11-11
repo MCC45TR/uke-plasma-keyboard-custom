@@ -12,10 +12,10 @@ import QtQuick.Effects
 
 import org.kde.kirigami as Kirigami
 
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
-import org.kde.plasma.keyboard.custom
-import org.kde.plasma.keyboard.custom.lib as PlasmaKeyboard
+import org.uke.plasma.keyboard
+import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 KeyboardStyle {
     id: currentStyle
@@ -91,7 +91,9 @@ KeyboardStyle {
     property real screenHeight: Screen.height
 
     // Always have the keyboard panel be 42% of the screen height, or 150px (whichever is larger)
-    readonly property real targetKeyboardHeight: Math.max(screenHeight * (PlasmaKeyboardSettings.keyboardHeightPercent / 100.0), 150)
+    readonly property real targetKeyboardHeight: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout
+        ? Math.min(screenHeight*0.68, (PlasmaKeyboard.Laptop.rows.length*PlasmaKeyboard.Laptop.options.keyHeightMm + (PlasmaKeyboard.Laptop.rows.length-1)*PlasmaKeyboard.Laptop.options.gapMm)*PlasmaKeyboard.Laptop.pixelsPerMm)
+        : Math.max(screenHeight*(PlasmaKeyboardSettings.keyboardHeightPercent/100.0),150)
 
     // The value to multiply the height by to get the width
     readonly property real aspectRatio: {

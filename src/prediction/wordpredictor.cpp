@@ -12,7 +12,7 @@
 #include <QLoggingCategory>
 #include <QtEndian>
 
-Q_LOGGING_CATEGORY(lcWordPrediction, "org.kde.plasma.keyboard.custom.prediction.ngrams")
+Q_LOGGING_CATEGORY(lcWordPrediction, "org.uke.plasma.keyboard.prediction.ngrams")
 
 namespace
 {
