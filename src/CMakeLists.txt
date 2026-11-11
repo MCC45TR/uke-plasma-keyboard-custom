@@ -295,6 +295,8 @@ target_link_libraries(uke-plasma-keyboard-custom
     KF6::ConfigGui
     KF6::Crash
     KF6::GlobalAccel
+    KF6::StatusNotifierItem
+    Qt::Widgets
     PkgConfig::XKBCommon
     LayerShellQt::Interface
     Plasma::PlasmaQuick

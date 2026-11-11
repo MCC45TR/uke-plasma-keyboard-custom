@@ -48,3 +48,17 @@ tablet, copy binaries into the system or download speech models for this trial.
 For rollback, select the original Plasma keyboard first, then remove the Uke
 RPM through DNF if desired. Preserve keyboard preferences and the original
 provider. Future image defaults require first-session and lock-screen acceptance.
+
+## Dynamic surface
+
+Select Dynamic in keyboard settings. With automatic opening disabled, focusing a
+text field must not open either the normal keyboard or the deck. Open/close the
+deck from its tray item and shortcut; drag the handle and resize through settings.
+Touch outside its visible rectangle must reach desktop content. Check keyboard,
+pad, 3/4-finger gestures and modifier chords without duplicate touchscreen
+shortcuts. The pointer must remain able to enter the tablet and ordinary windows
+must remain where the user placed them. Refresh mode must remain unchanged.
+Enable focus auto-show separately and check field activation/deactivation, manual
+hide, fast focus changes, disconnect, cover close and lock during pending entry.
+Repeat with a complex IME to verify that the language panel is visible above the
+pad and does not cover its buttons. These are pending physical checks.

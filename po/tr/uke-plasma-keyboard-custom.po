@@ -265,3 +265,39 @@ msgstr "PC düzenini kullan (dil motorları kullanılabilir)"
 
 msgid "Also use the PC layout in normal mode"
 msgstr "PC düzenini normal modda da kullan"
+
+msgid "Laptop surface:"
+msgstr "Dizüstü yüzeyi:"
+
+msgid "Static — full tablet"
+msgstr "Sabit — tabletin tamamı"
+
+msgid "Dynamic — movable panel"
+msgstr "Dinamik — taşınabilir panel"
+
+msgid "Open dynamic mode automatically on text focus"
+msgstr "Metin odağında dinamik modu otomatik aç"
+
+msgid "Dynamic panel width:"
+msgstr "Dinamik panel genişliği:"
+
+msgid "Dynamic panel height:"
+msgstr "Dinamik panel yüksekliği:"
+
+msgid "Drag to move"
+msgstr "Taşımak için sürükleyin"
+
+msgid "Uke keyboard"
+msgstr "Uke klavye"
+
+msgid "Toggle laptop mode"
+msgstr "Dizüstü modunu değiştir"
+
+msgid "Open laptop mode"
+msgstr "Dizüstü modunu aç"
+
+msgid "Enter laptop mode"
+msgstr "Dizüstü modunu aç"
+
+msgid "Dynamic mode opens from the tray by default. Drag its handle to move it. It leaves pointer movement, window placement and refresh settings under desktop control."
+msgstr "Dinamik mod varsayılan olarak tepsiden açılır. Tutamacını sürükleyerek taşıyın. İmleç hareketi, pencere yerleşimi ve yenileme ayarları masaüstünün denetiminde kalır."

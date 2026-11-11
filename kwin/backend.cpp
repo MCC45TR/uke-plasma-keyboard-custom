@@ -88,7 +88,7 @@ public:
         m_watcher.setConnection(m_bus);
         m_watcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
         connect(&m_watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this] { detach(); });
-        if(kwinApp()->session())connect(kwinApp()->session(),&Session::activeChanged,this,[this](bool active){if(!active){endStatic();release();}});
+        if(kwinApp()->session())connect(kwinApp()->session(),&Session::activeChanged,this,[this](bool active){if(!active){endStatic();endDynamic();release();}});
         m_device.locksChanged = [this] {
             if (m_client.isEmpty()) return;
             auto signal = QDBusMessage::createTargetedSignal(m_client, QLatin1String(UkeKeyboard::path),
@@ -102,6 +102,7 @@ public:
         input()->installInputEventFilter(this);
         connect(workspace(), &Workspace::outputsChanged, this, [this] {
             if (m_active && !eligible(m_tabletName)) endStatic();
+            if (m_dynamic && !eligible(m_tabletName)) endDynamic();
             m_refresh.topologyChanged();
             Q_EMIT TopologyChanged();
         });
@@ -121,7 +122,7 @@ public:
     }
     bool touchDown(TouchDownEvent *event) override {
         m_touches[event->id]=event->pos;relayTouch(0,event->id,event->pos);
-        if(!m_active||locked()||!tablet()||!rectangle(tablet()->geometry()).contains(event->pos))return false;
+        if((!m_active&&!m_dynamic)||locked()||!tablet()||!rectangle(tablet()->geometry()).contains(event->pos))return false;
         auto *window=input()->findToplevel(event->pos);
         if(!window||uint(window->pid())!=m_clientPid||!window->surface())return false;
         // Forward only the keyboard's own surface before the global touchscreen
@@ -134,14 +135,14 @@ public:
     }
     bool touchMotion(TouchMotionEvent *event) override {
         m_touches[event->id]=event->pos;relayTouch(1,event->id,event->pos);
-        if(locked()){endStatic();release();return false;}
+        if(locked()){endStatic();endDynamic();release();return false;}
         if(m_cancelledTouches.contains(event->id))return true;
         if(!m_directTouches.contains(event->id))return false;
         auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchMotion(event->id,event->pos);m_directFrame=true;return true;
     }
     bool touchUp(TouchUpEvent *event) override {
         relayTouch(2,event->id,m_touches.take(event->id));
-        if(locked()){endStatic();release();return false;}
+        if(locked()){endStatic();endDynamic();release();return false;}
         if(m_cancelledTouches.remove(event->id))return true;
         if(!m_directTouches.remove(event->id))return false;
         auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchUp(event->id);m_directFrame=true;return true;
@@ -206,6 +207,7 @@ public Q_SLOTS:
     bool BeginStatic(const QString &tablet) {
         if (!authorized() || !eligible(tablet)) return false;
         if (m_active) return m_tabletName == tablet;
+        endDynamic();
         m_tabletName = tablet;
         m_active = true;
         m_refresh.begin(tablet);
@@ -214,6 +216,15 @@ public Q_SLOTS:
         Q_EMIT StaticChanged(true);
         return true;
     }
+    bool BeginDynamic(const QString &tablet) {
+        if (!authorized() || !eligible(tablet)) return false;
+        if (m_dynamic) return m_tabletName == tablet;
+        endStatic();
+        m_tabletName=tablet;m_dynamic=true;
+        Q_EMIT DynamicChanged(true);
+        return true;
+    }
+    void EndDynamic() { if (authorized(false)) endDynamic(); }
     bool Profile(const QString &profile) { return authorized() && m_refresh.set(profile); }
     QVariantMap Locks() {
         if (!authorized()) return {};
@@ -261,11 +272,12 @@ public Q_SLOTS:
         else if (phase == 2 && m_pinching) { m_pinching=false; Q_EMIT m_device.pinchGestureEnd(now(),&m_device); }
         else if (phase == 3 && m_pinching) { m_pinching=false; Q_EMIT m_device.pinchGestureCancelled(now(),&m_device); }
     }
-    void Lock() { endStatic(); release(); }
+    void Lock() { endStatic(); endDynamic(); release(); }
     void Locked(bool active) { if (active) Lock(); }
 
 Q_SIGNALS:
     void StaticChanged(bool active);
+    void DynamicChanged(bool active);
     void TopologyChanged();
     void ProfileError(const QString &reason);
 
@@ -285,7 +297,7 @@ private:
     bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked() || !kwinApp()->session() || !kwinApp()->session()->isActive(); }
     bool authorized(bool requireUnlocked = true) {
         const bool own = calledFromDBus() && !m_client.isEmpty() && message().service() == m_client;
-        if (own && requireUnlocked && locked()) { endStatic(); release(); return false; }
+        if (own && requireUnlocked && locked()) { endStatic(); endDynamic(); release(); return false; }
         return own;
     }
     OutputType *tablet() const {
@@ -321,7 +333,7 @@ private:
         connect(w,&Window::bufferGeometryChanged,this,[this,w] {
             // TouchPoint's position setter is private to KWin. A panel move or
             // rotation cancels this sequence instead of calling hidden ABI.
-            if(m_active&&uint(w->pid())==m_clientPid&&!m_directTouches.isEmpty())release();
+            if((m_active||m_dynamic)&&uint(w->pid())==m_clientPid&&!m_directTouches.isEmpty())release();
         });
         connect(w, &Window::frameGeometryChanged, this, [this,w] {
             auto saved=m_saved.find(w);
@@ -367,6 +379,11 @@ private:
         m_saved.clear(); m_tabletName.clear();
         Q_EMIT StaticChanged(false);
     }
+    void endDynamic() {
+        if(!m_dynamic)return;
+        m_dynamic=false;release();m_tabletName.clear();
+        Q_EMIT DynamicChanged(false);
+    }
     void release() {
         if(!m_directTouches.isEmpty()){
             waylandServer()->seat()->notifyTouchCancel();m_cancelledTouches.unite(std::exchange(m_directTouches,{}));m_directFrame=false;
@@ -382,7 +399,7 @@ private:
         Q_EMIT m_device.pointerFrame(&m_device);
     }
     void detach() {
-        endStatic(); release();
+        endStatic(); endDynamic(); release();
         if(!m_client.isEmpty())m_watcher.removeWatchedService(m_client);
         m_client.clear(); m_clientPid=0;
     }
@@ -399,7 +416,7 @@ private:
     RefreshGuard m_refresh;
     QString m_client,m_tabletName;
     uint m_clientPid=0;
-    bool m_active=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;
+    bool m_active=false,m_dynamic=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;
     QSet<uint> m_keys,m_buttons;
     QHash<int,QPointF>m_touches;
     QSet<int>m_directTouches,m_cancelledTouches;

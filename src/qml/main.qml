@@ -25,10 +25,12 @@ InputPanelWindow {
 
     readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && (PlasmaKeyboard.Laptop.active || PlasmaKeyboard.Laptop.options.normalPcLayout) && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
     function keyPosition(letter) {
+        if(!root.visible || !root.active || !inputPanel.keyboard)return Qt.point(-1,-1);
         const keys=swipeInput.buildKeyMap();
         for(const key of keys)if(key.letter===letter)return Qt.point(key.x,key.y);
         return Qt.point(-1,-1);
     }
+    function navigationLabel(){const key=inputPanel.keyboard?inputPanel.keyboard.activeKey:null;return key&&key.text?key.text:"";}
     Connections {
         target: PlasmaKeyboard.Laptop
         function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }
@@ -470,6 +472,7 @@ InputPanelWindow {
         engine: inputPanel.InputContext.inputEngine
 
         keyboardNavigationActive: inputPanel.keyboard.navigationModeActive
+        nativePcInput: root.useNativePc
 
         onKeyNavigationPressed: (key) => {
             // HACK: invoke the Qt VirtualKeyboard keyboard navigation feature ourselves
@@ -772,7 +775,7 @@ InputPanelWindow {
     // Only the panel is interactive while the keyboard is on screen; while it is
     // hidden the window keeps a one pixel region so that clicks reach the windows
     // below it.
-    interactiveRegion: PlasmaKeyboard.Laptop.active ? Qt.rect(0,0,width,height) : Qt.rect(panelWrapper.x,panelWrapper.y,panelWrapper.width,panelWrapper.height)
+    interactiveRegion: PlasmaKeyboard.Laptop.active ? Qt.rect(laptopDeck.x,laptopDeck.y,laptopDeck.width,laptopDeck.height) : Qt.rect(panelWrapper.x,panelWrapper.y,panelWrapper.width,panelWrapper.height)
 
     Kirigami.ShadowedRectangle {
         id: panelWrapper
@@ -925,8 +928,9 @@ InputPanelWindow {
         // as it is and the vertical one is anchored to the bottom edge, so a
         // size change (a row of suggestions appearing, Shift changing the layout)
         // makes the panel grow upwards instead of moving it under the finger.
-        x: floating ? (floatingX < 0 ? (root.width - width) / 2 : floatingX) : (root.width / 2) - (width / 2)
-        y: PlasmaKeyboard.Laptop.active ? (10*PlasmaKeyboard.Laptop.pixelsPerMm) : floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
+        z: PlasmaKeyboard.Laptop.active && !root.useNativePc ? 2 : 0
+        x: PlasmaKeyboard.Laptop.active ? laptopDeck.x+laptopDeck.imeRect.x : floating ? (floatingX < 0 ? (root.width - width) / 2 : floatingX) : (root.width / 2) - (width / 2)
+        y: PlasmaKeyboard.Laptop.active ? laptopDeck.y+laptopDeck.imeRect.y : floating ? (floatingBottom < 0 ? root.height - height - padding : floatingBottom - height) : root.height - height
 
         // A resolution change can leave the panel outside the screen.
         Connections {
@@ -1531,6 +1535,7 @@ InputPanelWindow {
                     return 0;
                 }
                 const full = inputPanel.keyboard.style.aspectRatio * inputPanel.keyboard.style.targetKeyboardHeight;
+                if(PlasmaKeyboard.Laptop.active)return Math.max(1,Math.min(laptopDeck.imeRect.width-panelWrapper.padding*2,laptopDeck.imeRect.height*inputPanel.keyboard.style.aspectRatio,full));
                 if (!PlasmaKeyboardSettings.floatingKeyboard) {
                     return full;
                 }
@@ -1690,7 +1695,17 @@ InputPanelWindow {
     // радиус стартовой клавиши, нажатие этой клавиши отменяется, а на отпускании
     // путь уходит в C++-движок (src/swipekb) и лучшее слово вставляется в поле.
     LaptopDeck {
-        anchors.fill: parent
+        id: laptopDeck
+        width: PlasmaKeyboard.Laptop.dynamicActive?root.width*PlasmaKeyboard.Laptop.options.dynamicWidthPercent/100:root.width
+        height: PlasmaKeyboard.Laptop.dynamicActive?root.height*PlasmaKeyboard.Laptop.options.dynamicHeightPercent/100:root.height
+        x: (root.width-width)/2
+        y: root.height-height
+        property bool wasDynamic: false
+        function keepInside(){x=Math.max(0,Math.min(root.width-width,x));y=Math.max(0,Math.min(root.height-height,y));}
+        onWidthChanged:keepInside()
+        onHeightChanged:keepInside()
+        Connections {target:root;function onWidthChanged(){laptopDeck.keepInside();}function onHeightChanged(){laptopDeck.keepInside();}}
+        Connections {target:PlasmaKeyboard.Laptop;function onStateChanged(){const dynamic=PlasmaKeyboard.Laptop.dynamicActive;if(!dynamic){laptopDeck.x=0;laptopDeck.y=0;}else if(!laptopDeck.wasDynamic){laptopDeck.x=(root.width-laptopDeck.width)/2;laptopDeck.y=root.height-laptopDeck.height;}else laptopDeck.keepInside();laptopDeck.wasDynamic=dynamic;}}
         z: 1
         visible: PlasmaKeyboard.Laptop.active
         inputTarget: thing
@@ -1767,7 +1782,7 @@ InputPanelWindow {
                     stack.push(item.children[i]);
                 }
                 // Буквенная клавиша Qt VK: у BaseKey есть key/displayText/functionKey.
-                if (item.key !== undefined && item.displayText !== undefined && item.functionKey === false
+                if (item.visible && item.enabled && item.width>0 && item.height>0 && item.key !== undefined && item.displayText !== undefined && item.functionKey === false
                         && typeof item.text === "string" && letterRe.test(item.text.toLowerCase())) {
                     const c = item.mapToItem(null, item.width / 2, item.height / 2);
                     map.push({

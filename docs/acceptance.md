@@ -11,7 +11,7 @@
 | Language/variant selection, clipboard, emoji | Initial implementation | Pending | Pending |
 | Fixed refresh profiles and restoration | Initial implementation | Pending | Pending |
 | Native 30–60 VRR | Existing kernel interface reviewed; gated | Not qualified | Pending |
-| Dynamic laptop mode | Later phase | Not implemented | Not tested |
+| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Pending | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -207,3 +207,30 @@ All existing assertions remain. The normal/native protocol suite is still pendin
 Discovery metadata now names the Uke fork and its actual executable/maintainer
 rather than identifying it as the stock KDE application. Desktop-file/AppStream
 validation passes locally as text validation, with the checks added to COPR too.
+
+## COPR 11310196 — retained protocol tests expose three failures
+
+All three Fedora aarch64 workers compiled the app/plugin and passed26 of27
+CTest entries. The remaining protocol entry passed10 of13 internal cases:
+compose, dead keys, raw keys, repeat balancing and overlay navigation passed;
+touching Q, the assumed three-Right navigation position, and Italian alternate
+ordering failed. No RPM passed the full gate and nothing was installed.
+
+Italian alternate data was installed under the fork's directory while the
+loader still searched the original directory. The loader now matches its
+actual payload. Keyboard-event routing now follows the visible PC component,
+rather than treating every backend-ready session as a PC keyboard. The touch
+probe ignores hidden/disabled key items, waits for settled geometry and records
+bounded synthetic navigation state only on the private test path. Navigation
+still must reach and commit X without forwarding its arrow/Return keys; its
+initial highlight is no longer assumed to occupy one fixed position.
+
+Dynamic laptop mode now has an initial source implementation: an eligible
+session can select a movable, resizable keyboard/touchpad panel. It opens
+manually from the native KDE tray by default; text-focus auto-show is optional.
+The backend forwards only contacts on the keyboard's own surface and releases
+input on exit/lock/disconnect. Dynamic mode never starts static pointer/window
+exclusion or refresh ownership. Complex IME surfaces are raised into the deck's
+allocated keyboard region instead of being hidden behind its background.
+Native compilation, dynamic transitions, touch, focus and physical use are
+pending. The original Fedora StatusNotifierItem/Qt Widgets providers are used.

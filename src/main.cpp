@@ -30,9 +30,12 @@
 #include <KGlobalAccel>
 #include <KLocalizedQmlContext>
 #include <KLocalizedString>
+#include <KStatusNotifierItem>
 #include <LayerShellQt/Window>
 
 #include <QAction>
+#include <QApplication>
+#include <QMenu>
 #include <QCommandLineParser>
 #include <QDBusArgument>
 #include <QDBusConnection>
@@ -571,8 +574,11 @@ private:
                 auto *screen = LaptopController::instance()->tabletScreen();
                 m_layerShell->setScreen(screen);
                 m_layerShell->setWantsToBeOnActiveScreen(false);
-                m_layerShell->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop|LayerShellQt::Window::AnchorBottom|LayerShellQt::Window::AnchorLeft|LayerShellQt::Window::AnchorRight));
-                m_layerShell->setDesiredSize(QSize(0,0));
+                const bool full=LaptopController::instance()->staticActive();
+                auto anchors=LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop|LayerShellQt::Window::AnchorLeft);
+                if(full)anchors|=LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorBottom|LayerShellQt::Window::AnchorRight);
+                m_layerShell->setAnchors(anchors);
+                m_layerShell->setDesiredSize(full?QSize(0,0):(screen?screen->geometry().size():QSize(1280,800)));
                 m_layerShell->setExclusiveZone(0);
                 m_layerShell->setMargins(QMargins());
             }
@@ -791,6 +797,7 @@ public:
 public Q_SLOTS:
     void showKeyboard()
     {
+        if(auto *laptop=LaptopController::instance();laptop && laptop->available() && laptop->options().value("presentation")==QLatin1String("dynamic")){laptop->toggle();return;}
         if (LaptopController::instance() && LaptopController::instance()->active()) { LaptopController::instance()->leave(); return; }
         qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
         // Also when only this side has it shown: with hideOnInputFocusLoss off
@@ -821,6 +828,12 @@ public Q_SLOTS:
     {
         if (LaptopController::instance() && LaptopController::instance()->active()) { restorePanels(); return; }
         const bool compositorVisible = kwinVisible();
+        if(auto *laptop=LaptopController::instance();laptop && laptop->available() &&
+           laptop->options().value("presentation")==QLatin1String("dynamic")) {
+            // Manual dynamic mode must not map the normal panel on text focus.
+            m_bridge->setKwinVisible(compositorVisible);
+            QGuiApplication::inputMethod()->hide();restorePanels();return;
+        }
         const auto *lock = SessionLockState::instance();
         const auto visibilityChange = m_visibility.update(compositorVisible,
                                                           lock->isKnown(),
@@ -993,7 +1006,7 @@ int main(int argc, char **argv)
 
     initLayoutsPath();
 
-    QGuiApplication application(argc, argv);
+    QApplication application(argc, argv);
 
     if (application.arguments().contains(QStringLiteral("--preferences"))) {
         application.setApplicationName(QStringLiteral("uke-plasma-keyboard-custom"));
@@ -1085,11 +1098,33 @@ int main(int argc, char **argv)
         KGlobalAccel::self()->setShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
     }
     auto *laptop = new LaptopController(&application);
+    application.setQuitOnLastWindowClosed(false);
     QObject::connect(laptop,&LaptopController::preferencesRequested,&application,[]{ QProcess::startDetached(QCoreApplication::applicationFilePath(),{QStringLiteral("--preferences")}); });
     qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",laptop);
     auto *keyboardWindowBridge = new KeyboardWindowBridge(&application);
     auto *hotkeyController = new KeyboardHotkeyController(keyboardWindowBridge, &application);
     QObject::connect(showAction, &QAction::triggered, hotkeyController, &KeyboardHotkeyController::showKeyboard);
+    if(!testMode){
+        auto *tray=new KStatusNotifierItem(QStringLiteral("uke-plasma-keyboard-custom"),&application);
+        tray->setCategory(KStatusNotifierItem::Hardware);
+        tray->setTitle(i18nd("uke-plasma-keyboard-custom","Uke keyboard"));
+        tray->setIconByName(QStringLiteral("input-keyboard-virtual"));
+        tray->setStandardActionsEnabled(false);
+        auto *menu=new QMenu;
+        auto *toggle=menu->addAction(i18nd("uke-plasma-keyboard-custom","Toggle laptop mode"));
+        QObject::connect(toggle,&QAction::triggered,laptop,&LaptopController::toggle);
+        auto *preferences=menu->addAction(i18nd("uke-plasma-keyboard-custom","Keyboard settings"));
+        QObject::connect(preferences,&QAction::triggered,laptop,&LaptopController::openPreferences);
+        tray->setContextMenu(menu);
+        auto update=[tray,toggle,laptop]{
+            tray->setStatus(laptop->available()||laptop->active()?KStatusNotifierItem::Active:KStatusNotifierItem::Passive);
+            toggle->setEnabled(laptop->available()||laptop->active());
+            toggle->setText(laptop->active()?i18nd("uke-plasma-keyboard-custom","Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom","Open laptop mode"));
+        };
+        QObject::connect(laptop,&LaptopController::stateChanged,tray,update);
+        QObject::connect(tray,&KStatusNotifierItem::activateRequested,laptop,[laptop]{laptop->toggle();});
+        update();
+    }
 
     if(!testMode)KCrash::initialize();
 
@@ -1317,14 +1352,15 @@ int main(int argc, char **argv)
             auto *probe=new QTimer(&view);probe->setInterval(100);
             auto attempts=std::make_shared<int>(0);
             QObject::connect(probe,&QTimer::timeout,&view,[root,path,probe,attempts]{
-                if(!root||++*attempts>50){probe->stop();return;}
+                if(!root||++*attempts>1000){probe->stop();return;}
                 QVariant position;
                 if(!QMetaObject::invokeMethod(root,"keyPosition",Q_RETURN_ARG(QVariant,position),Q_ARG(QVariant,QStringLiteral("q"))))return;
                 if(!position.canConvert<QPointF>())return;
                 const auto point=position.toPointF();if(point.x()<=0||point.y()<=0)return;
+                QVariant label;QMetaObject::invokeMethod(root,"navigationLabel",Q_RETURN_ARG(QVariant,label));
                 QSaveFile file(path);if(!file.open(QIODevice::WriteOnly))return;
-                file.write(QJsonDocument(QJsonObject{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()}}).toJson());
-                if(file.commit())probe->stop();
+                file.write(QJsonDocument(QJsonObject{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()},{QStringLiteral("navigation"),label.toString()}}).toJson());
+                file.commit();
             });
             probe->start();
         }

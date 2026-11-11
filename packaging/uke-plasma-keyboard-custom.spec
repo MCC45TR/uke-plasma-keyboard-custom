@@ -3,7 +3,7 @@
 %global __requires_exclude_from ^%{_libdir}/%{name}/.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 12%{?dist}
+Release: 13%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -17,6 +17,7 @@ BuildRequires: cmake(Qt6VirtualKeyboard) cmake(Qt6WaylandClient) cmake(Qt6Waylan
 BuildRequires: cmake(Qt6CorePrivate) cmake(Qt6GuiPrivate) cmake(Qt6WaylandClientPrivate)
 BuildRequires: cmake(KF6CoreAddons) cmake(KF6I18n) cmake(KF6KCMUtils) cmake(KF6Config)
 BuildRequires: cmake(KF6Crash) cmake(KF6GlobalAccel) cmake(KF6Screen)
+BuildRequires: cmake(KF6StatusNotifierItem) cmake(Qt6Widgets)
 BuildRequires: cmake(KWin) cmake(PlasmaQuick) cmake(LayerShellQt)
 BuildRequires: pkgconfig(wayland-client) pkgconfig(wayland-server) pkgconfig(xkbcommon)
 BuildRequires: pkgconfig(epoxy) pkgconfig(libdrm) pkgconfig(vulkan)

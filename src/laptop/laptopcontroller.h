@@ -23,6 +23,8 @@ class LaptopController final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Control1")
     Q_PROPERTY(bool active READ active NOTIFY stateChanged)
+    Q_PROPERTY(bool staticActive READ staticActive NOTIFY stateChanged)
+    Q_PROPERTY(bool dynamicActive READ dynamicActive NOTIFY stateChanged)
     Q_PROPERTY(bool available READ available NOTIFY stateChanged)
     Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
     Q_PROPERTY(bool nativeInputAllowed READ nativeInputAllowed NOTIFY stateChanged)
@@ -45,6 +47,8 @@ public:
     ~LaptopController() override;
     static LaptopController *instance();
     bool active() const { return m_active; }
+    bool staticActive() const { return m_active && !m_dynamic; }
+    bool dynamicActive() const { return m_active && m_dynamic; }
     bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed; }
     bool backendReady() const { return m_ready; }
     bool nativeInputAllowed() const { return m_ready && !m_locked; }
@@ -68,6 +72,7 @@ public:
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void enter();
     Q_INVOKABLE void leave();
+    void textFocusChanged(bool focused);
     Q_INVOKABLE void setOption(const QString &key,const QVariant &value);
     Q_INVOKABLE void reload();
     Q_INVOKABLE void key(uint code,bool pressed);
@@ -101,6 +106,7 @@ Q_SIGNALS:
     void preferencesRequested();
 private Q_SLOTS:
     void backendStatic(bool active);
+    void backendDynamic(bool active);
     void systemLayout(uint index);
     void propertiesChanged(const QString &iface,const QVariantMap &changed,const QStringList &invalidated);
     void refreshRemote();
@@ -128,6 +134,8 @@ private:
     QStringList m_layoutCodes,m_variants;
     int m_layoutIndex=0;
     bool m_active=false,m_ready=false,m_available=false,m_locked=true,m_lidClosed=true,m_typing=false;
+    bool m_dynamic=false,m_textFocused=false,m_starting=false;
+    uint m_transition=0;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;

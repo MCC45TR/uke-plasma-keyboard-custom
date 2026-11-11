@@ -98,6 +98,7 @@ class InputListenerItem : public QQuickItem
 
     Q_PROPERTY(QVirtualKeyboardInputEngine *engine WRITE setEngine)
     Q_PROPERTY(bool keyboardNavigationActive MEMBER m_keyboardNavigationActive)
+    Q_PROPERTY(bool nativePcInput MEMBER m_nativePcInput)
 
     /**
      * Controller for overlay popups (diacritics, emoji, text expansion).
@@ -276,6 +277,7 @@ private:
     FocusedEditableTracker m_focusedEditable;
     bool m_longPressNeedsHitTest = false;
     bool m_keyboardNavigationActive = false;
+    bool m_nativePcInput = false;
 
     //! The word the predictive text input currently suggests for.
     QString m_predictionPrefix;

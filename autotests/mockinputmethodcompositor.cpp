@@ -829,10 +829,13 @@ private Q_SLOTS:
 
         const QString geometryPath=m_runtimeDir.path()+QStringLiteral("/q-key.json");
         QTRY_VERIFY_WITH_TIMEOUT(QFile::exists(geometryPath),5000);
+        QTest::qWait(500); // allow font/style and the layer configure to settle
         QFile geometry(geometryPath);QVERIFY(geometry.open(QIODevice::ReadOnly));
         const auto point=QJsonDocument::fromJson(geometry.readAll()).object();
         const QPointF qKeyCenter(point.value(QStringLiteral("x")).toDouble(-1),point.value(QStringLiteral("y")).toDouble(-1));
         QVERIFY(qKeyCenter.x()>0&&qKeyCenter.y()>0);
+        qInfo()<<"Synthetic Q geometry"<<qKeyCenter<<"surface"<<inputPanelSurfaceSize();
+        QVERIFY(qKeyCenter.x()<inputPanelSurfaceSize().width()&&qKeyCenter.y()<inputPanelSurfaceSize().height());
 
         QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
         tapInputPanel(qKeyCenter);
@@ -855,9 +858,15 @@ private Q_SLOTS:
         QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
         QSignalSpy keysymSpy(m_inputMethod->context(), &InputMethodContext::keysymReceived);
 
-        sendKey(KEY_RIGHT, 100);
-        sendKey(KEY_RIGHT, 100);
-        sendKey(KEY_RIGHT, 100);
+        // Qt chooses its initial highlight from the current geometry. Locate X
+        // through real navigation instead of assuming three Right presses.
+        auto selected=[this]{QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));if(!file.open(QIODevice::ReadOnly))return QString();return QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("navigation")).toString();};
+        bool found=false;
+        for(int row=0;row<5&&!found;++row){
+            for(int column=0;column<16;++column){sendKey(KEY_RIGHT,100);QTest::qWait(110);if(selected()==QLatin1String("x")){found=true;break;}}
+            if(!found)sendKey(KEY_DOWN,100);
+        }
+        QVERIFY2(found,"Navigation did not reach X in the configured layout");
         sendKey(KEY_ENTER, 100);
 
         QVERIFY(commitStringSpy.count() || commitStringSpy.wait());

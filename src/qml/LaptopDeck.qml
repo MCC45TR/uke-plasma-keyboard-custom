@@ -16,11 +16,27 @@ Rectangle {
     signal predictionChosen(string text)
     function keyGeometry(code) { return pc.keyGeometry(code); }
     readonly property bool toolbarFits: tools.childrenRect.width<=tools.width+0.1
+    readonly property rect imeRect: Qt.rect(imePlaceholder.x+deck.perMm,imePlaceholder.y+deck.perMm,imePlaceholder.width,imePlaceholder.height)
     color: Kirigami.Theme.backgroundColor
+    border.color: Kirigami.Theme.disabledTextColor
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: deck.perMm
         spacing: deck.perMm*0.8
+        QQC2.Label {
+            visible: Keyboard.Laptop.dynamicActive
+            Layout.fillWidth:true
+            Layout.preferredHeight: 6*deck.perMm
+            horizontalAlignment:Text.AlignHCenter
+            text:i18nd("uke-plasma-keyboard-custom","Drag to move")
+            DragHandler {
+                target:null
+                property real startX:0
+                property real startY:0
+                onActiveChanged:if(active){startX=deck.x;startY=deck.y;}
+                onTranslationChanged:if(active){deck.x=Math.max(0,Math.min(deck.parent.width-deck.width,startX+translation.x));deck.y=Math.max(0,Math.min(deck.parent.height-deck.height,startY+translation.y));}
+            }
+        }
         KeyboardTools { id: tools; Layout.fillWidth:true; target:deck.inputTarget; perMm:deck.perMm; }
         Rectangle {
             visible: Keyboard.Laptop.options.calibrationRuler
@@ -59,6 +75,7 @@ Rectangle {
             onSwipeAccepted: words=>deck.swipeAccepted(words)
         }
         QQC2.Label {
+            id: imePlaceholder
             visible:!deck.useNative
             Layout.fillWidth:true
             Layout.preferredHeight: deck.height*0.5

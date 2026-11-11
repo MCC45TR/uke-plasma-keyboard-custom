@@ -24,7 +24,7 @@ static constexpr int kExpectedVersion = 1;
 
 /// Relative path beneath GenericDataLocation where all diacritics JSON files are expected
 /// (e.g. `~/.local/share/plasma/keyboard/diacritics/` or the installed `/usr/share/` equivalent).
-static const QString kDataSubPath = u"plasma/keyboard/diacritics/"_s;
+static const QString kDataSubPath = u"uke-plasma-keyboard-custom/diacritics/"_s;
 
 /// File name of the language-neutral base diacritics map, located under kDataSubPath.
 /// This file defines the default set of alternates for every supported base character.

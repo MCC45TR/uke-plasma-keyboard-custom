@@ -76,7 +76,9 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     Config
     Crash
     GlobalAccel
+    StatusNotifierItem
 )
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Widgets)
 
 find_package(KF6Screen REQUIRED)
 

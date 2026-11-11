@@ -18,7 +18,10 @@ Fedora 44, 45 and Rawhide builds are qualified independently.
   external display. KWin integration keeps pointers and application windows
   on external displays. It never enables a display or changes screen layout,
   scale, orientation or interface language.
-- Dynamic laptop: reserved for a later release; not implemented by this version.
+- Dynamic laptop: a movable keyboard/touchpad panel, opened manually from the
+  tray by default, with optional text-focus activation. It leaves desktop
+  pointer, window and refresh policy intact. Initial implementation; hardware
+  qualification is pending.
 
 Key sizing uses physical millimetres with a calibration ruler. Function,
 modifier, arrow, navigation and system-key regions are independently selectable.

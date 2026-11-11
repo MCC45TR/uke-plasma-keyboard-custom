@@ -262,6 +262,7 @@ InputListenerItem::InputListenerItem()
 
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
         const bool hasContext = m_input.hasContext();
+        if(auto *laptop=LaptopController::instance())laptop->textFocusChanged(hasContext);
 
         // Invalidate asynchronous results even if the new field has the same word.
         Q_EMIT predictionTargetChanged();
@@ -276,6 +277,14 @@ InputListenerItem::InputListenerItem()
             m_hideDelay->stop();
             m_touchHold.disarm();
             m_longPressNeedsHitTest = false;
+            QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
+            return;
+        }
+
+        if(auto *laptop=LaptopController::instance();laptop && (laptop->active() ||
+           (laptop->available() && laptop->options().value("presentation")==QLatin1String("dynamic")))) {
+            m_hideDelay->stop();m_touchHold.disarm();m_longPressNeedsHitTest=false;
+            m_hiddenByUser=!laptop->active();
             QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
             return;
         }
@@ -438,7 +447,7 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_input, &InputPlugin::keyPressed, this, [this](QKeyEvent *keyEvent) {
-        if (LaptopController::instance() && LaptopController::instance()->options().value("nativePcLayout").toBool() && LaptopController::instance()->backendReady() && !LaptopController::instance()->complexLayout()) return;
+        if (m_nativePcInput) return;
         // qCDebug(PlasmaKeyboard) << "keyPressed. keycode:" << keyEvent->key() << "text:" << keyEvent->text() << "modifiers:" << keyEvent->modifiers();
 
         // Delegate to overlay controller for diacritics/emoji/text expansion
@@ -466,7 +475,7 @@ InputListenerItem::InputListenerItem()
         }
     });
     connect(&m_input, &InputPlugin::keyReleased, this, [this](QKeyEvent *keyEvent) {
-        if (LaptopController::instance() && LaptopController::instance()->options().value("nativePcLayout").toBool() && LaptopController::instance()->backendReady() && !LaptopController::instance()->complexLayout()) return;
+        if (m_nativePcInput) return;
         // qCDebug(PlasmaKeyboard) << "keyReleased. keycode:" << keyEvent->key() << "text:" << keyEvent->text();
 
         // Let the overlay controller handle release events (e.g. diacritics, emoji)

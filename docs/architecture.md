@@ -81,3 +81,13 @@ The native Wayland protocol fixture includes the unchanged MIT-style
 Its original Drew DeVault copyright/license text is retained. This is a build-only
 protocol fixture, not a fork or runtime rebuild of LayerShellQt. It supplies
 known synthetic session/content metadata without bypassing production guards.
+
+Dynamic mode uses the same authenticated virtual device and selected output.
+Only static mode calls the pointer/window exclusion and refresh guard. Both
+modes forward touches only for the keyboard's own surface, before global touch
+gestures, and cancel input when that surface moves or disappears. The transparent
+part of a dynamic surface has an empty input region. Its handle moves the QML
+panel without changing desktop geometry. A bounded entry-generation check stops
+late asynchronous replies from reopening a surface after lock/leave/topology
+changes. Tray control uses the distribution's original
+[KStatusNotifierItem](https://api.kde.org/kstatusnotifieritem.html), with no polling.
