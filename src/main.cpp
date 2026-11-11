@@ -969,6 +969,10 @@ private:
 #include <signal.h>
 #include <unistd.h>
 #include <cstdio>
+#include <memory>
+#include <QSaveFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #endif
 
 int main(int argc, char **argv)
@@ -1074,7 +1078,7 @@ int main(int argc, char **argv)
     showAction->setObjectName(QStringLiteral("show-virtual-keyboard"));
     showAction->setText(i18n("Show Virtual Keyboard"));
     showAction->setProperty("componentName", QStringLiteral("org.uke.plasma.keyboard"));
-    showAction->setProperty("componentDisplayName", i18n("Plasma Keyboard (custom)"));
+    showAction->setProperty("componentDisplayName", QStringLiteral("Uke Plasma Keyboard Custom"));
     const QList<QKeySequence> defaultShortcut{QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_K)};
     if (!testMode) {
         KGlobalAccel::self()->setDefaultShortcut(showAction, defaultShortcut, KGlobalAccel::NoAutoloading);
@@ -1087,7 +1091,7 @@ int main(int argc, char **argv)
     auto *hotkeyController = new KeyboardHotkeyController(keyboardWindowBridge, &application);
     QObject::connect(showAction, &QAction::triggered, hotkeyController, &KeyboardHotkeyController::showKeyboard);
 
-    KCrash::initialize();
+    if(!testMode)KCrash::initialize();
 
     {
         QCommandLineParser parser;
@@ -1306,6 +1310,25 @@ int main(int argc, char **argv)
         }
     });
     view.load(QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/main.qml")));
+    if(testMode&&qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_ISOLATED_BUS")&&!view.rootObjects().isEmpty()) {
+        const QString path=qEnvironmentVariable("UKE_KEYBOARD_TEST_KEY_FILE");
+        if(!path.isEmpty()) {
+            QPointer<QObject> root=view.rootObjects().first();
+            auto *probe=new QTimer(&view);probe->setInterval(100);
+            auto attempts=std::make_shared<int>(0);
+            QObject::connect(probe,&QTimer::timeout,&view,[root,path,probe,attempts]{
+                if(!root||++*attempts>50){probe->stop();return;}
+                QVariant position;
+                if(!QMetaObject::invokeMethod(root,"keyPosition",Q_RETURN_ARG(QVariant,position),Q_ARG(QVariant,QStringLiteral("q"))))return;
+                if(!position.canConvert<QPointF>())return;
+                const auto point=position.toPointF();if(point.x()<=0||point.y()<=0)return;
+                QSaveFile file(path);if(!file.open(QIODevice::WriteOnly))return;
+                file.write(QJsonDocument(QJsonObject{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()}}).toJson());
+                if(file.commit())probe->stop();
+            });
+            probe->start();
+        }
+    }
 
 #ifdef Q_OS_UNIX
     /**

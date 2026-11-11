@@ -73,3 +73,11 @@ at the same reviewed revision (`src/input.cpp`, `src/wayland/seat.h`), and is
 restricted to the selected keyboard's surface during static mode. Lock state is
 checked before forwarding; global touchscreen gestures do not also process
 keyboard/pad contacts. Native pad gestures use KWin's usual gesture pipeline.
+
+The native Wayland protocol fixture includes the unchanged MIT-style
+`wlr-layer-shell-unstable-v1.xml` from KDE/layer-shell-qt revision
+`034a61bc3d1dce51906803eeaa8752abff4c297c`, fileSHA256
+`a6fbdac025cfce7a4d7420ed8cd667786a53c5a3a01af6f974a6eb49392cf799`.
+Its original Drew DeVault copyright/license text is retained. This is a build-only
+protocol fixture, not a fork or runtime rebuild of LayerShellQt. It supplies
+known synthetic session/content metadata without bypassing production guards.

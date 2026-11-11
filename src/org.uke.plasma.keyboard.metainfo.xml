@@ -5,42 +5,42 @@
  -->
 <component type="inputmethod">
   <id>org.uke.plasma.keyboard</id>
-  <name>Plasma Keyboard</name>
-  <name xml:lang="ar">لوحة المفاتيح بلازما</name>
-  <name xml:lang="bg">Клавиатура на Plasma</name>
-  <name xml:lang="ca">Teclat del Plasma</name>
-  <name xml:lang="ca-valencia">Teclat de Plasma</name>
-  <name xml:lang="cs">Klávesnice Plasma</name>
-  <name xml:lang="de">Plasma-Tastatur</name>
-  <name xml:lang="es">Teclado de Plasma</name>
-  <name xml:lang="eu">Plasma Teklatua</name>
-  <name xml:lang="fi">Plasma-näppäimistö</name>
-  <name xml:lang="fr">Plasma Keyboard</name>
-  <name xml:lang="he">מקלדת פלזמה</name>
-  <name xml:lang="hu">Plasma Billentyűzet</name>
-  <name xml:lang="ia">Claviero de Plasma</name>
-  <name xml:lang="is">Plasma-lyklaborð</name>
-  <name xml:lang="it">Plasma Keyboard</name>
-  <name xml:lang="ka">Plasma Keyboard</name>
-  <name xml:lang="ko">Plasma 키보드</name>
-  <name xml:lang="lt">Plasma klaviatūra</name>
-  <name xml:lang="lv">„Plasma“ tastatūra</name>
-  <name xml:lang="nb">Plasma-tastatur</name>
-  <name xml:lang="nl">Plasma-toetsenbord</name>
-  <name xml:lang="nn">Plasma-tastatur</name>
-  <name xml:lang="pl">Klawiatura Plazmy</name>
-  <name xml:lang="pt-BR">Teclado do Plasma</name>
-  <name xml:lang="ro">Tastatură Plasma</name>
-  <name xml:lang="ru">Клавиатура Plasma</name>
-  <name xml:lang="sk">Klávesnica Plasma</name>
-  <name xml:lang="sl">Plasma Keyboard</name>
-  <name xml:lang="sv">Plasma tangentbord</name>
-  <name xml:lang="tr">Plasma Klavye</name>
-  <name xml:lang="ug">Plasma ھەرپتاختا</name>
-  <name xml:lang="uk">Клавіатура Плазми</name>
-  <name xml:lang="zh-CN">Plasma 键盘</name>
-  <name xml:lang="zh-TW">Plasma 鍵盤</name>
-  <summary>On-Screen Keyboard for Plasma</summary>
+  <name>Uke Plasma Keyboard Custom</name>
+  <name xml:lang="ar">Uke لوحة المفاتيح بلازما</name>
+  <name xml:lang="bg">Uke Клавиатура на Plasma</name>
+  <name xml:lang="ca">Uke Teclat del Plasma</name>
+  <name xml:lang="ca-valencia">Uke Teclat de Plasma</name>
+  <name xml:lang="cs">Uke Klávesnice Plasma</name>
+  <name xml:lang="de">Uke Plasma-Tastatur</name>
+  <name xml:lang="es">Uke Teclado de Plasma</name>
+  <name xml:lang="eu">Uke Plasma Teklatua</name>
+  <name xml:lang="fi">Uke Plasma-näppäimistö</name>
+  <name xml:lang="fr">Uke Plasma Keyboard</name>
+  <name xml:lang="he">Uke מקלדת פלזמה</name>
+  <name xml:lang="hu">Uke Plasma Billentyűzet</name>
+  <name xml:lang="ia">Uke Claviero de Plasma</name>
+  <name xml:lang="is">Uke Plasma-lyklaborð</name>
+  <name xml:lang="it">Uke Plasma Keyboard</name>
+  <name xml:lang="ka">Uke Plasma Keyboard</name>
+  <name xml:lang="ko">Uke Plasma 키보드</name>
+  <name xml:lang="lt">Uke Plasma klaviatūra</name>
+  <name xml:lang="lv">Uke „Plasma“ tastatūra</name>
+  <name xml:lang="nb">Uke Plasma-tastatur</name>
+  <name xml:lang="nl">Uke Plasma-toetsenbord</name>
+  <name xml:lang="nn">Uke Plasma-tastatur</name>
+  <name xml:lang="pl">Uke Klawiatura Plazmy</name>
+  <name xml:lang="pt-BR">Uke Teclado do Plasma</name>
+  <name xml:lang="ro">Uke Tastatură Plasma</name>
+  <name xml:lang="ru">Uke Клавиатура Plasma</name>
+  <name xml:lang="sk">Uke Klávesnica Plasma</name>
+  <name xml:lang="sl">Uke Plasma Keyboard</name>
+  <name xml:lang="sv">Uke Plasma tangentbord</name>
+  <name xml:lang="tr">Uke Plasma Klavye</name>
+  <name xml:lang="ug">Uke Plasma ھەرپتاختا</name>
+  <name xml:lang="uk">Uke Клавіатура Плазми</name>
+  <name xml:lang="zh-CN">Uke Plasma 键盘</name>
+  <name xml:lang="zh-TW">Uke Plasma 鍵盤</name>
+  <summary>Tablet keyboard and laptop control surface for Plasma Wayland</summary>
   <summary xml:lang="ar">لوحة المفاتيح على الشّاشة لبلازما</summary>
   <summary xml:lang="bg">Екранна клавиатура за Plasma</summary>
   <summary xml:lang="ca">Teclat en pantalla per al Plasma</summary>
@@ -70,14 +70,15 @@
   <summary xml:lang="sk">Klávesnica na obrazovke pre Plasma</summary>
   <summary xml:lang="sl">Zaslonska tipkovnica za Plasmo</summary>
   <summary xml:lang="sv">Skärmtangentbord för Plasma</summary>
-  <summary xml:lang="tr">Plasma için ekran üzeri klavye</summary>
+  <summary xml:lang="tr">Plasma Wayland için tablet klavyesi ve dizüstü kontrol yüzeyi</summary>
   <summary xml:lang="ug">Plasma نىڭ ئېكران ھەرپتاختىسى</summary>
   <summary xml:lang="uk">Екранна клавіатура для Плазми</summary>
   <summary xml:lang="zh-CN">Plasma 的屏幕键盘</summary>
   <summary xml:lang="zh-TW">Plasma 的螢幕虛擬鍵盤</summary>
   <metadata_license>FSFAP</metadata_license>
-  <project_license>GPL-3</project_license>
+  <project_license>GPL-3.0-only</project_license>
   <description>
+    <p>A separately named fork of KDE Plasma Keyboard and mops1k/plasma-keyboard-custom. Laptop mode requires an enabled tablet touchscreen and an extended external display.</p>
     <p>
       Plasma Keyboard provides a virtual, on-screen keyboard for touchscreens, tablets, convertible devices,
       phones, and traditional computers without a physical keyboard.
@@ -259,19 +260,13 @@
       <li xml:lang="zh-TW">可調整大小與行為來符合不同的裝置類型</li>
     </ul>
   </description>
-  <screenshots>
-    <screenshot type="default">
-      <image>https://cdn.kde.org/screenshots/plasma-keyboard/plasma-keyboard.png</image>
-    </screenshot>
-  </screenshots>
-  <developer id="kde.org">
-    <name>The KDE Community</name>
-    <url>https://kde.org</url>
+  <developer id="mcc45tr.github.io">
+    <name>Uke Linux contributors</name>
+    <url>https://github.com/MCC45TR/uke-plasma-keyboard-custom</url>
   </developer>
   <content_rating type="oars-1.1"/>
-  <project_group>KDE</project_group>
-  <url type="homepage">https://kde.org/plasma-desktop/</url>
+  <url type="homepage">https://github.com/MCC45TR/uke-plasma-keyboard-custom</url>
   <provides>
-    <binary>plasma-keyboard</binary>
+    <binary>uke-plasma-keyboard-custom</binary>
   </provides>
 </component>

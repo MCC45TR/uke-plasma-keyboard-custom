@@ -3,7 +3,7 @@
 %global __requires_exclude_from ^%{_libdir}/%{name}/.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 11%{?dist}
+Release: 12%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -23,6 +23,7 @@ BuildRequires: pkgconfig(epoxy) pkgconfig(libdrm) pkgconfig(vulkan)
 BuildRequires: hunspell hunspell-tr hunspell-en-US xkeyboard-config
 BuildRequires: wayland-protocols-devel dbus-daemon jq systemd-rpm-macros
 BuildRequires: gdb-headless
+BuildRequires: desktop-file-utils appstream
 BuildRequires: kf6-kirigami kf6-kirigami-addons kf6-kitemmodels
 Requires: plasma-keyboard kwin >= 6.8
 Requires: kf6-kirigami kf6-kirigami-addons kf6-kitemmodels
@@ -63,6 +64,8 @@ find %{buildroot} -type f \( -name '*.qmltypes' -o -name '*.qmlc' \) -delete
 
 %check
 bash tests/source.sh
+desktop-file-validate %{buildroot}%{_datadir}/applications/org.uke.plasma.keyboard*.desktop
+appstreamcli validate --no-net %{buildroot}%{_datadir}/metainfo/org.uke.plasma.keyboard.metainfo.xml
 export QML_IMPORT_PATH=%{buildroot}%{_libdir}/qt6/qml XDG_DATA_DIRS=%{buildroot}%{_datadir}:/usr/local/share:/usr/share
 export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 PLASMA_KEYBOARD_TEST_MODE=1
 # The protocol fixture uses software rendering and a private Wayland socket.

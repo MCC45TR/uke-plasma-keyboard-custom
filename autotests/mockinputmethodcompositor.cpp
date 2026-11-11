@@ -5,6 +5,11 @@
 #include <KConfigGroup>
 #include <QCoreApplication>
 #include <QDir>
+#include <QDBusConnection>
+#include <QPointer>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QElapsedTimer>
 #include <QGuiApplication>
 #include <QProcess>
@@ -30,6 +35,7 @@
 #include "mockinputmethodcompositor_config.h"
 #include "qwayland-server-input-method-unstable-v1.h"
 #include "qwayland-server-wayland.h"
+#include "qwayland-server-wlr-layer-shell-unstable-v1.h"
 
 #include <fcntl.h>
 #include <linux/input-event-codes.h>
@@ -375,8 +381,11 @@ public:
 
     QWaylandSurface *surface() const
     {
+        if(m_overlaySelected&&m_surface&&m_surface->hasContent())return m_surface;
+        if(m_keyboardSurface)return m_keyboardSurface;
         return m_surface;
     }
+    void setKeyboardSurface(QWaylandSurface *surface){m_keyboardSurface=surface;}
 
 Q_SIGNALS:
     void inputPanelSurfaceCreated();
@@ -407,10 +416,12 @@ protected:
 
         auto *panelSurface = new InputPanelSurface(wlSurface, resource->client(), id, resource->version(), this);
         connect(panelSurface, &InputPanelSurface::toplevelRequested, this, [this] {
+            m_overlaySelected=false;
             ++m_toplevelPanelCount;
             Q_EMIT toplevelPanelRequested();
         });
         connect(panelSurface, &InputPanelSurface::overlayRequested, this, [this] {
+            m_overlaySelected=true;
             ++m_overlayPanelCount;
             Q_EMIT overlayPanelRequested();
         });
@@ -423,6 +434,62 @@ private:
     int m_toplevelPanelCount = 0;
     wl_resource *m_surfaceResource = nullptr;
     QWaylandSurface *m_surface = nullptr;
+    QPointer<QWaylandSurface> m_keyboardSurface;
+    bool m_overlaySelected=false;
+};
+
+// Minimal server for the real visible layer surface; input-panel-v1 above is
+// retained for the compositor's invisible geometry stub and alternate overlay.
+class TestLayerSurface final:public QObject,public QtWaylandServer::zwlr_layer_surface_v1
+{
+public:
+    TestLayerSurface(QWaylandSurface *surface,wl_client *client,uint32_t id,int version,QObject *parent)
+        :QObject(parent),QtWaylandServer::zwlr_layer_surface_v1(client,id,version),m_surface(surface)
+    {
+        connect(surface,&QWaylandSurface::damaged,this,[surface]{surface->frameStarted();surface->sendFrameCallbacks();});
+        QTimer::singleShot(0,this,[this]{send_configure(++m_serial,m_width,m_height);});
+    }
+protected:
+    void zwlr_layer_surface_v1_set_size(Resource*,uint32_t width,uint32_t height)override{m_width=width?width:1280;m_height=height?height:720;}
+    void zwlr_layer_surface_v1_set_anchor(Resource*,uint32_t)override{}
+    void zwlr_layer_surface_v1_set_exclusive_zone(Resource*,int32_t)override{}
+    void zwlr_layer_surface_v1_set_margin(Resource*,int32_t,int32_t,int32_t,int32_t)override{}
+    void zwlr_layer_surface_v1_set_keyboard_interactivity(Resource*,uint32_t)override{}
+    void zwlr_layer_surface_v1_get_popup(Resource*,wl_resource*)override{}
+    void zwlr_layer_surface_v1_ack_configure(Resource*,uint32_t)override{}
+    void zwlr_layer_surface_v1_set_layer(Resource*,uint32_t)override{}
+    void zwlr_layer_surface_v1_set_exclusive_edge(Resource*,uint32_t)override{}
+    void zwlr_layer_surface_v1_destroy(Resource *resource)override{wl_resource_destroy(resource->handle);}
+    void zwlr_layer_surface_v1_destroy_resource(Resource*)override{delete this;}
+private:
+    QPointer<QWaylandSurface>m_surface;
+    uint32_t m_width=1280,m_height=720,m_serial=0;
+};
+class TestLayerShell final:public QWaylandCompositorExtensionTemplate<TestLayerShell>,public QtWaylandServer::zwlr_layer_shell_v1
+{
+    Q_OBJECT
+public:
+    explicit TestLayerShell(QWaylandCompositor *compositor):QWaylandCompositorExtensionTemplate<TestLayerShell>(compositor){}
+    void initialize()override{
+        QWaylandCompositorExtensionTemplate::initialize();
+        init(static_cast<QWaylandCompositor*>(extensionContainer())->display(),interfaceVersion());
+    }
+Q_SIGNALS:
+    void keyboardSurfaceCreated(QWaylandSurface *surface);
+protected:
+    void zwlr_layer_shell_v1_get_layer_surface(Resource *resource,uint32_t id,wl_resource *surface,wl_resource*,uint32_t,const QString&)override{
+        auto *waylandSurface=QWaylandSurface::fromResource(surface);Q_ASSERT(waylandSurface);
+        new TestLayerSurface(waylandSurface,resource->client(),id,resource->version(),this);
+        Q_EMIT keyboardSurfaceCreated(waylandSurface);
+    }
+    void zwlr_layer_shell_v1_destroy(Resource *resource)override{wl_resource_destroy(resource->handle);}
+};
+class TestScreenSaver final:public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface","org.freedesktop.ScreenSaver")
+public Q_SLOTS:
+    bool GetActive()const{return false;}
 };
 
 class InputMethodV1 : public QWaylandCompositorExtensionTemplate<InputMethodV1>, public QtWaylandServer::zwp_input_method_v1
@@ -461,6 +528,9 @@ public:
         for (auto *resource : resourceMap()) {
             auto *contextResource = m_context->add(resource->client(), resource->version());
             send_activate(resource->handle, contextResource->handle);
+            m_context->send_content_type(contextResource->handle,0,0);
+            m_context->send_surrounding_text(contextResource->handle,QString(),0,0);
+            m_context->send_commit_state(contextResource->handle,1);
         }
         qInfo() << "input_method_v1 activated";
         Q_EMIT activated();
@@ -496,6 +566,9 @@ protected:
         if (m_context) {
             auto *contextResource = m_context->add(resource->client(), resource->version());
             send_activate(resource->handle, contextResource->handle);
+            m_context->send_content_type(contextResource->handle,0,0);
+            m_context->send_surrounding_text(contextResource->handle,QString(),0,0);
+            m_context->send_commit_state(contextResource->handle,1);
             return;
         }
 
@@ -529,6 +602,10 @@ public:
 private Q_SLOTS:
     void initTestCase()
     {
+        if(qgetenv("PLASMA_KEYBOARD_TEST_ISOLATED_BUS")!="1")QSKIP("A private dbus-run-session is required");
+        auto bus=QDBusConnection::sessionBus();
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));
+        QVERIFY(bus.registerObject(QStringLiteral("/ScreenSaver"),&m_screenSaver,QDBusConnection::ExportAllSlots));
         // Keep test configuration/data separate without changing HOME.
         if (!m_home.isValid()) {
             qFatal("Couldn't create temporary configuration folder for the test");
@@ -538,12 +615,18 @@ private Q_SLOTS:
         qputenv("XDG_CONFIG_HOME", qPrintable(m_home.path() + QStringLiteral("/.config")));
         qputenv("XDG_DATA_HOME", qPrintable(m_home.path() + QStringLiteral("/.local/share")));
         qputenv("XDG_CACHE_HOME", qPrintable(m_home.path() + QStringLiteral("/.cache")));
+        qputenv("XDG_RUNTIME_DIR",m_runtimeDir.path().toUtf8());
 
         {
             KConfig cfg(QStringLiteral("uke-plasma-keyboard-customrc"));
             KConfigGroup grp(&cfg, QStringLiteral("General"));
             grp.writeEntry(QStringLiteral("enabledLocales"), QStringLiteral("it_IT"));
             grp.writeEntry(QStringLiteral("keyboardNavigationEnabled"), true);
+            grp.writeEntry(QStringLiteral("defaultLocale"),QStringLiteral("it_IT"));
+            KConfigGroup laptop(&cfg,QStringLiteral("Laptop"));
+            laptop.writeEntry(QStringLiteral("syncLayout"),false);
+            laptop.writeEntry(QStringLiteral("VirtualLayoutList"),QStringList{QStringLiteral("it")});
+            laptop.writeEntry(QStringLiteral("VirtualVariantList"),QStringList{QString()});
             // Set the long press threshold to max to avoid potential flakiness in CI where timing can be unpredictable.
             grp.writeEntry(QStringLiteral("diacriticsHoldThresholdMs"), 1500);
         }
@@ -579,6 +662,9 @@ private Q_SLOTS:
         m_inputPanel = std::make_unique<InputPanelV1>(m_compositor.get());
         m_inputPanel->initialize();
         m_inputMethod->setInputPanel(m_inputPanel.get());
+        m_layerShell=std::make_unique<TestLayerShell>(m_compositor.get());
+        connect(m_layerShell.get(),&TestLayerShell::keyboardSurfaceCreated,m_inputPanel.get(),&InputPanelV1::setKeyboardSurface);
+        m_layerShell->initialize();
 
         m_child = std::make_unique<QProcess>();
         connect(m_child.get(), &QProcess::readyReadStandardError, this, [this] {
@@ -596,6 +682,8 @@ private Q_SLOTS:
         env.insert(u"QT_QPA_PLATFORM"_s, u"wayland"_s);
         env.insert(u"XDG_RUNTIME_DIR"_s, m_runtimeDir.path());
         env.insert(u"QT_QUICK_BACKEND"_s, u"software"_s); // Without this plasma-keyboard explodes on alpine for some reason
+        env.insert(u"QT_FORCE_STDERR_LOGGING"_s,u"1"_s);
+        env.insert(u"UKE_KEYBOARD_TEST_KEY_FILE"_s,m_runtimeDir.path()+QStringLiteral("/q-key.json"));
         m_child->setProcessEnvironment(env);
 
 #if PLASMA_KEYBOARD_UNDER_GDB
@@ -739,11 +827,12 @@ private Q_SLOTS:
         QTRY_VERIFY_WITH_TIMEOUT(surface->hasContent(), 5000);
         QTRY_VERIFY_WITH_TIMEOUT(!inputPanelSurfaceSize().isEmpty(), 5000);
 
-        const QSize surfaceSize = inputPanelSurfaceSize();
-        const qreal keyboardHeight = std::max(surfaceSize.height() * 0.3, 150.0);
-        constexpr int keysPerRow = 10, numberOfRows = 4;
-        const qreal keyWidth = static_cast<qreal>(surfaceSize.width()) / keysPerRow;
-        const QPointF qKeyCenter(keyWidth / 2, surfaceSize.height() - keyboardHeight + keyboardHeight / (numberOfRows * 2));
+        const QString geometryPath=m_runtimeDir.path()+QStringLiteral("/q-key.json");
+        QTRY_VERIFY_WITH_TIMEOUT(QFile::exists(geometryPath),5000);
+        QFile geometry(geometryPath);QVERIFY(geometry.open(QIODevice::ReadOnly));
+        const auto point=QJsonDocument::fromJson(geometry.readAll()).object();
+        const QPointF qKeyCenter(point.value(QStringLiteral("x")).toDouble(-1),point.value(QStringLiteral("y")).toDouble(-1));
+        QVERIFY(qKeyCenter.x()>0&&qKeyCenter.y()>0);
 
         QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
         tapInputPanel(qKeyCenter);
@@ -1097,6 +1186,8 @@ private:
     std::unique_ptr<QWaylandXdgShell> m_xdgShell;
     std::unique_ptr<InputMethodV1> m_inputMethod;
     std::unique_ptr<InputPanelV1> m_inputPanel;
+    std::unique_ptr<TestLayerShell> m_layerShell;
+    TestScreenSaver m_screenSaver;
     std::unique_ptr<QProcess> m_child;
 };
 

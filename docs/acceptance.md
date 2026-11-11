@@ -185,3 +185,25 @@ private-Wayland fixture too, with a bounded timeout and isolated XDG data/config
 One-shot modifiers are consumed after deliberate clicks, and multi-word deletion
 holds its temporary Ctrl for the entire operation. Their physical touch/chord
 acceptance remains open. No distribution package was forked or rebuilt here.
+
+## COPR 11310094 — real key geometry passes; protocol fixture gaps
+
+The native scene test now passes: both QML windows stay alive, actual key-item
+geometry preserves its physical target across simulated scale and fits portrait,
+the toolbar stays within bounds, and the controller reports TR Q/F, English and
+Arabic glyphs. Rawhide passed25 of26 CTests. These are isolated native GUI checks,
+not measurements on the physical tablet. No RPM passed the complete package gate.
+
+The newly enabled protocol fixture exposed missing fixture capabilities: it
+provided neither a known unlocked ScreenSaver state nor content-type metadata,
+so the production privacy guard correctly stayed closed. Its surface getter
+also referred to the invisible input-panel stub instead of the visible layer
+surface. The fixture now advertises a minimal layer-shell server, reports safe
+synthetic text metadata on a private bus/socket, and targets actual rendered
+key geometry instead of estimating row coordinates. It explicitly configures
+independent Italian virtual input alongside its US physical compose keymap.
+All existing assertions remain. The normal/native protocol suite is still pending.
+
+Discovery metadata now names the Uke fork and its actual executable/maintainer
+rather than identifying it as the stock KDE application. Desktop-file/AppStream
+validation passes locally as text validation, with the checks added to COPR too.

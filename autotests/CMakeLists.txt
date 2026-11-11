@@ -18,6 +18,7 @@ ecm_add_test(mockinputmethodcompositor.cpp LINK_LIBRARIES
     KF6::ConfigCore
     PkgConfig::XKBCommon
     Qt::Core
+    Qt::DBus
     Qt::Gui
     Qt::GuiPrivate
     Qt::Test
@@ -29,6 +30,8 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
     FILES
         ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml
         ${Wayland_DATADIR}/wayland.xml
+        ${WaylandProtocols_DATADIR}/stable/xdg-shell/xdg-shell.xml
+        ${CMAKE_CURRENT_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml
 )
 
 # This test runs the real binary against a mock compositor. Without the flag it
@@ -272,9 +275,9 @@ add_dependencies(swipeenginetest swipe_dictionaries)
 # CI would never exercise them. Run them under dbus-run-session when available.
 find_program(DBUS_RUN_SESSION dbus-run-session)
 if(DBUS_RUN_SESSION)
-    foreach(_busTest focusededitabletrackertest clipboardhistorytest sessionlockstatetest)
+    foreach(_busTest focusededitabletrackertest clipboardhistorytest sessionlockstatetest mockinputmethodcompositor)
         set_target_properties(${_busTest} PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION}")
-        set_tests_properties(${_busTest} PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;QT_QPA_PLATFORM=offscreen")
+        set_tests_properties(${_busTest} PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;PLASMA_KEYBOARD_TEST_MODE=1;QT_QPA_PLATFORM=offscreen")
     endforeach()
 endif()
 
