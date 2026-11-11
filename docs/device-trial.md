@@ -45,7 +45,9 @@ tablet, copy binaries into the system or download speech models for this trial.
     scheduling; hardware wakeups require separate tracing. Record SELinux
     enforcing/AVC results and physical observations separately from build tests.
 
-For rollback, select the original Plasma keyboard first, then remove the Uke
+For rollback, stop and disable the optional Uke lock-switcher first if you
+enabled it (`systemctl --user disable --now uke-plasma-keyboard-lock-switcher.service`).
+Select the original Plasma keyboard, then remove the Uke
 RPM through DNF if desired. Preserve keyboard preferences and the original
 provider. Future image defaults require first-session and lock-screen acceptance.
 

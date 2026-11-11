@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 18%{?dist}
+Release: 19%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -32,6 +32,7 @@ Requires: qt6-qtvirtualkeyboard qt6-qtquickcontrols2
 Requires: xkeyboard-config
 Recommends: hunspell
 Suggests: hunspell-tr hunspell-en-US
+%{?systemd_requires}
 
 %description
 A separately named fork of plasma-keyboard-custom. Includes configurable PC
@@ -66,7 +67,7 @@ find %{buildroot} -type f \( -name '*.qmltypes' -o -name '*.qmlc' \) -delete
 
 %check
 bash tests/source.sh
-desktop-file-validate %{buildroot}%{_datadir}/applications/org.uke.plasma.keyboard*.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 appstreamcli validate --no-net %{buildroot}%{_datadir}/metainfo/org.uke.plasma.keyboard.metainfo.xml
 export QML_IMPORT_PATH=%{buildroot}%{_libdir}/qt6/qml XDG_DATA_DIRS=%{buildroot}%{_datadir}:/usr/local/share:/usr/share
 export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 PLASMA_KEYBOARD_TEST_MODE=1
@@ -75,6 +76,12 @@ export UKE_REQUIRE_TRANSCRIBE=1 PLASMA_KEYBOARD_TRANSCRIBE_LIBRARY=%{buildroot}%
 dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no-tests=error
 ! find %{buildroot} -type f -name '*.py' | read
 ! find %{buildroot} -type f -name '*plasma-keyboard-touchscreen.rules' | read
+
+%preun
+%systemd_user_preun uke-plasma-keyboard-lock-switcher.service
+
+%postun
+%systemd_user_postun_with_restart uke-plasma-keyboard-lock-switcher.service
 
 %files
 %license LICENSE LICENSES data/emoji/UNICODE-LICENSE.txt
@@ -88,6 +95,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_libexecdir}/uke-plasma-keyboard-lock-switcher
 %{_userunitdir}/uke-plasma-keyboard-lock-switcher.service
 %{_datadir}/applications/org.uke.plasma.keyboard*.desktop
+%{_datadir}/applications/kcm_uke_plasma_keyboard_custom.desktop
 %{_datadir}/config.kcfg/ukeplasmakeyboardcustomsettings.kcfg
 %{_datadir}/metainfo/org.uke.plasma.keyboard.metainfo.xml
 %{_datadir}/plasma/plasmoids/org.uke.plasma.keyboard.toggle/
@@ -96,7 +104,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
-* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-18
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-19
 - Add a movable laptop panel with manual tray and optional focus activation.
 - Support mobile and PC cursor/word-deletion gestures with optional key previews.
 - Keep local search edits scoped and place toolbar panels within the viewport.

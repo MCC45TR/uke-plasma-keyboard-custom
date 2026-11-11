@@ -334,3 +334,18 @@ Legacy screenshots remain excluded. The QML module libraries also receive Uke
 basenames, avoiding the stock package's libkeyboardlib/libbreezestyle provider
 names. The private speech build inherits the recipe's GGML_NATIVE setting for a
 consistent CPU baseline. The full native suite and RPM checks remain required.
+
+## COPR 11310535 — complete tests; one unpackaged launcher
+
+All three Fedora aarch64 workers again pass all 29 CTests with the renamed QML
+libraries, corrected service/libexec paths and complete source documentation.
+RPM assembly now rejects exactly one installed file: the generated KCM desktop
+launcher was absent from the file list. The next recipe owns that launcher and
+includes it in the existing desktop-file validation. The application code is
+unchanged. No binary RPM or device installation was accepted.
+
+The optional user-service lifecycle also uses the original distribution's
+systemd removal/upgrade macros. Fresh installation does not preset or enable it;
+final removal stops it, and upgrade marks an active service for restart. Actual
+DNF transaction and preference-preservation checks remain pending. Rollback
+instructions explicitly disable this optional policy before selecting stock.
