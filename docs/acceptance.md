@@ -143,3 +143,24 @@ these are not native Qt or physical tests. The remote scene will additionally
 check production TR Q/F, English and Arabic key labels with a private kxkbrc.
 Asynchronous window configure acknowledgements update restoration ownership
 only when the requested geometry is actually reached.
+
+## COPR 11309938 — non-exported KWin helper
+
+Native compilation completed, but the integration link rejected TouchPoint's
+non-exported surface-position setter. The plugin now cancels its own active
+touch sequence on keyboard surface geometry changes, releasing held input,
+instead of calling a hidden symbol. The QML startup failure remains unresolved
+until the next complete native test run. No RPM or device installation passed.
+
+Live read-only KWin introspection also established the case-sensitive
+`org.kde.KWin.Plugins.LoadPlugin` method and `org.kde.screensaver.AboutToLock`
+signal; both call sites are corrected. Native attachment additionally requires
+the installed executable to be a direct KWin child. The retained clipboard test
+adds protected-field/lock/setting/pin-size cases with private temporary config.
+A bounded read-only idle measurement tool and physical trial procedure are
+prepared, not yet run against the installed keyboard.
+
+Normal mode defaults to the retained phone/tablet layout; the new PC layout is
+the laptop default, with an independent option to use it in normal mode. This
+follows the request to preserve the existing mode alongside the new surface.
+The optional preference question remains answerable without a new code change.

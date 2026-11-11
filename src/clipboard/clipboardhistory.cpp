@@ -124,7 +124,6 @@ void ClipboardHistory::updateEnabled()
     m_refreshAgain = false;
     m_pendingEntries.clear();
     if (!isAvailable()) {
-        m_pollTimer.stop();
         clearLocal();
     } else {
         refresh();

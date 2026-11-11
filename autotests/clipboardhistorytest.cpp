@@ -11,6 +11,8 @@
 #include <QDBusVirtualObject>
 #include <QTest>
 #include <QTimer>
+#include <QTemporaryDir>
+#include <QSignalSpy>
 #include <memory>
 
 class FakeService : public QDBusVirtualObject
@@ -53,6 +55,7 @@ class ClipboardHistoryTest : public QObject
     Q_OBJECT
     std::unique_ptr<QDBusConnection> m_serviceBus;
     std::unique_ptr<FakeService> m_service;
+    QTemporaryDir m_privateConfig;
 
     void lock(bool active)
     {
@@ -74,6 +77,8 @@ private Q_SLOTS:
         if (qgetenv("PLASMA_KEYBOARD_TEST_ISOLATED_BUS") != "1") {
             QSKIP("Private dbus-run-session required; NEVER fake Klipper or ScreenSaver on a real desktop bus");
         }
+        QVERIFY(m_privateConfig.isValid());
+        qputenv("XDG_CONFIG_HOME",m_privateConfig.path().toUtf8());
         m_serviceBus = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("clipboard-test-service")));
         QVERIFY(m_serviceBus->isConnected());
         m_service = std::make_unique<FakeService>();
@@ -230,6 +235,29 @@ private Q_SLOTS:
         model.clear();
         QVERIFY(model.textAt(0).isEmpty());
         QCOMPARE(m_service->clears, 0);
+    }
+
+    void pinsRespectFieldLockAndSetting()
+    {
+        SessionLockState state;
+        ClipboardHistory model(&state);
+        QTRY_VERIFY(state.allowsPredictions());model.setAccessAllowed(true);QTRY_COMPARE(model.count(),2);
+        model.pin(0);model.pin(0);
+        QCOMPARE(model.pinnedTexts(),QStringList{QStringLiteral("fixture-a")});
+        QSignalSpy changed(&model,&ClipboardHistory::pinsChanged);
+        model.setAccessAllowed(false);QVERIFY(model.pinnedTexts().isEmpty());model.unpin(0);model.pin(1);
+        QVERIFY(!changed.isEmpty());
+        model.setAccessAllowed(true);QTRY_COMPARE(model.count(),2);
+        QCOMPARE(model.pinnedTexts(),QStringList{QStringLiteral("fixture-a")});
+        lock(true);QTRY_VERIFY(state.isLocked());QVERIFY(model.pinnedTexts().isEmpty());model.unpin(0);model.pin(1);
+        lock(false);QTRY_VERIFY(state.allowsPredictions());
+        QCOMPARE(model.pinnedTexts(),QStringList{QStringLiteral("fixture-a")});
+        PlasmaKeyboardSettings::self()->setClipboardEnabled(false);QVERIFY(model.pinnedTexts().isEmpty());model.unpin(0);
+        PlasmaKeyboardSettings::self()->setClipboardEnabled(true);
+        QCOMPARE(model.pinnedTexts(),QStringList{QStringLiteral("fixture-a")});
+        model.unpin(0);QVERIFY(model.pinnedTexts().isEmpty());QCOMPARE(m_service->clears,0);
+        m_service->entries={QString(65537,QChar(u'a'))};historySignal();QTRY_COMPARE(model.count(),1);
+        model.pin(0);QVERIFY(model.pinnedTexts().isEmpty());
     }
 
     void cleanupTestCase()

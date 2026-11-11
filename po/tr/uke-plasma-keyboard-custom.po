@@ -259,3 +259,9 @@ msgstr "Giriş dili"
 
 msgid "Show a 50 mm calibration ruler on the tablet in laptop mode"
 msgstr "Dizüstü modunda tablet üzerinde 50 mm kalibrasyon cetveli göster"
+
+msgid "Use the PC layout (language engines remain available)"
+msgstr "PC düzenini kullan (dil motorları kullanılabilir)"
+
+msgid "Also use the PC layout in normal mode"
+msgstr "PC düzenini normal modda da kullan"

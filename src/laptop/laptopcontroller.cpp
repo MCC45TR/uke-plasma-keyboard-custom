@@ -50,7 +50,7 @@ QVariantMap LaptopController::defaults() {
  return {{"keyWidthMm",14.0},{"keyHeightMm",12.0},{"gapMm",0.8},{"touchpadHeightMm",45.0},
  {"touchpadWidthPercent",60},{"touchpadFullWidth",false},{"pointerSpeed",1.3},{"naturalScroll",true},{"palmGuard",true},
  {"leftButton",false},{"middleButton",false},{"rightButton",false},{"functionRow",true},{"modifierRow",true},{"arrowRow",true},
- {"navigationRow",true},{"systemRow",true},{"nativePcLayout",true},{"spaceGesture",true},{"deleteGesture",true},
+ {"navigationRow",true},{"systemRow",true},{"nativePcLayout",true},{"normalPcLayout",false},{"spaceGesture",true},{"deleteGesture",true},
  {"keyPreview",false},{"calibrationRuler",false},{"refreshProfile",QStringLiteral("keep")},{"physicalWidthMm",0.0},{"physicalHeightMm",0.0},
  {"syncLayout",true},{"toolbar",QStringList{"volume","brightness","media","clipboard","emoji","language","settings"}}};
 }
@@ -86,7 +86,7 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Locks"),this,SLOT(syncLocks(bool,bool,bool)));
  auto *watcher=new QDBusServiceWatcher(QLatin1String(UkeKeyboard::service),m_bus,QDBusServiceWatcher::WatchForOwnerChange,this);
  connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){m_ready=false;if(owner.isEmpty()){backendStatic(false);m_reason=i18nd("uke-plasma-keyboard-custom", "The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
- auto load=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("loadPlugin"));load<<QStringLiteral("uke_keyboard_backend");
+ auto load=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("LoadPlugin"));load<<QStringLiteral("uke_keyboard_backend");
  auto *loader=new QDBusPendingCallWatcher(m_bus.asyncCall(load),this);
  connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
  requestTopology();

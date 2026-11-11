@@ -8,7 +8,6 @@
 #include <QDBusConnection>
 #include <QPointer>
 #include <QStringList>
-#include <QTimer>
 #include <qqmlintegration.h>
 
 class SessionLockState;
@@ -61,7 +60,6 @@ private:
     void publish();
     QDBusConnection m_bus;
     QPointer<SessionLockState> m_lockState;
-    QTimer m_pollTimer;
     QStringList m_entries;
     QStringList m_pendingEntries;
     quint64 m_generation = 0;

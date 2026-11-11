@@ -24,6 +24,7 @@
 #include <QDBusMessage>
 #include <QDBusServiceWatcher>
 #include <QFileInfo>
+#include <QFile>
 #include <QHash>
 #include <QPointer>
 #include <QSet>
@@ -108,7 +109,7 @@ public:
         connect(workspace(), &Workspace::windowRemoved, this, [this](Window *w) { m_saved.remove(w); });
         for (Window *w : workspace()->windows()) observe(w);
         m_bus.connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
-                      QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("AboutToLock"), this, SLOT(Lock()));
+                      QStringLiteral("org.kde.screensaver"), QStringLiteral("AboutToLock"), this, SLOT(Lock()));
         m_bus.connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
                       QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("ActiveChanged"), this, SLOT(Locked(bool)));
     }
@@ -129,7 +130,6 @@ public:
         auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);
         auto *point=seat->notifyTouchDown(window->surface(),window->bufferGeometry().topLeft(),event->id,event->pos);
         if(!point)return false;
-        connect(window,&Window::bufferGeometryChanged,point,[window,point]{point->setSurfacePosition(window->bufferGeometry().topLeft());});
         m_directTouches.insert(event->id);m_directFrame=true;return true;
     }
     bool touchMotion(TouchMotionEvent *event) override {
@@ -181,6 +181,13 @@ public Q_SLOTS:
         const auto uid = m_bus.interface()->serviceUid(sender);
         const auto pid = m_bus.interface()->servicePid(sender);
         if (!uid.isValid() || uid.value() != getuid() || !pid.isValid()) return false;
+        // The selected input method is launched directly by KWin. An arbitrary
+        // same-UID instance of the executable must not acquire native input.
+        QFile status(QStringLiteral("/proc/%1/status").arg(pid.value()));
+        if(!status.open(QIODevice::ReadOnly))return false;
+        bool child=false;
+        while(!status.atEnd()) {const auto line=status.readLine();if(line.startsWith("PPid:")){child=line.mid(5).trimmed().toLongLong()==getpid();break;}}
+        if(!child)return false;
         const QFileInfo executable(QStringLiteral("/proc/%1/exe").arg(pid.value()));
         const QString target = executable.symLinkTarget();
         const QFileInfo installed(QStringLiteral("/usr/bin/uke-plasma-keyboard-custom"));
@@ -311,6 +318,11 @@ private:
         return best;
     }
     void observe(Window *w) {
+        connect(w,&Window::bufferGeometryChanged,this,[this,w] {
+            // TouchPoint's position setter is private to KWin. A panel move or
+            // rotation cancels this sequence instead of calling hidden ABI.
+            if(m_active&&uint(w->pid())==m_clientPid&&!m_directTouches.isEmpty())release();
+        });
         connect(w, &Window::frameGeometryChanged, this, [this,w] {
             auto saved=m_saved.find(w);
             if(saved!=m_saved.end()&&rectangle(w->frameGeometry())==saved->requested)saved->moved=saved->requested;
@@ -327,7 +339,7 @@ private:
         if (screens.isEmpty()) return;
         auto *target = screens.first();
         for (auto *o : screens) if (rectangle(o->geometry()).contains(old.center())) { target=o; break; }
-        if (!m_saved.contains(w)) m_saved.insert(w, {w->output(), old, {}});
+        if (!m_saved.contains(w)) m_saved.insert(w, {w->output(), old, {}, {}});
         m_moving = true;
         w->sendToOutput(target);
         QRectF moved = rectangle(w->frameGeometry());
