@@ -121,6 +121,8 @@ ecm_add_qtwayland_client_protocol(uke-plasma-keyboard-custom PROTOCOL ${CMAKE_CU
 
 target_sources(uke-plasma-keyboard-custom PRIVATE
     main.cpp
+    laptop/controladaptor.cpp
+    laptop/controladaptor.h
     laptop/laptopcontroller.cpp
     laptop/laptopcontroller.h
     laptop/physicalgeometry.h
@@ -346,7 +348,7 @@ add_subdirectory(qmlplugin)
 install(DIRECTORY layouts DESTINATION ${CMAKE_INSTALL_PREFIX}/share/uke-plasma-keyboard-custom)
 install(DIRECTORY overlay/diacritics DESTINATION ${CMAKE_INSTALL_PREFIX}/share/uke-plasma-keyboard-custom)
 
-install(FILES plasmakeyboardsettings.kcfg DESTINATION ${KDE_INSTALL_KCFGDIR} RENAME plasmakeyboardcustomsettings.kcfg)
+install(FILES plasmakeyboardsettings.kcfg DESTINATION ${KDE_INSTALL_KCFGDIR} RENAME ukeplasmakeyboardcustomsettings.kcfg)
 
 install(
     FILES ${CMAKE_CURRENT_SOURCE_DIR}/org.uke.plasma.keyboard.metainfo.xml

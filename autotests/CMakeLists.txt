@@ -7,7 +7,7 @@ include(ECMAddTests)
 find_program(BASH_EXECUTABLE bash REQUIRED)
 add_test(NAME lockswitchertest COMMAND ${BASH_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/lockswitchertest.sh
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/plasma-keyboard-lock-switcher)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/uke-plasma-keyboard-lock-switcher)
 
 file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mockinputmethodcompositor_config.h
@@ -276,3 +276,7 @@ endif()
 ecm_add_test(qmlsmoketest.cpp TEST_NAME qmlsmoketest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(qmlsmoketest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(qmlsmoketest uke-plasma-keyboard-custom)
+
+ecm_add_test(controladaptortest.cpp ../src/laptop/controladaptor.cpp ../src/laptop/controladaptor.h
+    TEST_NAME controladaptortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
+target_include_directories(controladaptortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)

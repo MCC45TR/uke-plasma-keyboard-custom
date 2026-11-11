@@ -3,7 +3,7 @@
 %global __requires_exclude_from ^%{_libdir}/%{name}/.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 3%{?dist}
+Release: 4%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -76,10 +76,10 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_uke_plasma_keyboard_custom.so
 %{_libdir}/qt6/plugins/kwin/plugins/uke_keyboard_backend.so
 %{_libdir}/%{name}/
-%{_libexecdir}/plasma-keyboard-lock-switcher
-%{_userunitdir}/plasma-keyboard-lock-switcher.service
+%{_libexecdir}/uke-plasma-keyboard-lock-switcher
+%{_userunitdir}/uke-plasma-keyboard-lock-switcher.service
 %{_datadir}/applications/org.uke.plasma.keyboard*.desktop
-%{_datadir}/config.kcfg/plasmakeyboardcustomsettings.kcfg
+%{_datadir}/config.kcfg/ukeplasmakeyboardcustomsettings.kcfg
 %{_datadir}/metainfo/org.uke.plasma.keyboard.metainfo.xml
 %{_datadir}/plasma/plasmoids/org.uke.plasma.keyboard.toggle/
 %{_datadir}/%{name}/

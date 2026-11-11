@@ -57,7 +57,7 @@ SwipeController::SwipeController(QObject *parent)
     // keyboard. The object is always reachable through the connection's unique
     // name; the well-known one may be taken by another instance.
     QDBusConnection bus = QDBusConnection::sessionBus();
-    if (bus.isConnected()) {
+    if (bus.isConnected() && qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE")) {
         bus.registerObject(QStringLiteral("/SwipeDebug"), this, QDBusConnection::ExportAllSlots);
         if (!bus.registerService(QStringLiteral("org.uke.plasma.keyboard"))) {
             qCDebug(lcSwipe) << "D-Bus name org.uke.plasma.keyboard is taken; SwipeDebug is on the unique name";

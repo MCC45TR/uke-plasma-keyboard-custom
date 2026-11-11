@@ -108,12 +108,12 @@ add_subdirectory(kwin)
 # Optional user service for devices where the stock keyboard is preferable on
 # the lock screen. It is installed disabled and can be enabled by the user.
 configure_file(
-    tools/plasma-keyboard-lock-switcher.service.in
+    tools/uke-plasma-keyboard-lock-switcher.service.in
     ${CMAKE_CURRENT_BINARY_DIR}/plasma-keyboard-lock-switcher.service
     @ONLY
 )
 install(
-    PROGRAMS tools/plasma-keyboard-lock-switcher
+    PROGRAMS tools/uke-plasma-keyboard-lock-switcher
     DESTINATION ${KDE_INSTALL_LIBEXECDIR}
 )
 install(

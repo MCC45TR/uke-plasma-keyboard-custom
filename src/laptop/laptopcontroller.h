@@ -98,6 +98,7 @@ private Q_SLOTS:
     void systemLayout(uint index);
     void propertiesChanged(const QString &iface,const QVariantMap &changed,const QStringList &invalidated);
     void refreshRemote();
+    void profileError(const QString &reason);
 private:
     void connectBackend();
     void updateTopology();

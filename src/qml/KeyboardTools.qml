@@ -30,6 +30,8 @@ RowLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 9*root.perMm
                     icon.name: modelData.icon
+                    icon.width: Math.round(4*root.perMm)
+                    icon.height: Math.round(4*root.perMm)
                     focusPolicy: Qt.NoFocus
                     Accessible.name: modelData.name
                     QQC2.ToolTip.text: modelData.name

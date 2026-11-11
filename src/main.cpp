@@ -698,6 +698,7 @@ public:
         , m_bridge(bridge)
     {
         m_panelHidingModes = configuredPanelHidingModes();
+        if(auto *laptop=LaptopController::instance())connect(laptop,&LaptopController::stateChanged,this,&KeyboardHotkeyController::updatePanelVisibility);
 
         QDBusConnection::sessionBus().connect(QLatin1String(s_kwinService),
                                               QLatin1String(s_kwinPath),
@@ -748,12 +749,7 @@ public:
             }
         });
 
-        // The PropertiesChanged signal is not always delivered; poll instead.
-        auto *pollTimer = new QTimer(this);
-        pollTimer->setInterval(1000);
-        connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::restoreModeIfHidden);
-        connect(pollTimer, &QTimer::timeout, this, &KeyboardHotkeyController::updatePanelVisibility);
-        pollTimer->start();
+        // KWin and window notifications drive visibility; no idle polling.
 
         // Apply the configured input mode on startup and whenever the settings
         // are re-read from disk. KConfigWatcher does not deliver the change in
@@ -795,6 +791,7 @@ public:
 public Q_SLOTS:
     void showKeyboard()
     {
+        if (LaptopController::instance() && LaptopController::instance()->active()) { LaptopController::instance()->leave(); return; }
         qCDebug(PlasmaKeyboard) << "Show-virtual-keyboard shortcut triggered";
         // Also when only this side has it shown: with hideOnInputFocusLoss off
         // the keyboard can stay up after KWin already considers it hidden.
@@ -822,6 +819,7 @@ public Q_SLOTS:
     // reaches the bottom of the screen, and restore them afterwards.
     void updatePanelVisibility()
     {
+        if (LaptopController::instance() && LaptopController::instance()->active()) { restorePanels(); return; }
         const bool compositorVisible = kwinVisible();
         const auto *lock = SessionLockState::instance();
         const auto visibilityChange = m_visibility.update(compositorVisible,
@@ -887,8 +885,9 @@ private Q_SLOTS:
         if (interfaceName != QLatin1String(s_kwinIface)) {
             return;
         }
-        if (changed.contains(QStringLiteral("visible")) && !changed.value(QStringLiteral("visible")).toBool()) {
-            applyConfiguredMode();
+        if (changed.contains(QStringLiteral("visible"))) {
+            if(!changed.value(QStringLiteral("visible")).toBool()) applyConfiguredMode();
+            updatePanelVisibility();
         }
     }
 

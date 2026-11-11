@@ -50,3 +50,17 @@ single-active-language caches, exact XKB variant preservation and compositor
 notifications for long-touch detection. Healthy-idle clipboard, gamepad and
 binary-update polling were removed. Crash recovery blocks on a pidfd and file
 notifications. These remain source changes until their COPR tests pass.
+
+## COPR 11309653 — first native compile
+
+The original Fedora KWin 6.8.2 development closure configured in all three
+chroots. Native dictionary generation, speech dependencies and Qt resource
+compilation ran on COPR. The plugin then failed on a wrong Qt D-Bus call:
+`QDBusMessage::setDestination` does not exist. It is replaced with the documented
+`createTargetedSignal` API, keeping touch notifications unicast to the selected
+input method. No binary RPM or device delivery was accepted.
+
+The next source also gives temporary refresh ownership and a private recovery
+journal to the compositor, adds active-session checks and a narrow control
+adaptor. Parent input methods are not exposed over D-Bus. Native tests include
+caller rejection, input-method exposure denial and QML settings startup.

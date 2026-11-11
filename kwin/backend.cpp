@@ -2,8 +2,10 @@
 // Uses KWin's public-to-plugins InputDevice and Plugin interfaces. The virtual
 // device pattern follows KDE's buttonrebinds plugin (David Redondo, GPL).
 #include "protocol.h"
+#include "refreshguard.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
+#include <core/session.h>
 #include <input.h>
 #include <input_event.h>
 #include <main.h>
@@ -42,7 +44,7 @@ using OutputType = Output;
 using WindowRect = QRectF;
 #endif
 auto now() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()); }
-QRectF rectangle(const auto &r) { return {r.x(), r.y(), r.width(), r.height()}; }
+QRectF rectangle(const auto &r) { return {qreal(r.x()), qreal(r.y()), qreal(r.width()), qreal(r.height())}; }
 
 class VirtualDevice final : public InputDevice {
 public:
@@ -64,7 +66,7 @@ class Backend final : public Plugin, protected QDBusContext, public InputEventFi
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
 public:
     Backend() : InputEventFilter(InputFilterOrder::ScreenEdge), m_bus(QDBusConnection::sessionBus()),
-        m_watcher(this)
+        m_watcher(this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);})
     {
         if (!m_bus.registerService(QLatin1String(UkeKeyboard::service))) return;
         m_bus.registerObject(QLatin1String(UkeKeyboard::path), this,
@@ -72,11 +74,13 @@ public:
         m_watcher.setConnection(m_bus);
         m_watcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
         connect(&m_watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this] { detach(); });
+        if(kwinApp()->session())connect(kwinApp()->session(),&Session::activeChanged,this,[this](bool active){if(!active){endStatic();release();}});
         input()->addInputDevice(&m_device);
         m_deviceAdded = true;
         input()->installInputEventFilter(this);
         connect(workspace(), &Workspace::outputsChanged, this, [this] {
             if (m_active && !eligible(m_tabletName)) endStatic();
+            m_refresh.topologyChanged();
             Q_EMIT TopologyChanged();
         });
         connect(workspace(), &Workspace::windowAdded, this, [this](Window *w) { observe(w); });
@@ -131,7 +135,7 @@ public Q_SLOTS:
         const QString target = executable.symLinkTarget();
         const QFileInfo installed(QStringLiteral("/usr/bin/uke-plasma-keyboard-custom"));
         if (target != installed.canonicalFilePath() || installed.ownerId() != 0 ||
-            installed.permission(QFile::WriteGroup | QFile::WriteOther)) return false;
+            (installed.permissions() & (QFile::WriteGroup | QFile::WriteOther))) return false;
         const QString selected = KSharedConfig::openConfig(QStringLiteral("kwinrc"))->group(QStringLiteral("Wayland"))
                                      .readEntry(QStringLiteral("InputMethod"), QString());
         if (!selected.endsWith(QLatin1String("/org.uke.plasma.keyboard.desktop")) &&
@@ -147,11 +151,13 @@ public Q_SLOTS:
         if (m_active) return m_tabletName == tablet;
         m_tabletName = tablet;
         m_active = true;
+        m_refresh.begin(tablet);
         for (Window *w : workspace()->windows()) moveAway(w);
         input()->pointer()->warp(constrain(input()->globalPointer()));
         Q_EMIT StaticChanged(true);
         return true;
     }
+    bool Profile(const QString &profile) { return authorized() && m_refresh.set(profile); }
     void EndStatic() { if (authorized(false)) endStatic(); }
     void ReleaseAll() { if (authorized(false)) release(); }
     void Key(uint code, bool pressed) {
@@ -198,6 +204,7 @@ public Q_SLOTS:
 Q_SIGNALS:
     void StaticChanged(bool active);
     void TopologyChanged();
+    void ProfileError(const QString &reason);
 
 private:
     void relayTouch(int phase,int id,const QPointF &position) {
@@ -207,13 +214,12 @@ private:
         if(!output&&phase!=3)return;
         const QRectF area=output?rectangle(output->geometry()):QRectF(0,0,1,1);
         const QSize mm=output?output->physicalSize():QSize(200,140);
-        auto signal=QDBusMessage::createSignal(QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Touch"));
-        signal.setDestination(m_client);
+        auto signal=QDBusMessage::createTargetedSignal(m_client,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Touch"));
         signal<<phase<<id<<(position.x()-area.x())/std::max(1.0,area.width())<<(position.y()-area.y())/std::max(1.0,area.height())<<8.0/std::max(60,mm.width())<<8.0/std::max(60,mm.height());
         m_bus.send(signal);
     }
     struct Saved { QPointer<OutputType> output; QRectF before; QRectF moved; };
-    bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked(); }
+    bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked() || !kwinApp()->session() || !kwinApp()->session()->isActive(); }
     bool authorized(bool requireUnlocked = true) {
         const bool own = calledFromDBus() && !m_client.isEmpty() && message().service() == m_client;
         if (own && requireUnlocked && locked()) { endStatic(); release(); return false; }
@@ -254,7 +260,7 @@ private:
         moveAway(w);
     }
     void moveAway(Window *w) {
-        if (!m_active || m_moving || !tablet() || !w || w->isSpecialWindow() || w->pid() == m_clientPid) return;
+        if (!m_active || m_moving || !tablet() || !w || w->isSpecialWindow() || uint(w->pid()) == m_clientPid) return;
         const QRectF old = rectangle(w->frameGeometry());
         if (!old.intersects(rectangle(tablet()->geometry()))) return;
         const auto screens = external();
@@ -276,6 +282,7 @@ private:
     void endStatic() {
         if (!m_active) return;
         m_active = false;
+        m_refresh.end();
         release();
         const auto outputs = workspace()->outputs();
         for (auto it=m_saved.begin();it!=m_saved.end();++it) {
@@ -313,6 +320,7 @@ private:
     QDBusConnection m_bus;
     QDBusServiceWatcher m_watcher;
     VirtualDevice m_device;
+    RefreshGuard m_refresh;
     QString m_client,m_tabletName;
     uint m_clientPid=0;
     bool m_active=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;

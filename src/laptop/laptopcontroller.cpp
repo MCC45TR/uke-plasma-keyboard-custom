@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "laptopcontroller.h"
+#include "controladaptor.h"
 #include "physicalgeometry.h"
 #include "protocol.h"
 #include "sessionlockstate.h"
@@ -29,6 +30,7 @@
 #include <QXmlStreamReader>
 #include <linux/input-event-codes.h>
 #include <algorithm>
+#include <tuple>
 #include <cmath>
 
 namespace {
@@ -95,13 +97,16 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  }
  if(qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))return;
  m_bus.registerService(QStringLiteral("org.uke.plasma.keyboard"));
- m_bus.registerObject(QStringLiteral("/Laptop"),this,QDBusConnection::ExportAllInvokables|QDBusConnection::ExportAllSignals);
+ auto *adaptor=new KeyboardControlAdaptor(this,[this]{return status();},[this]{toggle();});
+ connect(this,&LaptopController::stateChanged,adaptor,&KeyboardControlAdaptor::stateChanged);
+ adaptor->publish(m_bus,QStringLiteral("/Laptop"));
  auto system=QDBusConnection::systemBus();
  system.connect(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("PropertiesChanged"),this,SLOT(propertiesChanged(QString,QVariantMap,QStringList)));
  auto lid=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("GetAll"));lid<<QStringLiteral("org.freedesktop.UPower");
  auto *lidWatcher=new QDBusPendingCallWatcher(system.asyncCall(lid),this);
  connect(lidWatcher,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap> reply=*w;if(!reply.isError()){const auto p=reply.value();m_lidClosed=p.value("LidIsPresent").toBool()&&p.value("LidIsClosed").toBool();updateTopology();}w->deleteLater();});
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("StaticChanged"),this,SLOT(backendStatic(bool)));
+ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("ProfileError"),this,SLOT(profileError(QString)));
  auto *watcher=new QDBusServiceWatcher(QLatin1String(UkeKeyboard::service),m_bus,QDBusServiceWatcher::WatchForOwnerChange,this);
  connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){m_ready=false;if(owner.isEmpty()){backendStatic(false);m_reason=tr("The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
  auto load=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("loadPlugin"));load<<QStringLiteral("uke_keyboard_backend");
@@ -274,7 +279,7 @@ void LaptopController::deleteWords(int count){if(count<=0)return;setRawKey(KEY_L
 void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
 void LaptopController::button(uint code,bool pressed){backendCall(QStringLiteral("Button"),{code,pressed});}
-void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?1:-1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
+void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
 void LaptopController::swipe(int fingers,int phase,double x,double y){backendCall(QStringLiteral("Swipe"),{fingers,phase,x,y});}
 void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendCall(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
 void LaptopController::openPreferences(){Q_EMIT preferencesRequested();}
@@ -283,30 +288,9 @@ void LaptopController::tool(const QString&name){
  if(keys.contains(name)){tap(keys.value(name));return;}
  if(name==QLatin1String("settings"))openPreferences();else if(name==QLatin1String("language"))nextLayout();
 }
-void LaptopController::refreshProfile(bool restore){
- if(!m_config||m_profileBusy)return;
- auto config=m_config->clone();KScreen::OutputPtr panel;
- for(const auto&o:config->outputs())if(o->type()==KScreen::Output::Panel&&o->isEnabled())panel=o;
- if(!panel)return;
- const QString profile=m_options.value("refreshProfile").toString();
- if(restore||profile==QLatin1String("keep")){
-  if(m_savedMode.isEmpty())return;
-  if(panel->currentModeId()!=m_appliedMode||panel->vrrPolicy()!=m_appliedVrr){m_savedMode.clear();return;}
-  panel->setCurrentModeId(m_savedMode);panel->setVrrPolicy(m_savedVrr);m_savedMode.clear();
- }else{
-  if(profile==QLatin1String("adaptive")){
-   // Do not claim a physically qualified VRR range from a boolean capability.
-   m_reason=tr("30–60 Hz VRR requires the qualified Uke kernel/display range. Keep, fixed 30 and fixed 60 remain available.");Q_EMIT stateChanged();return;
-  }
-  const int hz=profile.toInt();QString mode;
-  for(const auto&m:panel->modes())if(m->size()==panel->currentMode()->size()&&std::abs(m->refreshRate()-hz)<0.6){mode=m->id();break;}
-  if(mode.isEmpty()){m_reason=tr("This display does not advertise the requested refresh rate.");Q_EMIT stateChanged();return;}
-  if(m_savedMode.isEmpty()){m_savedMode=panel->currentModeId();m_savedVrr=panel->vrrPolicy();}
-  panel->setCurrentModeId(mode);panel->setVrrPolicy(KScreen::Output::VrrPolicy::Never);m_appliedMode=mode;m_appliedVrr=panel->vrrPolicy();
- }
- m_profileBusy=true;auto*op=new KScreen::SetConfigOperation(config,this);
- connect(op,&KScreen::ConfigOperation::finished,this,[this,op](auto*){m_profileBusy=false;if(op->hasError()){m_reason=tr("The display server refused the refresh profile.");Q_EMIT stateChanged();}requestTopology();});
-}
+void LaptopController::refreshProfile(bool restore){if(!restore&&m_active)backendCall(QStringLiteral("Profile"),{m_options.value("refreshProfile").toString()});}
+void LaptopController::profileError(const QString&reason){m_reason=reason;Q_EMIT stateChanged();}
+
 QString LaptopController::keyLabel(uint code,const QString&fallback)const{
  if(!fallback.isEmpty())return fallback;
  if(code==KEY_SPACE)return layoutName();
@@ -324,7 +308,10 @@ void LaptopController::refreshRemote(){
 QVariantList LaptopController::emojiMatches(const QString&query)const{
  struct Entry{QString emoji,name;};
  static QList<Entry> entries;
+ static QHash<QString,QString> turkish;
  if(entries.isEmpty()){
+  QFile annotations(QStringLiteral("/usr/share/uke-plasma-keyboard-custom/emoji/tr.xml"));
+  if(annotations.open(QIODevice::ReadOnly)){QXmlStreamReader xml(&annotations);while(!xml.atEnd()){xml.readNext();if(xml.isStartElement()&&xml.name()==QLatin1String("annotation")){const QString cp=xml.attributes().value(QLatin1String("cp")).toString();turkish[cp]+=QStringLiteral(" ")+xml.readElementText();}}}
   QFile file(QStringLiteral("/usr/share/uke-plasma-keyboard-custom/emoji/emoji-test.txt"));
   if(file.open(QIODevice::ReadOnly|QIODevice::Text))while(!file.atEnd()){
    const QString line=QString::fromUtf8(file.readLine());
@@ -335,6 +322,6 @@ QVariantList LaptopController::emojiMatches(const QString&query)const{
   }
  }
  QVariantList result;const QString needle=query.trimmed().toCaseFolded();
- for(const auto&e:entries)if(needle.isEmpty()||e.name.toCaseFolded().contains(needle)||e.emoji==needle){result.append(QVariantMap{{"emoji",e.emoji},{"name",e.name}});if(result.size()>=120)break;}
+ for(const auto&e:entries)if(needle.isEmpty()||e.name.toCaseFolded().contains(needle)||turkish.value(e.emoji).toCaseFolded().contains(needle)||e.emoji==needle){result.append(QVariantMap{{"emoji",e.emoji},{"name",e.name}});if(result.size()>=120)break;}
  return result;
 }

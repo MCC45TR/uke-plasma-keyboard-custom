@@ -1,0 +1,4 @@
+# New Uke images only. Merge into the image's /etc/xdg/kwinrc at image build time.
+# Existing per-user selections override this distribution default.
+[Wayland]
+InputMethod=/usr/share/applications/org.uke.plasma.keyboard.desktop
