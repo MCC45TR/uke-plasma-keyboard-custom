@@ -64,3 +64,12 @@ The next source also gives temporary refresh ownership and a private recovery
 journal to the compositor, adds active-session checks and a narrow control
 adaptor. Parent input methods are not exposed over D-Bus. Native tests include
 caller rejection, input-method exposure denial and QML settings startup.
+
+## COPR 11309690 — application compile errors
+
+The KWin plugin compiled on the original Fedora development stack. Application
+compilation then rejected a const D-Bus connection passed to registerObject and
+a mixed QString/QStringBuilder initializer list. Both are corrected without
+removing tests or weakening caller checks. No RPM or installation was accepted.
+The next recipe supplies the staged QML import path to the startup test; held
+modifier transitions and event-driven gamepad highlighting are also corrected.

@@ -213,12 +213,12 @@ void LaptopController::rebuildKeymap(){
  const xkb_rule_names names{"evdev","pc105",code.constData(),variant.constData(),options.constData()};
  m_state.reset();m_keymap.reset(xkb_keymap_new_from_names(m_xkb.get(),&names,XKB_KEYMAP_COMPILE_NO_FLAGS));if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));updateModifiers();Q_EMIT layoutChanged();
 }
-void LaptopController::updateModifiers(){if(!m_state)return;for(uint k:m_held)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);for(uint k:m_latched)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);Q_EMIT layoutChanged();}
+void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held|m_latched;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);Q_EMIT layoutChanged();}
 QString LaptopController::layoutName()const{return m_layouts.value(m_layoutIndex).toMap().value("label").toString();}
 QString LaptopController::locale()const{return countryLocale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")));}
 bool LaptopController::complexLayout()const{return QStringList{"jp","kr","cn","tw","th"}.contains(m_layoutCodes.value(m_layoutIndex));}
 bool LaptopController::dictionaryAvailable()const{
- const QString l=locale();for(const QString&base:{QStringLiteral("/usr/share/hunspell/"),QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+QStringLiteral("/hunspell/")})if(QFile::exists(base+l+QStringLiteral(".dic"))&&QFile::exists(base+l+QStringLiteral(".aff")))return true;return false;
+ const QString l=locale();const QStringList paths{QStringLiteral("/usr/share/hunspell/"),QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+QStringLiteral("/hunspell/")};for(const QString&base:paths)if(QFile::exists(base+l+QStringLiteral(".dic"))&&QFile::exists(base+l+QStringLiteral(".aff")))return true;return false;
 }
 QString LaptopController::dictionaryPackage()const{return QStringLiteral("hunspell-%1").arg(locale().section('_',0,0));}
 void LaptopController::systemLayout(uint index){if(index>=uint(m_layoutCodes.size())||int(index)==m_layoutIndex)return;m_layoutIndex=int(index);releaseAll();rebuildKeymap();}
@@ -258,13 +258,14 @@ void LaptopController::key(uint code,bool pressed){
  if(pressed){
   if(m_held.contains(code))return;m_held.insert(code);m_pressTimes[code]=time;
   if(modifier(code)){
-   if(m_lockedKeys.remove(code)){m_latched.remove(code);setRawKey(code,false);}
+   if(m_lockedKeys.remove(code)){m_latched.remove(code);m_cancelLatch.insert(code);setRawKey(code,false);}
    else if(!m_latched.contains(code))setRawKey(code,true);
   }else{for(uint k:m_held)if(modifier(k))m_modifierUsed.insert(k);setRawKey(code,true);markTyping();}
  }else{
   if(!m_held.remove(code))return;
   if(modifier(code)){
-   if(m_modifierUsed.remove(code)||time-m_pressTimes.value(code)>250){m_latched.remove(code);m_lockedKeys.remove(code);setRawKey(code,false);}
+   if(m_cancelLatch.remove(code)){}
+   else if(m_modifierUsed.remove(code)||time-m_pressTimes.value(code)>250){m_latched.remove(code);m_lockedKeys.remove(code);setRawKey(code,false);}
    else if(m_latched.contains(code)&&time-m_tapTimes.value(code)<400){m_lockedKeys.insert(code);}
    else if(m_latched.remove(code)){setRawKey(code,false);}
    else{m_latched.insert(code);m_tapTimes[code]=time;}
@@ -276,7 +277,7 @@ void LaptopController::tap(uint code){key(code,true);key(code,false);}
 void LaptopController::markTyping(){m_typing=true;Q_EMIT typingChanged();const auto generation=++m_typingGeneration;QTimer::singleShot(250,this,[this,generation]{if(generation==m_typingGeneration){m_typing=false;Q_EMIT typingChanged();}});}
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
 void LaptopController::deleteWords(int count){if(count<=0)return;setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++)tap(KEY_BACKSPACE);setRawKey(KEY_LEFTCTRL,false);}
-void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));Q_EMIT layoutChanged();}
+void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
 void LaptopController::button(uint code,bool pressed){backendCall(QStringLiteral("Button"),{code,pressed});}
 void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
@@ -310,9 +311,9 @@ QVariantList LaptopController::emojiMatches(const QString&query)const{
  static QList<Entry> entries;
  static QHash<QString,QString> turkish;
  if(entries.isEmpty()){
-  QFile annotations(QStringLiteral("/usr/share/uke-plasma-keyboard-custom/emoji/tr.xml"));
+  QFile annotations(QStandardPaths::locate(QStandardPaths::GenericDataLocation,QStringLiteral("uke-plasma-keyboard-custom/emoji/tr.xml")));
   if(annotations.open(QIODevice::ReadOnly)){QXmlStreamReader xml(&annotations);while(!xml.atEnd()){xml.readNext();if(xml.isStartElement()&&xml.name()==QLatin1String("annotation")){const QString cp=xml.attributes().value(QLatin1String("cp")).toString();turkish[cp]+=QStringLiteral(" ")+xml.readElementText();}}}
-  QFile file(QStringLiteral("/usr/share/uke-plasma-keyboard-custom/emoji/emoji-test.txt"));
+  QFile file(QStandardPaths::locate(QStandardPaths::GenericDataLocation,QStringLiteral("uke-plasma-keyboard-custom/emoji/emoji-test.txt")));
   if(file.open(QIODevice::ReadOnly|QIODevice::Text))while(!file.atEnd()){
    const QString line=QString::fromUtf8(file.readLine());
    if(!line.contains(QLatin1String("; fully-qualified")))continue;

@@ -12,7 +12,7 @@ class KeyboardControlAdaptor final : public QDBusAbstractAdaptor,protected QDBus
  Q_CLASSINFO("D-Bus Interface","org.uke.PlasmaKeyboard.Control1")
 public:
  KeyboardControlAdaptor(QObject *parent,std::function<QVariantMap()>status,std::function<void()>toggle);
- bool publish(const QDBusConnection &bus,const QString &path);
+ bool publish(QDBusConnection bus,const QString &path);
 public Q_SLOTS:
  QVariantMap status()const;
  bool toggle();

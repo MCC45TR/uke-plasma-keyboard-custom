@@ -438,13 +438,15 @@ InputPanelWindow {
         alternatesList.anchorY = centre.y;
     }
 
-    // The highlighted key is not a normal property of the panel: the highlight
-    // moves inside Qt Virtual Keyboard, so it is watched per frame instead.
-    Timer {
-        interval: 100
-        running: root.visible
-        repeat: true
-        onTriggered: root.updateGamepadAlternates()
+    // Highlight changes are notifications; an idle keyboard does not poll.
+    Connections {
+        target: inputPanel.keyboard ? inputPanel.keyboard.navigationHighlight : null
+        ignoreUnknownSignals: true
+        function onHighlightItemChanged() { root.updateGamepadAlternates(); }
+    }
+    Connections {
+        target: gamepad
+        function onAvailableChanged() { root.updateGamepadAlternates(); }
     }
 
     // While the focus is in the row right above the keyboard, keep the keyboard

@@ -18,4 +18,4 @@ bool KeyboardControlAdaptor::trustedCaller()const{
 }
 bool KeyboardControlAdaptor::toggle(){if(!trustedCaller())return false;m_toggle();return true;}
 
-bool KeyboardControlAdaptor::publish(const QDBusConnection&bus,const QString&path){return bus.registerObject(path,parent(),QDBusConnection::ExportAdaptors);}
+bool KeyboardControlAdaptor::publish(QDBusConnection bus,const QString&path){return bus.registerObject(path,parent(),QDBusConnection::ExportAdaptors);}

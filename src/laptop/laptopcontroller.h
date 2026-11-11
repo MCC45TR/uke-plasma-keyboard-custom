@@ -124,7 +124,7 @@ private:
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;
     QSet<uint> m_held,m_latched,m_lockedKeys;
-    QSet<uint> m_modifierUsed;
+    QSet<uint> m_modifierUsed,m_cancelLatch;
     QHash<uint,qint64> m_pressTimes,m_tapTimes;
     QElapsedTimer m_clock;
     quint64 m_typingGeneration=0;
