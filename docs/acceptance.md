@@ -73,3 +73,19 @@ a mixed QString/QStringBuilder initializer list. Both are corrected without
 removing tests or weakening caller checks. No RPM or installation was accepted.
 The next recipe supplies the staged QML import path to the startup test; held
 modifier transitions and event-driven gamepad highlighting are also corrected.
+
+## COPR 11309840 — compatibility facade include
+
+Source8ae54cb reached native compilation on all three Fedora aarch64 workers.
+The compatibility shortcut facade lacked QDBusPendingCall's complete type.
+Its explicit include is restored; obsolete device-file/timer-queue declarations
+are removed. No RPM or installation was produced.
+
+The next source synchronizes lock LEDs from the compositor, preserves Caps Lock
+through virtual release cleanup, keeps key labels readable under Ctrl, permits
+intentional modifier/touchpad chords, and restarts one typing-guard timer rather
+than scheduling one callback per key. Dictionary presence uses the predictor's
+own file lookup without loading dictionaries on the GUI thread. Turkish strings
+are supplied for the new UI. A second QML smoke scene instantiates the actual
+keyboard and touchpad alongside the existing settings-startup case. These are
+pending native tests, not physical acceptance.

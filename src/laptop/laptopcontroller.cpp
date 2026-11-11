@@ -4,7 +4,9 @@
 #include "physicalgeometry.h"
 #include "protocol.h"
 #include "sessionlockstate.h"
+#include "prediction/hunspelldictionary.h"
 #include <KConfigGroup>
+#include <KLocalizedString>
 #include <KSharedConfig>
 #include <KScreen/ConfigMonitor>
 #include <KScreen/GetConfigOperation>
@@ -29,6 +31,7 @@
 #include <QTimer>
 #include <QXmlStreamReader>
 #include <linux/input-event-codes.h>
+#include <xkbcommon/xkbcommon-names.h>
 #include <algorithm>
 #include <tuple>
 #include <cmath>
@@ -82,6 +85,8 @@ QVariantMap LaptopController::defaults() {
 }
 LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusConnection::sessionBus()),m_files(this),m_xkb(xkb_context_new(XKB_CONTEXT_NO_FLAGS)) {
  s_instance=this;m_clock.start();reload();loadLayouts();
+ m_typingTimer.setSingleShot(true);m_typingTimer.setInterval(250);
+ connect(&m_typingTimer,&QTimer::timeout,this,[this]{m_typing=false;Q_EMIT typingChanged();});
  const QString config=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
  m_files.addPath(config);
  if(QFile::exists(QStringLiteral("/usr/share/hunspell")))m_files.addPath(QStringLiteral("/usr/share/hunspell"));
@@ -107,8 +112,9 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  connect(lidWatcher,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap> reply=*w;if(!reply.isError()){const auto p=reply.value();m_lidClosed=p.value("LidIsPresent").toBool()&&p.value("LidIsClosed").toBool();updateTopology();}w->deleteLater();});
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("StaticChanged"),this,SLOT(backendStatic(bool)));
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("ProfileError"),this,SLOT(profileError(QString)));
+ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Locks"),this,SLOT(syncLocks(bool,bool,bool)));
  auto *watcher=new QDBusServiceWatcher(QLatin1String(UkeKeyboard::service),m_bus,QDBusServiceWatcher::WatchForOwnerChange,this);
- connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){m_ready=false;if(owner.isEmpty()){backendStatic(false);m_reason=tr("The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
+ connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){m_ready=false;if(owner.isEmpty()){backendStatic(false);m_reason=i18nd("uke-plasma-keyboard-custom", "The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
  auto load=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("loadPlugin"));load<<QStringLiteral("uke_keyboard_backend");
  auto *loader=new QDBusPendingCallWatcher(m_bus.asyncCall(load),this);
  connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
@@ -120,7 +126,7 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
 LaptopController::~LaptopController(){leave();releaseAll();if(s_instance==this)s_instance=nullptr;}
 void LaptopController::connectBackend(){
  auto *w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Attach")),this);
- connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool> reply=*call;m_ready=!reply.isError()&&reply.value();if(!m_ready)m_reason=tr("Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");updateTopology();call->deleteLater();});
+ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool> reply=*call;m_ready=!reply.isError()&&reply.value();if(!m_ready)m_reason=i18nd("uke-plasma-keyboard-custom", "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");else{auto*locks=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Locks")),this);connect(locks,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap>r=*w;if(!r.isError()){const auto p=r.value();syncLocks(p.value("caps").toBool(),p.value("num").toBool(),p.value("scroll").toBool());}w->deleteLater();});}updateTopology();call->deleteLater();});
 }
 QDBusPendingCall LaptopController::backendCall(const QString &method,const QVariantList &args)const {
  auto m=QDBusMessage::createMethodCall(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);m.setArguments(args);m.setAutoStartService(false);return m_bus.asyncCall(m);
@@ -146,13 +152,13 @@ void LaptopController::updateTopology(){
    bool mirrored=panel->replicationSource()!=0;
    for(const auto&o:external)if(o->replicationSource()!=0||o->geometry().intersects(panel->geometry()))mirrored=true;
    m_available=touch&&m_screen&&!external.isEmpty()&&!mirrored;
-   if(!touch)m_reason=tr("A touchscreen is required.");
-   else if(external.isEmpty())m_reason=tr("Connect and enable an external display.");
-   else if(mirrored)m_reason=tr("Use extended displays instead of mirroring.");
-  }else m_reason=tr("The tablet touchscreen must already be enabled. This application does not enable displays.");
+   if(!touch)m_reason=i18nd("uke-plasma-keyboard-custom", "A touchscreen is required.");
+   else if(external.isEmpty())m_reason=i18nd("uke-plasma-keyboard-custom", "Connect and enable an external display.");
+   else if(mirrored)m_reason=i18nd("uke-plasma-keyboard-custom", "Use extended displays instead of mirroring.");
+  }else m_reason=i18nd("uke-plasma-keyboard-custom", "The tablet touchscreen must already be enabled. This application does not enable displays.");
  }
- if(m_lidClosed)m_reason=tr("Open the tablet cover before entering laptop mode.");
- else if(m_locked)m_reason=tr("Unlock the session before entering laptop mode.");
+ if(m_lidClosed)m_reason=i18nd("uke-plasma-keyboard-custom", "Open the tablet cover before entering laptop mode.");
+ else if(m_locked)m_reason=i18nd("uke-plasma-keyboard-custom", "Unlock the session before entering laptop mode.");
  else if(m_available&&m_ready)m_reason.clear();
  if(m_active&&!available())leave();
  Q_EMIT stateChanged();
@@ -165,7 +171,7 @@ void LaptopController::enter(){
  if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("enter")));return;}
  if(!available()||m_active)return;
  auto*w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("BeginStatic"),{m_tabletName}),this);
- connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool>reply=*call;if(!reply.isError()&&reply.value()){m_active=true;refreshProfile();Q_EMIT stateChanged();}else{m_reason=tr("KWin refused the current display layout.");Q_EMIT stateChanged();}call->deleteLater();});
+ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool>reply=*call;if(!reply.isError()&&reply.value()){m_active=true;refreshProfile();Q_EMIT stateChanged();}else{m_reason=i18nd("uke-plasma-keyboard-custom", "KWin refused the current display layout.");Q_EMIT stateChanged();}call->deleteLater();});
 }
 void LaptopController::leave(){if(m_preferencesOnly){return;}if(!m_active)return;backendCall(QStringLiteral("EndStatic"));backendStatic(false);}
 void LaptopController::backendStatic(bool active){
@@ -213,12 +219,23 @@ void LaptopController::rebuildKeymap(){
  const xkb_rule_names names{"evdev","pc105",code.constData(),variant.constData(),options.constData()};
  m_state.reset();m_keymap.reset(xkb_keymap_new_from_names(m_xkb.get(),&names,XKB_KEYMAP_COMPILE_NO_FLAGS));if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));updateModifiers();Q_EMIT layoutChanged();
 }
-void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held|m_latched;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);Q_EMIT layoutChanged();}
+void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held|m_latched;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);applyLocks();Q_EMIT layoutChanged();}
+void LaptopController::applyLocks(){
+ if(!m_state||!m_keymap)return;
+ auto locked=xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LOCKED);
+ const auto caps=xkb_keymap_mod_get_index(m_keymap.get(),XKB_MOD_NAME_CAPS);
+ const auto num=xkb_keymap_mod_get_index(m_keymap.get(),XKB_MOD_NAME_NUM);
+ for(const auto&entry:{std::pair{caps,m_caps},std::pair{num,m_num}})if(entry.first!=XKB_MOD_INVALID){const xkb_mod_mask_t mask=xkb_mod_mask_t(1)<<entry.first;if(entry.second)locked|=mask;else locked&=~mask;}
+ xkb_state_update_mask(m_state.get(),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_DEPRESSED),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LATCHED),locked,0,0,0);
+}
+void LaptopController::syncLocks(bool caps,bool num,bool scroll){m_caps=caps;m_num=num;m_scroll=scroll;applyLocks();++m_revision;Q_EMIT keyStateChanged();}
+bool LaptopController::latched(uint code)const{return code==KEY_CAPSLOCK?m_caps:code==KEY_SCROLLLOCK?m_scroll:m_latched.contains(code)||m_lockedKeys.contains(code);}
+bool LaptopController::modifierActive()const{const auto keys=m_held|m_latched;return std::any_of(keys.begin(),keys.end(),modifier);}
 QString LaptopController::layoutName()const{return m_layouts.value(m_layoutIndex).toMap().value("label").toString();}
 QString LaptopController::locale()const{return countryLocale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")));}
 bool LaptopController::complexLayout()const{return QStringList{"jp","kr","cn","tw","th"}.contains(m_layoutCodes.value(m_layoutIndex));}
 bool LaptopController::dictionaryAvailable()const{
- const QString l=locale();const QStringList paths{QStringLiteral("/usr/share/hunspell/"),QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+QStringLiteral("/hunspell/")};for(const QString&base:paths)if(QFile::exists(base+l+QStringLiteral(".dic"))&&QFile::exists(base+l+QStringLiteral(".aff")))return true;return false;
+ return HunspellDictionary::hasDictionaryFiles(locale());
 }
 QString LaptopController::dictionaryPackage()const{return QStringLiteral("hunspell-%1").arg(locale().section('_',0,0));}
 void LaptopController::systemLayout(uint index){if(index>=uint(m_layoutCodes.size())||int(index)==m_layoutIndex)return;m_layoutIndex=int(index);releaseAll();rebuildKeymap();}
@@ -274,10 +291,10 @@ void LaptopController::key(uint code,bool pressed){
  ++m_revision;Q_EMIT keyStateChanged();
 }
 void LaptopController::tap(uint code){key(code,true);key(code,false);}
-void LaptopController::markTyping(){m_typing=true;Q_EMIT typingChanged();const auto generation=++m_typingGeneration;QTimer::singleShot(250,this,[this,generation]{if(generation==m_typingGeneration){m_typing=false;Q_EMIT typingChanged();}});}
+void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingChanged();}m_typingTimer.start();}
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
 void LaptopController::deleteWords(int count){if(count<=0)return;setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++)tap(KEY_BACKSPACE);setRawKey(KEY_LEFTCTRL,false);}
-void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));Q_EMIT layoutChanged();}
+void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
 void LaptopController::button(uint code,bool pressed){backendCall(QStringLiteral("Button"),{code,pressed});}
 void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
@@ -295,7 +312,7 @@ void LaptopController::profileError(const QString&reason){m_reason=reason;Q_EMIT
 QString LaptopController::keyLabel(uint code,const QString&fallback)const{
  if(!fallback.isEmpty())return fallback;
  if(code==KEY_SPACE)return layoutName();
- char text[128]{};if(m_state&&xkb_state_key_get_utf8(m_state.get(),code+8,text,sizeof(text))>0)return QString::fromUtf8(text);return QStringLiteral("·");
+ char text[128]{};if(m_state&&xkb_keysym_to_utf8(xkb_state_key_get_one_sym(m_state.get(),code+8),text,sizeof(text))>1)return QString::fromUtf8(text);return QStringLiteral("·");
 }
 QStringList LaptopController::alternatives(const QString&text)const{
  static const QHash<QString,QString> values{{"a","áàâäãåæā"},{"e","éèêëē"},{"i","ıíìîïī"},{"ı","iíìîï"},{"o","öóòôõøœō"},{"u","üúùûū"},{"c","çćč"},{"g","ğǧ"},{"s","şßśš"},{"n","ñń"},{"y","ýÿ"},{"z","źžż"}};
@@ -304,7 +321,7 @@ QStringList LaptopController::alternatives(const QString&text)const{
 QVariantMap LaptopController::status()const{return {{"active",active()},{"available",available()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()}};}
 void LaptopController::refreshRemote(){
  auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("status"))),this);
- connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_ready=p.value("ready").toBool();m_available=p.value("available").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=tr("Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});
+ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_ready=p.value("ready").toBool();m_available=p.value("available").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=i18nd("uke-plasma-keyboard-custom", "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});
 }
 QVariantList LaptopController::emojiMatches(const QString&query)const{
  struct Entry{QString emoji,name;};

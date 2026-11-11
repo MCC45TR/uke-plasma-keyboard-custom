@@ -1483,12 +1483,12 @@ InputPanelWindow {
             width: parent.width
             anchors.bottom: parent.bottom
             height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
-            QQC2.Button { text: qsTr("Laptop mode"); visible: PlasmaKeyboard.Laptop.available; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
-            QQC2.Button { text: qsTr("Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
-            QQC2.Button { text: qsTr("Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.available; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
             Item { Layout.fillWidth: true; }
-            QQC2.ToolButton { icon.name: "configure"; Accessible.name: qsTr("Keyboard settings"); visible: root.auxiliaryUiAllowed; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
-            QQC2.ToolButton { icon.name: "go-down"; Accessible.name: qsTr("Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
+            QQC2.ToolButton { icon.name: "configure"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Keyboard settings"); visible: root.auxiliaryUiAllowed; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
+            QQC2.ToolButton { icon.name: "go-down"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
         }
         PcKeyboard {
             anchors.fill: inputPanel
@@ -1692,7 +1692,10 @@ InputPanelWindow {
         useNative: root.useNativePc
         predictions: root.predictions
         onSwipeAccepted: words => root.swipeAlternatives=words
-        onPredictionChosen: text => thing.applyPrediction(text)
+        onPredictionChosen: text => {
+            if(root.swipeAlternatives.length>0){thing.replaceSwipeWord(text);root.swipeAlternatives=[];root.updatePredictions();}
+            else thing.applyPrediction(text);
+        }
     }
     SwipeController {
         id: swipeController

@@ -7,6 +7,7 @@
 #include <QPointer>
 #include <QScreen>
 #include <QSet>
+#include <QTimer>
 #include <QVariantList>
 #include <QVariantMap>
 #include <KScreen/Config>
@@ -37,6 +38,7 @@ class LaptopController final : public QObject {
     Q_PROPERTY(QString dictionaryPackage READ dictionaryPackage NOTIFY layoutChanged)
     Q_PROPERTY(bool typing READ typing NOTIFY typingChanged)
     Q_PROPERTY(int keyRevision READ keyRevision NOTIFY keyStateChanged)
+    Q_PROPERTY(bool modifierActive READ modifierActive NOTIFY keyStateChanged)
 public:
     explicit LaptopController(QObject *parent=nullptr);
     ~LaptopController() override;
@@ -57,8 +59,9 @@ public:
     QString dictionaryPackage() const;
     bool typing() const { return m_typing; }
     int keyRevision() const { return m_revision; }
+    bool modifierActive() const;
     Q_INVOKABLE QString keyLabel(uint code,const QString &fallback) const;
-    Q_INVOKABLE bool latched(uint code) const { return m_latched.contains(code)||m_lockedKeys.contains(code); }
+    Q_INVOKABLE bool latched(uint code) const;
     Q_INVOKABLE QStringList alternatives(const QString &text) const;
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void enter();
@@ -99,6 +102,7 @@ private Q_SLOTS:
     void propertiesChanged(const QString &iface,const QVariantMap &changed,const QStringList &invalidated);
     void refreshRemote();
     void profileError(const QString &reason);
+    void syncLocks(bool caps,bool num,bool scroll);
 private:
     void connectBackend();
     void updateTopology();
@@ -107,27 +111,27 @@ private:
     void refreshProfile(bool restore=false);
     void setRawKey(uint code,bool pressed);
     void updateModifiers();
+    void applyLocks();
     void markTyping();
     static QVariantMap defaults();
     static LaptopController *s_instance;
     QDBusConnection m_bus;
     KScreen::ConfigPtr m_config;
     QPointer<QScreen> m_screen;
-    QString m_reason,m_tabletName,m_savedMode,m_appliedMode;
-    KScreen::Output::VrrPolicy m_savedVrr=KScreen::Output::VrrPolicy::Automatic;
-    KScreen::Output::VrrPolicy m_appliedVrr=KScreen::Output::VrrPolicy::Automatic;
+    QString m_reason,m_tabletName;
     QVariantMap m_options;
     QVariantList m_layouts;
     QStringList m_layoutCodes,m_variants;
     int m_layoutIndex=0;
-    bool m_active=false,m_ready=false,m_available=false,m_locked=true,m_lidClosed=true,m_typing=false,m_profileBusy=false;
+    bool m_active=false,m_ready=false,m_available=false,m_locked=true,m_lidClosed=true,m_typing=false;
+    bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;
     QSet<uint> m_held,m_latched,m_lockedKeys;
     QSet<uint> m_modifierUsed,m_cancelLatch;
     QHash<uint,qint64> m_pressTimes,m_tapTimes;
     QElapsedTimer m_clock;
-    quint64 m_typingGeneration=0;
+    QTimer m_typingTimer;
     int m_revision=0;
     QFileSystemWatcher m_files;
     struct XkbDeleter { void operator()(xkb_context *p) const {xkb_context_unref(p);} void operator()(xkb_keymap *p) const {xkb_keymap_unref(p);} void operator()(xkb_state *p) const {xkb_state_unref(p);} };

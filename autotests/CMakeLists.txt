@@ -274,6 +274,7 @@ if(DBUS_RUN_SESSION)
 endif()
 
 ecm_add_test(qmlsmoketest.cpp TEST_NAME qmlsmoketest LINK_LIBRARIES Qt::Core Qt::Test)
+target_compile_definitions(qmlsmoketest PRIVATE LAPTOP_SMOKE_SCENE="${CMAKE_CURRENT_SOURCE_DIR}/laptopsmoke.qml")
 target_include_directories(qmlsmoketest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(qmlsmoketest uke-plasma-keyboard-custom)
 

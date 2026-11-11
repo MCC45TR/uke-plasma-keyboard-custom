@@ -51,7 +51,7 @@ Rectangle {
             visible:!deck.useNative
             Layout.fillWidth:true
             Layout.preferredHeight: deck.height*0.5
-            text:qsTr("The language input panel is displayed above the touchpad.")
+            text:i18nd("uke-plasma-keyboard-custom", "The language input panel is displayed above the touchpad.")
             horizontalAlignment:Text.AlignHCenter
             opacity:0
         }
@@ -65,10 +65,10 @@ Rectangle {
         }
         RowLayout {
             Layout.fillWidth:true
-            QQC2.Button {text:qsTr("Normal keyboard");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.leave();}
+            QQC2.Button {text:i18nd("uke-plasma-keyboard-custom", "Normal keyboard");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.leave();}
             QQC2.Label {Layout.fillWidth:true;text:Keyboard.Laptop.reason;wrapMode:Text.Wrap;visible:text.length>0;}
-            QQC2.Button {text:qsTr("Layout");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.nextLayout();}
-            QQC2.ToolButton {icon.name:"configure";Accessible.name:qsTr("Keyboard settings");focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.openPreferences();}
+            QQC2.Button {text:i18nd("uke-plasma-keyboard-custom", "Layout");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.nextLayout();}
+            QQC2.ToolButton {icon.name:"configure";Accessible.name:i18nd("uke-plasma-keyboard-custom", "Keyboard settings");focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.openPreferences();}
         }
     }
 }

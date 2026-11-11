@@ -1,0 +1,219 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: uke-plasma-keyboard-custom\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Uke keyboard — laptop and physical layout"
+msgstr "Uke klavye — dizüstü modu ve fiziksel yerleşim"
+
+msgid "Keyboard and laptop mode"
+msgstr "Klavye ve dizüstü modu"
+
+msgid "Static laptop mode requires an enabled touchscreen and an extended external display. Display power, layout, scale and rotation are never changed."
+msgstr "Sabit dizüstü modu için açık bir dokunmatik ekran ve genişletilmiş harici ekran gerekir. Ekranın güç durumu, yerleşimi, ölçeği ve yönü değiştirilmez."
+
+msgid "Return to normal keyboard"
+msgstr "Normal klavyeye dön"
+
+msgid "Enter static laptop mode"
+msgstr "Sabit dizüstü modunu aç"
+
+msgid "Static refresh profile:"
+msgstr "Sabit mod yenileme profili:"
+
+msgid "Keep current settings"
+msgstr "Geçerli ayarları koru"
+
+msgid "Fixed 30 Hz"
+msgstr "Sabit 30 Hz"
+
+msgid "Fixed 60 Hz"
+msgstr "Sabit 60 Hz"
+
+msgid "Adaptive 30–60 Hz (qualification required)"
+msgstr "Uyarlanabilir 30–60 Hz (doğrulama gerekiyor)"
+
+msgid "Target key width (mm):"
+msgstr "Hedef tuş genişliği (mm):"
+
+msgid "Target key height (mm):"
+msgstr "Hedef tuş yüksekliği (mm):"
+
+msgid "Key gap (mm):"
+msgstr "Tuş aralığı (mm):"
+
+msgid "Touchpad height (mm):"
+msgstr "Dokunmatik yüzey yüksekliği (mm):"
+
+msgid "Physical panel width (mm, 0 = automatic):"
+msgstr "Fiziksel ekran genişliği (mm, 0 = otomatik):"
+
+msgid "Physical panel height (mm, 0 = automatic):"
+msgstr "Fiziksel ekran yüksekliği (mm, 0 = otomatik):"
+
+msgid "Touchpad width:"
+msgstr "Dokunmatik yüzey genişliği:"
+
+msgid "Pointer speed:"
+msgstr "İşaretçi hızı:"
+
+msgid "50 mm calibration ruler"
+msgstr "50 mm kalibrasyon cetveli"
+
+msgid "Measure the ruler on the tablet panel. If its length is wrong, enter the visible panel width and height in millimetres. Keys adapt to rotation and fit smaller screens."
+msgstr "Cetveli tablet ekranında ölçün. Uzunluğu yanlışsa görünür ekranın genişliğini ve yüksekliğini milimetre olarak girin. Tuşlar ekran yönüne ve daha küçük ekranlara uyarlanır."
+
+msgid "F1–F12 row"
+msgstr "F1–F12 sırası"
+
+msgid "Ctrl / Alt / Meta region"
+msgstr "Ctrl / Alt / Meta bölgesi"
+
+msgid "Arrow keys"
+msgstr "Ok tuşları"
+
+msgid "Home / End / Page Up / Page Down / Insert / Delete"
+msgstr "Home / End / Page Up / Page Down / Insert / Delete"
+
+msgid "Print Screen / Scroll Lock / Pause"
+msgstr "Print Screen / Scroll Lock / Pause"
+
+msgid "Use dynamic PC layout (language engines remain available)"
+msgstr "Dile uyarlanan PC yerleşimini kullan (dil motorları kullanılabilir)"
+
+msgid "Use the entire bottom area as touchpad"
+msgstr "Alt bölgenin tamamını dokunmatik yüzey olarak kullan"
+
+msgid "Show left-click button"
+msgstr "Sol tıklama düğmesini göster"
+
+msgid "Show middle-click button"
+msgstr "Orta tıklama düğmesini göster"
+
+msgid "Show right-click button"
+msgstr "Sağ tıklama düğmesini göster"
+
+msgid "Natural scrolling"
+msgstr "Doğal kaydırma"
+
+msgid "Short accidental-touch protection while typing"
+msgstr "Yazarken kısa süreli yanlış dokunma koruması"
+
+msgid "Slide on Space to move the text cursor"
+msgstr "Metin imlecini taşımak için Boşluk üzerinde kaydır"
+
+msgid "Slide left on Backspace to delete words"
+msgstr "Sözcük silmek için Geri Sil üzerinde sola kaydır"
+
+msgid "Show character preview bubbles"
+msgstr "Karakter önizleme balonlarını göster"
+
+msgid "Synchronize input layout with Plasma (never the interface language)"
+msgstr "Giriş düzenini Plasma ile eşzamanla (arayüz dili değişmez)"
+
+msgid "Languages and dictionaries"
+msgstr "Diller ve sözlükler"
+
+msgid "Default variant"
+msgstr "Varsayılan varyant"
+
+msgid "Add"
+msgstr "Ekle"
+
+msgid "An installed dictionary is available. Suggestions require choosing a candidate; personal learning is disabled."
+msgstr "Kurulu bir sözlük var. Öneriler yalnızca seçtiğinizde uygulanır; kişisel öğrenme kapalıdır."
+
+msgid "Optional Fedora package: %1. Install the dictionary for this language to enable suggestions. Personal learning is disabled."
+msgstr "İsteğe bağlı Fedora paketi: %1. Önerileri açmak için bu dilin sözlüğünü kurun. Kişisel öğrenme kapalıdır."
+
+msgid "Top toolbar"
+msgstr "Üst araç çubuğu"
+
+msgid "Typing, themes, sound and voice settings"
+msgstr "Yazım, tema, ses ve dikte ayarları"
+
+msgid "Dynamic laptop mode is planned for a later release. It is not enabled by these settings."
+msgstr "Dinamik dizüstü modu sonraki sürüm için planlanıyor. Bu ayarlar o modu etkinleştirmez."
+
+msgid "The language input panel is displayed above the touchpad."
+msgstr "Dil giriş paneli dokunmatik yüzeyin üzerinde gösterilir."
+
+msgid "Normal keyboard"
+msgstr "Normal klavye"
+
+msgid "Layout"
+msgstr "Düzen"
+
+msgid "Keyboard settings"
+msgstr "Klavye ayarları"
+
+msgid "Clipboard"
+msgstr "Pano"
+
+msgid "Unpin"
+msgstr "Sabitlemeyi kaldır"
+
+msgid "Pin"
+msgstr "Sabitle"
+
+msgid "Clipboard follows Plasma/Klipper settings. Password fields are excluded."
+msgstr "Pano, Plasma/Klipper ayarlarını izler. Parola alanları kapsam dışıdır."
+
+msgid "Search emoji"
+msgstr "Emoji ara"
+
+msgid "Touchpad"
+msgstr "Dokunmatik yüzey"
+
+msgid "Left"
+msgstr "Sol"
+
+msgid "Middle"
+msgstr "Orta"
+
+msgid "Right"
+msgstr "Sağ"
+
+msgid "The KWin integration is unavailable or needs rebuilding for this KWin version."
+msgstr "KWin bütünleştirmesi kullanılamıyor veya bu KWin sürümü için yeniden derlenmesi gerekiyor."
+
+msgid "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed."
+msgstr "Sistem Ayarları’nda Uke Plasma Keyboard’u seçin. Uyumlu KWin bütünleştirmesi kurulu olmalıdır."
+
+msgid "A touchscreen is required."
+msgstr "Dokunmatik ekran gerekiyor."
+
+msgid "Connect and enable an external display."
+msgstr "Harici ekran bağlayıp etkinleştirin."
+
+msgid "Use extended displays instead of mirroring."
+msgstr "Yansıtma yerine genişletilmiş ekranları kullanın."
+
+msgid "The tablet touchscreen must already be enabled. This application does not enable displays."
+msgstr "Tabletin dokunmatik ekranı önceden açık olmalıdır. Bu uygulama ekranları açmaz."
+
+msgid "Open the tablet cover before entering laptop mode."
+msgstr "Dizüstü moduna geçmeden önce tabletin kapağını açın."
+
+msgid "Unlock the session before entering laptop mode."
+msgstr "Dizüstü moduna geçmeden önce oturumun kilidini açın."
+
+msgid "KWin refused the current display layout."
+msgstr "KWin geçerli ekran yerleşimini kabul etmedi."
+
+msgid "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now."
+msgstr "Dizüstü modunu kullanmak için Uke Plasma Keyboard’u seçip başlatın. Düzen ve görünüm ayarlarını şimdi değiştirebilirsiniz."
+
+msgid "Laptop mode"
+msgstr "Dizüstü modu"
+
+msgid "Voice"
+msgstr "Dikte"
+
+msgid "Hide keyboard"
+msgstr "Klavyeyi gizle"

@@ -16,8 +16,8 @@ ColumnLayout {
         border.color: Kirigami.Theme.disabledTextColor
         border.width: 1
         Accessible.role: Accessible.Pane
-        Accessible.name: qsTr("Touchpad")
-        QQC2.Label { anchors.centerIn: parent; text: qsTr("Touchpad"); opacity: 0.35; visible: !touch.sequence; }
+        Accessible.name: i18nd("uke-plasma-keyboard-custom", "Touchpad")
+        QQC2.Label { anchors.centerIn: parent; text: i18nd("uke-plasma-keyboard-custom", "Touchpad"); opacity: 0.35; visible: !touch.sequence; }
         MultiPointTouchArea {
             id: touch
             anchors.fill: parent
@@ -60,7 +60,7 @@ ColumnLayout {
                 }
                 if(!sequence) {
                     sequence=true;started=Date.now();maxFingers=p.n;moved=false;gesture="";dragged=false;
-                    blocked=Keyboard.Laptop.options.palmGuard&&Keyboard.Laptop.typing;
+                    blocked=Keyboard.Laptop.options.palmGuard&&Keyboard.Laptop.typing&&!Keyboard.Laptop.modifierActive;
                     if(!blocked&&p.n===1&&Date.now()-lastTap<300){Keyboard.Laptop.button(272,true);dragged=true;}
                     fingers=p.n;origin=p;previous=p;return;
                 }
@@ -93,7 +93,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: Keyboard.Laptop.options.leftButton||Keyboard.Laptop.options.middleButton||Keyboard.Laptop.options.rightButton
         Repeater {
-            model: [{option:"leftButton",label:qsTr("Left"),code:272},{option:"middleButton",label:qsTr("Middle"),code:274},{option:"rightButton",label:qsTr("Right"),code:273}]
+            model: [{option:"leftButton",label:i18nd("uke-plasma-keyboard-custom", "Left"),code:272},{option:"middleButton",label:i18nd("uke-plasma-keyboard-custom", "Middle"),code:274},{option:"rightButton",label:i18nd("uke-plasma-keyboard-custom", "Right"),code:273}]
             delegate: QQC2.Button {
                 required property var modelData
                 visible: Keyboard.Laptop.options[modelData.option]

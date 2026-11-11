@@ -34,6 +34,8 @@ public:
      * Whether libhunspell could be loaded. False when it is not installed.
      */
     static bool isLibraryAvailable();
+    //! Presence check for settings; does not load the library or dictionary.
+    static bool hasDictionaryFiles(const QString &locale);
 
     /**
      * Whether a dictionary for @p locale is installed.

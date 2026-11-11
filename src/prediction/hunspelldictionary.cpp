@@ -173,6 +173,11 @@ bool HunspellDictionary::isLibraryAvailable()
     return hunspellApi().isValid();
 }
 
+bool HunspellDictionary::hasDictionaryFiles(const QString &locale)
+{
+    return !dictionaryFiles(locale).first.isEmpty();
+}
+
 std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const QString &locale) const
 {
     const auto cached = m_handles.constFind(locale);

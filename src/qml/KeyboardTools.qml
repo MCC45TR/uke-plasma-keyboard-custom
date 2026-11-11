@@ -57,14 +57,14 @@ RowLayout {
             clip: true
             ColumnLayout {
                 width: clipboardPopup.availableWidth
-                QQC2.Label { text: qsTr("Clipboard"); font.bold: true; }
+                QQC2.Label { text: i18nd("uke-plasma-keyboard-custom", "Clipboard"); font.bold: true; }
                 Repeater {
                     model: clipboardPopup.opened&&root.target?root.target.clipboardHistory.pinnedTexts:[]
                     delegate: RowLayout {
                         required property string modelData
                         required property int index
                         QQC2.Button { Layout.fillWidth:true;text:modelData.replace(/\s+/g," ").slice(0,120);focusPolicy:Qt.NoFocus;onClicked:{root.target.commitText(modelData);clipboardPopup.close();} }
-                        QQC2.ToolButton {icon.name:"window-unpin";Accessible.name:qsTr("Unpin");focusPolicy:Qt.NoFocus;onClicked:root.target.clipboardHistory.unpin(index);}
+                        QQC2.ToolButton {icon.name:"window-unpin";Accessible.name:i18nd("uke-plasma-keyboard-custom", "Unpin");focusPolicy:Qt.NoFocus;onClicked:root.target.clipboardHistory.unpin(index);}
                     }
                 }
                 Repeater {
@@ -73,10 +73,10 @@ RowLayout {
                         required property string text
                         required property int index
                         QQC2.Button { Layout.fillWidth:true;text:parent.text.replace(/\s+/g," ").slice(0,120);focusPolicy:Qt.NoFocus;onClicked:{root.target.pasteClipboardEntry(index);clipboardPopup.close();} }
-                        QQC2.ToolButton {icon.name:"window-pin";Accessible.name:qsTr("Pin");focusPolicy:Qt.NoFocus;onClicked:root.target.clipboardHistory.pin(index);}
+                        QQC2.ToolButton {icon.name:"window-pin";Accessible.name:i18nd("uke-plasma-keyboard-custom", "Pin");focusPolicy:Qt.NoFocus;onClicked:root.target.clipboardHistory.pin(index);}
                     }
                 }
-                QQC2.Label {text:qsTr("Clipboard follows Plasma/Klipper settings. Password fields are excluded.");wrapMode:Text.Wrap;Layout.fillWidth:true;}
+                QQC2.Label {text:i18nd("uke-plasma-keyboard-custom", "Clipboard follows Plasma/Klipper settings. Password fields are excluded.");wrapMode:Text.Wrap;Layout.fillWidth:true;}
             }
         }
     }
@@ -91,7 +91,7 @@ RowLayout {
             QQC2.TextField {
                 id: search
                 Layout.fillWidth: true
-                placeholderText: qsTr("Search emoji")
+                placeholderText: i18nd("uke-plasma-keyboard-custom", "Search emoji")
                 inputMethodHints: Qt.ImhNoPredictiveText
                 selectByMouse: true
             }

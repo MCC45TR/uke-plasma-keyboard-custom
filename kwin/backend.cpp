@@ -30,6 +30,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <functional>
 #include <utility>
 #include <linux/input-event-codes.h>
 #include <unistd.h>
@@ -48,6 +49,13 @@ QRectF rectangle(const auto &r) { return {qreal(r.x()), qreal(r.y()), qreal(r.wi
 
 class VirtualDevice final : public InputDevice {
 public:
+    std::function<void()> locksChanged;
+    LEDs leds() const override { return m_leds; }
+    void setLeds(LEDs leds) override {
+        if (m_leds == leds) return;
+        m_leds = leds;
+        if (locksChanged) locksChanged();
+    }
     QString name() const override { return QStringLiteral("Uke virtual keyboard and touchpad"); }
     bool isEnabled() const override { return true; }
     void setEnabled(bool) override { }
@@ -59,6 +67,8 @@ public:
     bool isTabletPad() const override { return false; }
     bool isTabletModeSwitch() const override { return false; }
     bool isLidSwitch() const override { return false; }
+private:
+    LEDs m_leds;
 };
 
 class Backend final : public Plugin, protected QDBusContext, public InputEventFilter {
@@ -75,6 +85,14 @@ public:
         m_watcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
         connect(&m_watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this] { detach(); });
         if(kwinApp()->session())connect(kwinApp()->session(),&Session::activeChanged,this,[this](bool active){if(!active){endStatic();release();}});
+        m_device.locksChanged = [this] {
+            if (m_client.isEmpty()) return;
+            auto signal = QDBusMessage::createTargetedSignal(m_client, QLatin1String(UkeKeyboard::path),
+                QLatin1String(UkeKeyboard::interface), QStringLiteral("Locks"));
+            signal << m_device.leds().testFlag(LED::CapsLock) << m_device.leds().testFlag(LED::NumLock)
+                   << m_device.leds().testFlag(LED::ScrollLock);
+            m_bus.send(signal);
+        };
         input()->addInputDevice(&m_device);
         m_deviceAdded = true;
         input()->installInputEventFilter(this);
@@ -158,6 +176,12 @@ public Q_SLOTS:
         return true;
     }
     bool Profile(const QString &profile) { return authorized() && m_refresh.set(profile); }
+    QVariantMap Locks() {
+        if (!authorized()) return {};
+        return {{QStringLiteral("caps"),m_device.leds().testFlag(LED::CapsLock)},
+                {QStringLiteral("num"),m_device.leds().testFlag(LED::NumLock)},
+                {QStringLiteral("scroll"),m_device.leds().testFlag(LED::ScrollLock)}};
+    }
     void EndStatic() { if (authorized(false)) endStatic(); }
     void ReleaseAll() { if (authorized(false)) release(); }
     void Key(uint code, bool pressed) {

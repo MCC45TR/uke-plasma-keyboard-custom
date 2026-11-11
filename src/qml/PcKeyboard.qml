@@ -132,7 +132,7 @@ Item {
                                         implicitWidth: Math.max(30,9*keyboard.perMm)
                                         implicitHeight: Math.max(30,10*keyboard.perMm)
                                         focusPolicy: Qt.NoFocus
-                                        onClicked: { if(keyboard.target)keyboard.target.commitText(modelData);alternatePopup.close(); }
+                                        onClicked: { if(keyboard.localEditor)keyboard.localEditor.insert(keyboard.localEditor.cursorPosition,modelData);else if(keyboard.target)keyboard.target.commitText(modelData);alternatePopup.close(); }
                                     }
                                 }
                             }
@@ -147,7 +147,7 @@ Item {
                                 const p=points[0];keyItem.down=true;keyItem.sent=false;keyItem.moved=false;keyItem.popupUsed=false;
                                 keyItem.startX=p.x;keyItem.lastStep=0;keyItem.began=Date.now();
                                 const q=keyItem.mapToItem(keyboard,p.x,p.y);keyItem.trace=[{x:q.x,y:q.y,t:0}];
-                                if(!keyItem.deferred){keyItem.sent=true;Keyboard.Laptop.key(keyItem.code,true);}
+                                if(!keyItem.deferred){keyItem.sent=true;keyboard.emitKey(keyItem.code,true,keyItem.caption);}
                                 hold.restart();
                             }
                             onUpdated: points => {
@@ -173,7 +173,7 @@ Item {
                                 }
                                 keyItem.down=false;
                             }
-                            onCanceled: {hold.stop();if(keyItem.sent)Keyboard.Laptop.key(keyItem.code,false);keyItem.down=false;}
+                            onCanceled: {hold.stop();if(keyItem.sent)keyboard.emitKey(keyItem.code,false,keyItem.caption);keyItem.down=false;}
                         }
                         Component.onDestruction: { if(sent&&down)keyboard.emitKey(code,false,caption); }
                     }

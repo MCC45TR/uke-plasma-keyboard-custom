@@ -996,9 +996,13 @@ int main(int argc, char **argv)
         KLocalizedString::setApplicationDomain("uke-plasma-keyboard-custom");
         LaptopController preferences;
         qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",&preferences);
+        qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"ThemeManager",ThemeManager::instance());
         QQmlApplicationEngine settings;
+        ThemeManager::instance()->setQmlEngine(&settings);
         KLocalization::setupLocalizedContext(&settings);
-        settings.load(QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/LaptopSettings.qml")));
+        const QString scene = qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE")
+            ? qEnvironmentVariable("UKE_KEYBOARD_TEST_SCENE") : QString();
+        settings.load(scene.isEmpty() ? QUrl(QStringLiteral("qrc:/qt/qml/org/uke/plasma/keyboard/LaptopSettings.qml")) : QUrl::fromLocalFile(scene));
         return settings.rootObjects().isEmpty()?1:application.exec();
     }
 
