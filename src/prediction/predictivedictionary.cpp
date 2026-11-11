@@ -90,6 +90,7 @@ std::shared_ptr<const PredictiveDictionary::WordList> PredictiveDictionary::list
         return *cached;
     }
 
+    m_lists.clear();
     auto list = std::make_shared<WordList>();
 
     QFile file(QStringLiteral(":/prediction/%1.bin").arg(language));

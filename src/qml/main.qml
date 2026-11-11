@@ -22,10 +22,10 @@ InputPanelWindow {
     width: Screen.width
     color: 'transparent'
 
-    readonly property bool useNativePc: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
+    readonly property bool useNativePc: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
     Connections {
         target: PlasmaKeyboard.Laptop
-        function onLayoutChanged() { if (PlasmaKeyboard.Laptop.options.syncLayout) VirtualKeyboardSettings.locale=PlasmaKeyboard.Laptop.locale; }
+        function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=PlasmaKeyboard.Laptop.locale; }
     }
     // The style sizes the panel from the screen size, but as a QtObject its own
     // Screen attached property does not follow this window (see style.qml).
@@ -162,7 +162,7 @@ InputPanelWindow {
     function updatePredictions() {
         // Fail closed first: no suggestions at all in sensitive/locked contexts,
         // when predictive text is disabled, or while swipe alternatives are shown.
-        if (!root.visible || !thing.predictionActive || !PlasmaKeyboardSettings.predictiveTextEnabled || swipeAlternatives.length > 0) {
+        if (!root.visible || !thing.predictionActive || !PlasmaKeyboard.Laptop.dictionaryAvailable || !PlasmaKeyboardSettings.predictiveTextEnabled || swipeAlternatives.length > 0) {
             predictor.cancel();
             return;
         }
@@ -1482,10 +1482,10 @@ InputPanelWindow {
             anchors.bottom: parent.bottom
             height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
             QQC2.Button { text: qsTr("Laptop mode"); visible: PlasmaKeyboard.Laptop.available; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
-            QQC2.Button { text: qsTr("Voice"); visible: PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
+            QQC2.Button { text: qsTr("Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
             QQC2.Button { text: qsTr("Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
             Item { Layout.fillWidth: true; }
-            QQC2.ToolButton { icon.name: "configure"; Accessible.name: qsTr("Keyboard settings"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
+            QQC2.ToolButton { icon.name: "configure"; Accessible.name: qsTr("Keyboard settings"); visible: root.auxiliaryUiAllowed; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
             QQC2.ToolButton { icon.name: "go-down"; Accessible.name: qsTr("Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
         }
         PcKeyboard {
@@ -1547,6 +1547,8 @@ InputPanelWindow {
                     }
                     locales = [locale];
                 }
+                const selected=PlasmaKeyboard.Laptop.layouts.map(layout=>layout.locale);
+                locales=Array.from(new Set(locales.concat(selected).concat([PlasmaKeyboard.Laptop.locale])));
                 VirtualKeyboardSettings.activeLocales = locales;
 
                 // Qt checks VirtualKeyboardSettings.locale before the locale the

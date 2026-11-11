@@ -17,6 +17,7 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusContext>
+#include <QDBusMessage>
 #include <QDBusServiceWatcher>
 #include <QFileInfo>
 #include <QHash>
@@ -92,6 +93,10 @@ public:
         m_bus.unregisterObject(QLatin1String(UkeKeyboard::path));
         m_bus.unregisterService(QLatin1String(UkeKeyboard::service));
     }
+    bool touchDown(TouchDownEvent *event) override { m_touches[event->id]=event->pos; relayTouch(0,event->id,event->pos); return false; }
+    bool touchMotion(TouchMotionEvent *event) override { m_touches[event->id]=event->pos; relayTouch(1,event->id,event->pos); return false; }
+    bool touchUp(TouchUpEvent *event) override { relayTouch(2,event->id,m_touches.take(event->id)); return false; }
+    bool touchCancel() override { relayTouch(3,0,{});m_touches.clear();return false; }
     bool pointerMotion(PointerMotionEvent *event) override {
         if (!m_active || m_warping) return false;
         if (locked()) { endStatic(); return false; }
@@ -195,6 +200,18 @@ Q_SIGNALS:
     void TopologyChanged();
 
 private:
+    void relayTouch(int phase,int id,const QPointF &position) {
+        if(m_client.isEmpty()||locked())return;
+        OutputType *output=nullptr;
+        for(auto *o:workspace()->outputs())if(rectangle(o->geometry()).contains(position)){output=o;break;}
+        if(!output&&phase!=3)return;
+        const QRectF area=output?rectangle(output->geometry()):QRectF(0,0,1,1);
+        const QSize mm=output?output->physicalSize():QSize(200,140);
+        auto signal=QDBusMessage::createSignal(QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Touch"));
+        signal.setDestination(m_client);
+        signal<<phase<<id<<(position.x()-area.x())/std::max(1.0,area.width())<<(position.y()-area.y())/std::max(1.0,area.height())<<8.0/std::max(60,mm.width())<<8.0/std::max(60,mm.height());
+        m_bus.send(signal);
+    }
     struct Saved { QPointer<OutputType> output; QRectF before; QRectF moved; };
     bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked(); }
     bool authorized(bool requireUnlocked = true) {
@@ -300,6 +317,7 @@ private:
     uint m_clientPid=0;
     bool m_active=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;
     QSet<uint> m_keys,m_buttons;
+    QHash<int,QPointF>m_touches;
     QHash<Window *,Saved> m_saved;
 };
 }

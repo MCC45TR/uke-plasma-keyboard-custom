@@ -68,7 +68,7 @@ int restartInputMethod();
  * KWin starts the configured input method once but does not start a
  * replacement when it exits. The global shortcut to show the keyboard is
  * registered by that process, so once it is gone the shortcut stops working.
- * The watchdog polls the single instance lock and, when it is free, asks KWin
+ * The watchdog blocks on a pidfd and file notifications, then asks KWin
  * to start the input method again. It stays idle while the virtual keyboard is
  * disabled, and only one watchdog runs at a time.
  */

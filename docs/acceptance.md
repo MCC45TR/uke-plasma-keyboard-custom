@@ -36,3 +36,17 @@ The package-definition API also requires its actual `package_name` form field;
 that producer was created as 3281444 after HTTP 400 responses, without replaying
 an ambiguous operation. GitHub Actions is disabled: the token lacks workflow
 scope and no SSH identity is available. Native builds remain COPR-only.
+
+## COPR 11309623 — configuration failure
+
+The SRPM source worker succeeded with verified dependency archives. All three
+aarch64 buildroots reached CMake and found the missing explicit `epoxy` build
+dependency required by the original KWin export. No binary RPM was produced.
+Epoxy, DRM and Vulkan development requirements are now explicit. This corrects
+the package recipe without changing a distribution provider.
+
+The next source adds native QML startup validation, dictionary presence gates,
+single-active-language caches, exact XKB variant preservation and compositor
+notifications for long-touch detection. Healthy-idle clipboard, gamepad and
+binary-update polling were removed. Crash recovery blocks on a pidfd and file
+notifications. These remain source changes until their COPR tests pass.

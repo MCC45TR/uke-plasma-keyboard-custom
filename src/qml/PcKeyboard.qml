@@ -108,7 +108,7 @@ Item {
                             interval: 450
                             onTriggered: {
                                 if(!keyItem.down||keyItem.moved)return;
-                                if(keyItem.letter && keyboard.auxiliaryAllowed && PlasmaKeyboardSettings.diacriticsPopupEnabled) {
+                                if(keyItem.letter && PlasmaKeyboardSettings.diacriticsPopupEnabled) {
                                     const variants=Keyboard.Laptop.alternatives(keyItem.caption);
                                     if(variants.length>0){alternatePopup.choices=variants;alternatePopup.open();keyItem.popupUsed=true;}
                                 } else if(keyItem.code===14 || keyItem.code===57) {
@@ -132,7 +132,7 @@ Item {
                                         implicitWidth: Math.max(30,9*keyboard.perMm)
                                         implicitHeight: Math.max(30,10*keyboard.perMm)
                                         focusPolicy: Qt.NoFocus
-                                        onClicked: { if(keyboard.auxiliaryAllowed)keyboard.target.commitText(modelData);alternatePopup.close(); }
+                                        onClicked: { if(keyboard.target)keyboard.target.commitText(modelData);alternatePopup.close(); }
                                     }
                                 }
                             }

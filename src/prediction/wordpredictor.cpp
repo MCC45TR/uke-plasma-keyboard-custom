@@ -138,6 +138,7 @@ std::shared_ptr<const WordPredictor::NgramList> WordPredictor::listFor(const QSt
         return *cached;
     }
 
+    m_lists.clear();
     auto list = std::make_shared<NgramList>();
 
     QFile file(QStringLiteral(":/prediction/%1.ngrams").arg(language));

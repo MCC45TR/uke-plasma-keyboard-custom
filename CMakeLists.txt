@@ -53,6 +53,7 @@ option(PLASMA_KEYBOARD_VIBRATION_ENABLED "Whether to enable haptic feedback via 
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
+    Concurrent
     Gui
     Multimedia
     Network
@@ -173,3 +174,5 @@ feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 # Uke's native implementation uses ordinary UTF-8 Qt string conversions.
 target_compile_options(uke-plasma-keyboard-custom PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)
 target_compile_options(uke_keyboard_backend PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)
+
+target_compile_options(kcm_uke_plasma_keyboard_custom PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)

@@ -4,6 +4,7 @@
 */
 #include "asyncpredictor.h"
 #include "predictivedictionary.h"
+#include "hunspelldictionary.h"
 #include "wordpredictor.h"
 
 #include <QThread>
@@ -40,6 +41,7 @@ private:
             m_dictionary = std::make_unique<PredictiveDictionary>();
             m_nextWord = std::make_unique<WordPredictor>();
         }
+        if (!m_hunspell.isAvailable(request.locale)) return {};
         if (request.prefix.size() >= request.minPrefixLength) {
             auto words = m_dictionary->complete(request.prefix, request.limit, request.locale);
             if (!words.isEmpty()) {
@@ -54,6 +56,7 @@ private:
         return {};
     }
 
+    HunspellDictionary m_hunspell;
     AsyncPredictor::Backend m_backend;
     std::unique_ptr<PredictiveDictionary> m_dictionary;
     std::unique_ptr<WordPredictor> m_nextWord;

@@ -34,7 +34,7 @@ RowLayout {
                     Accessible.name: modelData.name
                     QQC2.ToolTip.text: modelData.name
                     QQC2.ToolTip.visible: hovered
-                    enabled: (modelData.name!=="clipboard"&&modelData.name!=="emoji") || (root.target&&root.target.auxiliaryUiAllowed)
+                    enabled: (modelData.name!=="clipboard"&&modelData.name!=="emoji"&&modelData.name!=="settings") || (root.target&&root.target.auxiliaryUiAllowed)
                     onClicked: root.openTool(modelData.name)
                 }
             }
@@ -46,6 +46,7 @@ RowLayout {
     }
     QQC2.Popup {
         id: clipboardPopup
+        onClosed: {if(root.target)root.target.forceActiveFocus();}
         y: parent.height
         width: Math.min(root.width,100*root.perMm)
         height: Math.min(70*root.perMm,550)
@@ -79,6 +80,7 @@ RowLayout {
     }
     QQC2.Popup {
         id: emojiPopup
+        onClosed: {if(root.target)root.target.forceActiveFocus();}
         y: parent.height
         width: Math.min(root.width,110*root.perMm)
         height: Math.min(80*root.perMm,600)

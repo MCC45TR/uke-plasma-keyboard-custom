@@ -5,6 +5,7 @@
 */
 
 #include "systemlayoutsync.h"
+#include "laptop/laptopcontroller.h"
 #include "logging.h"
 
 #include <KConfig>
@@ -191,6 +192,10 @@ QString SystemLayoutSync::layoutForLocale(const QString &locale) const
 
 void SystemLayoutSync::syncToLocale(const QString &locale)
 {
+    if (auto *laptop=LaptopController::instance()) {
+        if (!laptop->options().value("syncLayout").toBool()) return;
+        if (laptop->backendReady() && laptop->options().value("nativePcLayout").toBool() && !laptop->complexLayout()) return;
+    }
     const QString wanted = layoutForLocale(locale);
     if (wanted.isEmpty()) {
         return;

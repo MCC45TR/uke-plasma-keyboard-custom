@@ -82,10 +82,11 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  s_instance=this;m_clock.start();reload();loadLayouts();
  const QString config=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
  m_files.addPath(config);
- connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this]{reload();loadLayouts();});
+ if(QFile::exists(QStringLiteral("/usr/share/hunspell")))m_files.addPath(QStringLiteral("/usr/share/hunspell"));
+ connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this]{reload();loadLayouts();Q_EMIT layoutChanged();});
  m_bus.connect(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),QStringLiteral("layoutChanged"),this,SLOT(systemLayout(uint)));
  auto *lock=SessionLockState::instance();
- connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked)leave();Q_EMIT stateChanged();});
+ connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked)leave();else if(!m_ready&&!m_preferencesOnly&&!qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))connectBackend();Q_EMIT stateChanged();});
  m_locked=!lock->isKnown()||lock->isLocked();
  m_preferencesOnly=QCoreApplication::arguments().contains(QStringLiteral("--preferences"));
  if(m_preferencesOnly){
@@ -195,7 +196,7 @@ void LaptopController::loadLayouts(){
  if(codes.isEmpty()){QString code=QLocale::system().name().section('_',0,0);if(code==QLatin1String("en")||code==QLatin1String("C"))code=QStringLiteral("us");codes={code};}
  if(codes==m_layoutCodes&&variants==m_variants&&!m_layouts.isEmpty())return;
  m_layoutCodes=codes;m_variants=variants;m_layouts.clear();const auto all=allLayouts();
- for(int i=0;i<codes.size();i++){QString title=codes[i];for(const auto&v:all){const auto m=v.toMap();if(m.value("code")==codes[i])title=m.value("label").toString();}if(!variants.value(i).isEmpty())title+=QStringLiteral(" (%1)").arg(variants[i]);m_layouts.append(QVariantMap{{"code",codes[i]},{"variant",variants.value(i)},{"label",title}});}
+ for(int i=0;i<codes.size();i++){QString title=codes[i];for(const auto&v:all){const auto m=v.toMap();if(m.value("code")==codes[i])title=m.value("label").toString();}if(!variants.value(i).isEmpty())title+=QStringLiteral(" (%1)").arg(variants[i]);m_layouts.append(QVariantMap{{"code",codes[i]},{"variant",variants.value(i)},{"locale",countryLocale(codes[i])},{"label",title}});}
  m_layoutIndex=std::clamp(m_layoutIndex,0,int(codes.size())-1);rebuildKeymap();
  auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(layoutCall(QStringLiteral("getLayout"))),this);
  connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<uint>r=*call;if(!r.isError())systemLayout(r.value());call->deleteLater();});

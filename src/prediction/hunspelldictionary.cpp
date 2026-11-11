@@ -180,6 +180,8 @@ std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const 
         return *cached;
     }
 
+    m_handles.clear();
+    m_words.clear();
     auto handle = std::make_shared<Handle>();
     const QPair<QString, QString> files = dictionaryFiles(locale);
     if (!files.first.isEmpty()) {
@@ -198,7 +200,7 @@ std::shared_ptr<HunspellDictionary::Handle> HunspellDictionary::handleFor(const 
         }
     }
 
-    m_handles.insert(locale, handle);
+    if(handle->valid)m_handles.insert(locale, handle);
     return handle;
 }
 

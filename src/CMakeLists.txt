@@ -294,6 +294,7 @@ target_link_libraries(uke-plasma-keyboard-custom
     LayerShellQt::Interface
     Plasma::PlasmaQuick
     Qt::DBus
+    Qt::Concurrent
     KF6::Screen
     Qt::Gui
     Qt::GuiPrivate

@@ -272,3 +272,7 @@ if(DBUS_RUN_SESSION)
         set_tests_properties(${_busTest} PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;QT_QPA_PLATFORM=offscreen")
     endforeach()
 endif()
+
+ecm_add_test(qmlsmoketest.cpp TEST_NAME qmlsmoketest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(qmlsmoketest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_dependencies(qmlsmoketest uke-plasma-keyboard-custom)
