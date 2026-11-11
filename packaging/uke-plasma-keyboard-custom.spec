@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 17%{?dist}
+Release: 18%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -50,6 +50,7 @@ tar xf %{SOURCE2}
 %cmake -G Ninja \
  -DBUILD_TESTING=ON \
  -DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
+ -DKDE_INSTALL_LIBEXECDIR=%{_libexecdir} \
  -DWHISPER_CPP_SOURCE_DIR=$PWD/whisper.cpp-1.9.3 \
  -DTRANSCRIBE_CPP_SOURCE_DIR=$PWD/transcribe.cpp-5bb2deb2a4afb1fd50534ecb51cfcb521ef94944 \
  -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_BLAS=OFF
@@ -76,8 +77,8 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 ! find %{buildroot} -type f -name '*plasma-keyboard-touchscreen.rules' | read
 
 %files
-%license LICENSE LICENSES/* data/emoji/UNICODE-LICENSE.txt
-%doc README.md docs/*.md
+%license LICENSE LICENSES data/emoji/UNICODE-LICENSE.txt
+%doc README.md docs
 %{_bindir}/%{name}
 %{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/UkeBreeze/
 %{_libdir}/qt6/qml/org/uke/plasma/keyboard/lib/
@@ -95,7 +96,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
-* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-17
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-18
 - Add a movable laptop panel with manual tray and optional focus activation.
 - Support mobile and PC cursor/word-deletion gestures with optional key previews.
 - Keep local search edits scoped and place toolbar panels within the viewport.

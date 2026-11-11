@@ -111,7 +111,7 @@ add_subdirectory(kwin)
 # the lock screen. It is installed disabled and can be enabled by the user.
 configure_file(
     tools/uke-plasma-keyboard-lock-switcher.service.in
-    ${CMAKE_CURRENT_BINARY_DIR}/plasma-keyboard-lock-switcher.service
+    ${CMAKE_CURRENT_BINARY_DIR}/uke-plasma-keyboard-lock-switcher.service
     @ONLY
 )
 install(
@@ -119,7 +119,7 @@ install(
     DESTINATION ${KDE_INSTALL_LIBEXECDIR}
 )
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/plasma-keyboard-lock-switcher.service
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/uke-plasma-keyboard-lock-switcher.service
     DESTINATION ${KDE_INSTALL_SYSTEMDUSERUNITDIR}
 )
 

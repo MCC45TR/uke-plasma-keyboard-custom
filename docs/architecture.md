@@ -103,3 +103,12 @@ fork is required. This behavior was checked against Qt Virtual Keyboard's6.12
 The reviewed Qt Virtual Keyboard6.12 branch revision was
 `ee95ac1db05f6b1a5ef8b309f81e47bbe1a497f8`; its original Qt/GPL license headers
 remain with the reference source. Only the keyboard's own integration changes.
+
+The QML helper/style targets use ukekeyboardlib and ukebreezestyle as their
+library names as well as independent import URIs. Stock Fedora retains its
+original libkeyboardlib/libbreezestyle providers. The optional lock-switcher
+service has a Uke basename and uses Fedora's libexec directory; it is installed
+disabled. Source archives include the acceptance and architecture documents,
+while legacy reference screenshots stay in Git only. The private transcribe
+build inherits GGML_NATIVE from the outer recipe; COPR requests OFF rather than
+optimizing that dependency for a particular builder CPU.

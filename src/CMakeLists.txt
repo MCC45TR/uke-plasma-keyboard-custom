@@ -106,6 +106,7 @@ ExternalProject_Add(transcribe_cpp
         # and then cannot resolve the cblas symbols, so the decoder runs
         # without system BLAS. That is fast enough for the keyboard.
         -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF
+        -DGGML_NATIVE=${GGML_NATIVE}
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target transcribe
     INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR>
     UPDATE_COMMAND ""

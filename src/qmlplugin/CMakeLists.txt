@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Devin Lin <devin@kde.org>
 # SPDX-License-Identifier: BSD-2-Clause
 
-ecm_add_qml_module(keyboardlib URI org.uke.plasma.keyboard.lib GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
+ecm_add_qml_module(ukekeyboardlib URI org.uke.plasma.keyboard.lib GENERATE_PLUGIN_SOURCE DEPENDENCIES QtQuick)
 
 set_source_files_properties(
     BreezeConstants.qml
@@ -10,7 +10,7 @@ set_source_files_properties(
     QT_QML_SINGLETON_TYPE TRUE
 )
 
-ecm_target_qml_sources(keyboardlib SOURCES
+ecm_target_qml_sources(ukekeyboardlib SOURCES
     BreezeKeyPanel.qml
     BreezeConstants.qml
     BreezePopup.qml
@@ -33,7 +33,7 @@ ecm_target_qml_sources(keyboardlib SOURCES
     ThemeGoogleDarkPalette.qml
 )
 
-target_link_libraries(keyboardlib
+target_link_libraries(ukekeyboardlib
     PUBLIC
         Qt::Core
     PRIVATE
@@ -42,4 +42,4 @@ target_link_libraries(keyboardlib
         Qt::Quick
 )
 
-ecm_finalize_qml_module(keyboardlib)
+ecm_finalize_qml_module(ukekeyboardlib)

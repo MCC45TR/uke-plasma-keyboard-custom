@@ -4,4 +4,4 @@
 # tarball shipped next to the sources).
 install.sh export-ignore
 .github export-ignore
-docs export-ignore
+docs/screenshots export-ignore

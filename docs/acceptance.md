@@ -1,17 +1,17 @@
 # Acceptance status
 
-11 November 2026. Work in progress; no physical acceptance is claimed.
+12 November 2026. Work in progress; no physical acceptance is claimed.
 
 | Area | Source | Build/package | Physical |
 |---|---|---|---|
-| Fork and independent identity | Implemented | COPR pending | Not applicable |
-| Static surface and KWin routing | Initial implementation | Pending | Pending |
-| Physical size, key groups and settings | Initial implementation | Pending | Pending |
-| Touchpad gestures, buttons, typing guard | Initial implementation | Pending | Pending |
-| Language/variant selection, clipboard, emoji | Initial implementation | Pending | Pending |
-| Fixed refresh profiles and restoration | Initial implementation | Pending | Pending |
+| Fork and independent identity | Implemented | Native tests pass; RPM file fixes pending | Not applicable |
+| Static surface and KWin routing | Initial implementation | Compile/controller tests pass; compositor integration pending | Pending |
+| Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
+| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
+| Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
+| Fixed refresh profiles and restoration | Initial implementation | Compiles; mode/restoration qualification pending | Pending |
 | Native 30–60 VRR | Existing kernel interface reviewed; gated | Not qualified | Pending |
-| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Pending | Not tested |
+| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; compositor integration pending | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -318,3 +318,19 @@ laptop mode uses the touchpad area so the keys remain accessible. Native QML
 checks add popup viewport bounds; a new native text test covers Unicode cursor
 boundaries, word deletion, selections and invalid local targets. Qualification
 of these additions and physical use remains pending.
+
+## COPR 11310499 — all native tests pass; RPM file manifest rejects packaging
+
+Fedora 44, Fedora 45 and Rawhide aarch64 each pass all 29 CTests. The controller
+now exercises real deferred replies over separate private-bus connections.
+Unicode/local-editor tests and native popup bounds pass too. RPM assembly then
+rejects three missing paths: the helper used KDE's lib64/libexec default, the
+service retained its original basename, and the source archive excluded docs.
+No binary RPM was accepted or installed.
+
+The next recipe explicitly selects Fedora's libexec directory, gives the service
+its Uke filename and includes Markdown documentation in the source archive.
+Legacy screenshots remain excluded. The QML module libraries also receive Uke
+basenames, avoiding the stock package's libkeyboardlib/libbreezestyle provider
+names. The private speech build inherits the recipe's GGML_NATIVE setting for a
+consistent CPU baseline. The full native suite and RPM checks remain required.
