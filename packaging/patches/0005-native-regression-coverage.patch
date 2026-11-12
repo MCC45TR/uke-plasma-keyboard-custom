@@ -1,5 +1,5 @@
 diff --git a/autotests/CMakeLists.txt b/autotests/CMakeLists.txt
-index e66076607305b4221c74600da7beab1bd1b95049..461bfec1c47912778d37c5dc25fc53dab9b0b6ac 100644
+index e66076607305b4221c74600da7beab1bd1b95049..0431350940d82248bf8d63f71ad0428e83a006c0 100644
 --- a/autotests/CMakeLists.txt
 +++ b/autotests/CMakeLists.txt
 @@ -2,17 +2,24 @@
@@ -346,7 +346,7 @@ index e66076607305b4221c74600da7beab1bd1b95049..461bfec1c47912778d37c5dc25fc53da
 +    TEST_NAME tabletposturemonitortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
 +target_include_directories(tabletposturemonitortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 +if(DBUS_RUN_SESSION)
-+    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
++    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-motion-bus.sh")
 +    set_tests_properties(tabletposturemonitortest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;QT_LOGGING_RULES=uke.keyboard.posture.debug=true" TIMEOUT 30)
 +endif()
 diff --git a/autotests/asyncpredictortest.cpp b/autotests/asyncpredictortest.cpp
@@ -3906,6 +3906,37 @@ index 0000000000000000000000000000000000000000..dc439dff5a9b8438e3bd0ee74f9eead6
 +QTEST_GUILESS_MAIN(PredictiveDictionaryTest)
 +
 +#include "predictivedictionarytest.moc"
+diff --git a/autotests/private-motion-bus.sh b/autotests/private-motion-bus.sh
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dffbb0051dd33760480153f164a19920a2840dc
+--- /dev/null
++++ b/autotests/private-motion-bus.sh
+@@ -0,0 +1,25 @@
++#!/usr/bin/bash
++# SPDX-License-Identifier: MIT
++set -Eeuo pipefail
++umask 077
++[[ ${PLASMA_KEYBOARD_TEST_ISOLATED_BUS:-} == 1 ]]
++task_bus=$(mktemp -d)
++trap 'rm -f -- "$task_bus/bus.conf"; rmdir -- "$task_bus"' EXIT
++cat > "$task_bus/bus.conf" <<'UKE_BUS'
++<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
++<busconfig>
++  <type>session</type>
++  <listen>unix:tmpdir=/tmp</listen>
++  <policy context="default">
++    <allow user="*"/>
++    <allow own="*"/>
++    <allow send_type="method_call"/>
++    <allow send_type="signal"/>
++    <allow send_requested_reply="true" send_type="method_return"/>
++    <allow send_requested_reply="true" send_type="error"/>
++    <allow receive_sender="*"/>
++  </policy>
++</busconfig>
++UKE_BUS
++export UKE_POSTURE_SYSTEM_POLICY=1
++dbus-run-session --config-file "$task_bus/bus.conf" -- bash "$(dirname "$0")/private-system-bus.sh" "$@"
 diff --git a/autotests/private-system-bus.sh b/autotests/private-system-bus.sh
 new file mode 100644
 index 0000000000000000000000000000000000000000..3933bc6159a0cf9354480823a305b14005b38370
@@ -5377,10 +5408,10 @@ index 0000000000000000000000000000000000000000..38f25e33bc576f2ab8b55070d4df6d7b
 +#include "swipeenginetest.moc"
 diff --git a/autotests/tabletposturemonitortest.cpp b/autotests/tabletposturemonitortest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..4ece405dbbf5d660e43bbc5eeb79eee12310e522
+index 0000000000000000000000000000000000000000..8a7ba1726732933a69d90b66c62bcb0cf02a1462
 --- /dev/null
 +++ b/autotests/tabletposturemonitortest.cpp
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,203 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "tabletposturemonitor.h"
 +#include <QDBusMessage>
@@ -5388,6 +5419,7 @@ index 0000000000000000000000000000000000000000..4ece405dbbf5d660e43bbc5eeb79eee1
 +#include <QDBusServiceWatcher>
 +#include <QDBusVirtualObject>
 +#include <QSignalSpy>
++#include <QScopeGuard>
 +#include <QTest>
 +#include <QUuid>
 +#include <ctime>
@@ -5455,6 +5487,7 @@ index 0000000000000000000000000000000000000000..4ece405dbbf5d660e43bbc5eeb79eee1
 +    void initTestCase() {
 +        QCOMPARE(qgetenv("PLASMA_KEYBOARD_TEST_ISOLATED_BUS"),QByteArray("1"));
 +        QCOMPARE(qgetenv("DBUS_SYSTEM_BUS_ADDRESS"),qgetenv("DBUS_SESSION_BUS_ADDRESS"));
++        QCOMPARE(qgetenv("UKE_POSTURE_SYSTEM_POLICY"),QByteArray("1"));
 +    }
 +    void demandAndReleaseLeaveNoLease() {
 +        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
@@ -5473,6 +5506,26 @@ index 0000000000000000000000000000000000000000..4ece405dbbf5d660e43bbc5eeb79eee1
 +        const auto initial=nowUsec();provider.change(caller,false,0,initial+1);provider.reply(0,true,0,initial);
 +        QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(observations.isEmpty());
 +        provider.change(caller,true,20);QTRY_COMPARE(observations.size(),1);QVERIFY(observations.last().at(0).toBool());
++    }
++    void unrelatedPeerCannotForgeAReply_data() {
++        QTest::addColumn<bool>("error");QTest::newRow("return")<<false;QTest::newRow("error")<<true;
++    }
++    void unrelatedPeerCannotForgeAReply() {
++        QFETCH(bool,error);
++        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
++        monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
++        const QString name=QUuid::createUuid().toString(QUuid::Id128);
++        auto forger=QDBusConnection::connectToBus(QDBusConnection::SessionBus,name);
++        const auto cleanup=qScopeGuard([&]{QDBusConnection::disconnectFromBus(name);});
++        QVERIFY(forger.isConnected());QVERIFY(forger.baseService()!=provider.bus.baseService());
++        const auto original=provider.claims.first();
++        const auto forged=error?original.createErrorReply(QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),QStringLiteral("Forged fixture reply")):
++            original.createReply(QVariantList{true,0.0,QVariant::fromValue(nowUsec())});
++        QVERIFY(forger.send(forged));
++        auto fence=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),QStringLiteral("/org/freedesktop/DBus"),QStringLiteral("org.freedesktop.DBus"),QStringLiteral("ListNames"));
++        auto pending=forger.asyncCall(fence);QTRY_VERIFY(pending.isFinished());QCoreApplication::processEvents();
++        QVERIFY(observations.isEmpty());
++        provider.reply(0,true,0);QTRY_COMPARE(observations.size(),1);QVERIFY(observations.last().at(0).toBool());
 +    }
 +    void releasedClaimAndOldConnectionCannotEnableANewLease() {
 +        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);

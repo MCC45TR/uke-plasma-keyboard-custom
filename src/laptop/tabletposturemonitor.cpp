@@ -181,10 +181,13 @@ void TabletPostureMonitor::claim(const QString &owner, quint64 generation) {
     connect(call, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *finished) {
         const auto reply = finished->reply();
         finished->deleteLater();
-        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation)
-                            << "owner matched" << (reply.service() == m_owner) << reply.errorName();
+        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation) << reply.errorName();
         if (generation != m_generation) return;
-        if (reply.type() != QDBusMessage::ReplyMessage || reply.service() != m_owner || reply.signature() != QLatin1String("bdt")) {
+        // Qt deliberately returns an empty service() for replies. The pending
+        // call is addressed to the pinned unique peer; system-bus requested-
+        // reply policy and this ownership generation bind its response. Signal
+        // messages do expose the sender and keep their explicit owner check.
+        if (reply.type() != QDBusMessage::ReplyMessage || reply.signature() != QLatin1String("bdt")) {
             closeConnection(); return;
         }
         m_claimed = true;

@@ -50,6 +50,17 @@ cached posture. Resume requires a new claim and observation. There is no client
 sensor timer, raw-device access or background polling. This connection lifecycle
 uses the original [Qt D-Bus API](https://doc.qt.io/qt-6/qdbusconnection.html).
 
+Qt deliberately returns an empty `QDBusMessage::service()` for return/error
+messages ([original6.11.2 implementation](https://code.qt.io/cgit/qt/qtbase.git/tree/src/dbus/qdbusmessage.cpp?h=v6.11.2#n583)).
+The pending method call is therefore bound to its pinned unique destination,
+connection, serial and owner generation, with exact reply type/signature checks.
+The production system bus must enforce requested-reply policy and restrict the
+provider's name ownership. Signals expose their sender and keep the explicit
+unique-owner check. The private test bus reproduces original Fedora's
+requested-return/error rules and verifies that an unrelated peer cannot forge
+either response before the real provider replies. Its broad fixture name/call
+permissions are not a production policy or an admission of the Control service.
+
 Only otherwise-eligible static mode requests the lease: enabled internal touch
 panel, extended external monitor, open cover, unlocked session, authenticated
 backend and no USB typing keyboard/receiver. Pogo remains excluded. Automatic

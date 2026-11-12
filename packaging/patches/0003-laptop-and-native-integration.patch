@@ -2213,10 +2213,10 @@ index 0000000000000000000000000000000000000000..34042a3566308205fdf2aa684f7ebdba
 +}
 diff --git a/src/laptop/tabletposturemonitor.cpp b/src/laptop/tabletposturemonitor.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..363705b51f92d5ae52cfc369ab7a3e4894fcd87c
+index 0000000000000000000000000000000000000000..c77537ee90645ce1e25c663806aec19de1c670a8
 --- /dev/null
 +++ b/src/laptop/tabletposturemonitor.cpp
-@@ -0,0 +1,223 @@
+@@ -0,0 +1,226 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "tabletposturemonitor.h"
 +
@@ -2400,10 +2400,13 @@ index 0000000000000000000000000000000000000000..363705b51f92d5ae52cfc369ab7a3e48
 +    connect(call, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *finished) {
 +        const auto reply = finished->reply();
 +        finished->deleteLater();
-+        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation)
-+                            << "owner matched" << (reply.service() == m_owner) << reply.errorName();
++        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation) << reply.errorName();
 +        if (generation != m_generation) return;
-+        if (reply.type() != QDBusMessage::ReplyMessage || reply.service() != m_owner || reply.signature() != QLatin1String("bdt")) {
++        // Qt deliberately returns an empty service() for replies. The pending
++        // call is addressed to the pinned unique peer; system-bus requested-
++        // reply policy and this ownership generation bind its response. Signal
++        // messages do expose the sender and keep their explicit owner check.
++        if (reply.type() != QDBusMessage::ReplyMessage || reply.signature() != QLatin1String("bdt")) {
 +            closeConnection(); return;
 +        }
 +        m_claimed = true;

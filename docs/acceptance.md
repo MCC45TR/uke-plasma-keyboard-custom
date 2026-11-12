@@ -1076,3 +1076,22 @@ validation booleans; debug output contains no measured angle, timestamp, caller
 identity or entered content. The fixture verifies its own sends. These diagnostics
 are enabled only by the native test environment; production logging remains off
 at debug level. The original reply/age/owner assertions and timeout remain.
+
+## Candidate49 — use Qt reply semantics and verify requested replies
+
+The focused COPR source-worker diagnostic11318536 reproduces the48 failure
+without the speech/application build. The Claim response has the required bdt
+signature and current generation; its service field is empty. Original Qt6.11.2
+explicitly returns an empty service() for reply/error messages.49 removes this
+unsupported comparison while retaining the pinned unique RPC destination,
+connection generation, exact type/signature, sample validation and signal sender
+checks. A private bus now reproduces Fedora requested-reply policy and rejects
+forged return and error packets from another connection before accepting the
+actual provider response. The test timeout and all earlier assertions remain.
+This is a source fix; focused49, full42-test ARM matrix and actual provider/frame
+acceptance remain pending. The numeric provider is still not delivered.
+
+Full48/11318526 independently reproduces the same cause on all three ARM64
+workers:41/42 pass, including the new manual cancellation/refusal controller
+cases. Debug output shows a typed/current-generation reply rejected only by
+the unsupported service comparison. No RPM or device acceptance is recorded.

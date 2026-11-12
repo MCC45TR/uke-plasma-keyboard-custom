@@ -52,7 +52,7 @@
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "d179f890d6f696183b15dffe988f799b982583d5e810df2f90268434055296d6"
+      "sha256": "af3108bfd11e893325e45c6d0661cc6b37f3f062e7e5db86275c1b0ee62cd6dd"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "0ede0f25aa66eaa2dc2957a7960c7d740e6028e39e1c0bf6c9027dcd84fd3dc3"
+      "sha256": "8d70420ad4ad68c757ebf4422400c771e6910339542fe83292db0f4ff4a827b1"
     }
   ],
   "production_files": [
@@ -146,7 +146,7 @@
     },
     {
       "path": "autotests/CMakeLists.txt",
-      "sha256": "2b41f7a3b87b788ed9eed817775afec5fef1455b34ef931359d14a7d7e6ed47f"
+      "sha256": "6cdc0da70826e4ef40e0d76ae475fb6f668077493527b7f0e4d589cb3fc2626d"
     },
     {
       "path": "autotests/asyncpredictortest.cpp",
@@ -277,6 +277,10 @@
       "sha256": "ecaaeca3a72e07114ecb3f0a7a3b93a599b3e262f08542300f51f00089f33e8d"
     },
     {
+      "path": "autotests/private-motion-bus.sh",
+      "sha256": "4bd97493dfe7e7eda5a99eaa13c187d16611ca7bbbe12c0f6861dbc50d37f125"
+    },
+    {
       "path": "autotests/private-system-bus.sh",
       "sha256": "c2293294da83832783aa01abec2714662cdc641eee4ca63068b9dc5289822356"
     },
@@ -314,7 +318,7 @@
     },
     {
       "path": "autotests/tabletposturemonitortest.cpp",
-      "sha256": "8f2c1c194b953836f21903e0605036921e6f12f946861b5795ef1022dfab92bb"
+      "sha256": "955e24fdb166cabd94d71efd0b0c6cf6d05de9fd73dc3e54bd26c2981106ad81"
     },
     {
       "path": "autotests/tabletposturetest.cpp",
@@ -1206,7 +1210,7 @@
     },
     {
       "path": "src/laptop/tabletposturemonitor.cpp",
-      "sha256": "05bb7b2d38e90150453f327a6612ba3853a3aaf364c0fcf61bb96087ac642d9d"
+      "sha256": "1a3b69a14de89a0a7e4c564c77ab032215f21f210fc12050a917c063429fa418"
     },
     {
       "path": "src/laptop/tabletposturemonitor.h",

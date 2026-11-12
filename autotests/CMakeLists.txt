@@ -345,6 +345,6 @@ ecm_add_test(tabletposturemonitortest.cpp
     TEST_NAME tabletposturemonitortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
 target_include_directories(tabletposturemonitortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 if(DBUS_RUN_SESSION)
-    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
+    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-motion-bus.sh")
     set_tests_properties(tabletposturemonitortest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;QT_LOGGING_RULES=uke.keyboard.posture.debug=true" TIMEOUT 30)
 endif()

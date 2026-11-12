@@ -5,6 +5,7 @@
 #include <QDBusServiceWatcher>
 #include <QDBusVirtualObject>
 #include <QSignalSpy>
+#include <QScopeGuard>
 #include <QTest>
 #include <QUuid>
 #include <ctime>
@@ -72,6 +73,7 @@ private Q_SLOTS:
     void initTestCase() {
         QCOMPARE(qgetenv("PLASMA_KEYBOARD_TEST_ISOLATED_BUS"),QByteArray("1"));
         QCOMPARE(qgetenv("DBUS_SYSTEM_BUS_ADDRESS"),qgetenv("DBUS_SESSION_BUS_ADDRESS"));
+        QCOMPARE(qgetenv("UKE_POSTURE_SYSTEM_POLICY"),QByteArray("1"));
     }
     void demandAndReleaseLeaveNoLease() {
         Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
@@ -90,6 +92,26 @@ private Q_SLOTS:
         const auto initial=nowUsec();provider.change(caller,false,0,initial+1);provider.reply(0,true,0,initial);
         QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(observations.isEmpty());
         provider.change(caller,true,20);QTRY_COMPARE(observations.size(),1);QVERIFY(observations.last().at(0).toBool());
+    }
+    void unrelatedPeerCannotForgeAReply_data() {
+        QTest::addColumn<bool>("error");QTest::newRow("return")<<false;QTest::newRow("error")<<true;
+    }
+    void unrelatedPeerCannotForgeAReply() {
+        QFETCH(bool,error);
+        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
+        monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
+        const QString name=QUuid::createUuid().toString(QUuid::Id128);
+        auto forger=QDBusConnection::connectToBus(QDBusConnection::SessionBus,name);
+        const auto cleanup=qScopeGuard([&]{QDBusConnection::disconnectFromBus(name);});
+        QVERIFY(forger.isConnected());QVERIFY(forger.baseService()!=provider.bus.baseService());
+        const auto original=provider.claims.first();
+        const auto forged=error?original.createErrorReply(QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),QStringLiteral("Forged fixture reply")):
+            original.createReply(QVariantList{true,0.0,QVariant::fromValue(nowUsec())});
+        QVERIFY(forger.send(forged));
+        auto fence=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),QStringLiteral("/org/freedesktop/DBus"),QStringLiteral("org.freedesktop.DBus"),QStringLiteral("ListNames"));
+        auto pending=forger.asyncCall(fence);QTRY_VERIFY(pending.isFinished());QCoreApplication::processEvents();
+        QVERIFY(observations.isEmpty());
+        provider.reply(0,true,0);QTRY_COMPARE(observations.size(),1);QVERIFY(observations.last().at(0).toBool());
     }
     void releasedClaimAndOldConnectionCannotEnableANewLease() {
         Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
