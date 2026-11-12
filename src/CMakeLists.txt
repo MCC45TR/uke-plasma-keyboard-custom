@@ -129,6 +129,9 @@ target_sources(uke-plasma-keyboard-custom PRIVATE
     laptop/layoutregistry.cpp
     laptop/layoutregistry.h
     laptop/physicalgeometry.h
+    laptop/tabletposture.h
+    laptop/tabletposturemonitor.cpp
+    laptop/tabletposturemonitor.h
     inputpanelintegration.cpp
     inputpanelintegration.h
     inputpanelrole.h

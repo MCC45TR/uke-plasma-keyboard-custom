@@ -86,6 +86,8 @@ add_test(NAME mainpolicysourcetest COMMAND ${BASH_EXECUTABLE} ${CMAKE_CURRENT_SO
 
 ecm_add_test(physicalgeometrytest.cpp TEST_NAME physicalgeometrytest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(physicalgeometrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+ecm_add_test(tabletposturetest.cpp TEST_NAME tabletposturetest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(tabletposturetest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 ecm_add_test(layoutregistrytest.cpp ../src/laptop/layoutregistry.cpp TEST_NAME layoutregistrytest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(layoutregistrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 ecm_add_test(kwinversiontest.cpp TEST_NAME kwinversiontest LINK_LIBRARIES Qt::Core Qt::Test)
@@ -326,6 +328,7 @@ ecm_add_test(laptopcontrollertest.cpp
     ../src/laptop/laptopcontroller.cpp ../src/laptop/laptopcontroller.h
     ../src/laptop/controladaptor.cpp ../src/laptop/controladaptor.h
     ../src/laptop/layoutregistry.cpp ../src/sessionlockstate.cpp
+    ../src/laptop/tabletposturemonitor.cpp ../src/laptop/tabletposturemonitor.h
     ../src/prediction/hunspelldictionary.cpp ../src/prediction/wordlookup.cpp
     TEST_NAME laptopcontrollertest
     LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Test KF6::ConfigCore KF6::I18n KF6::Screen PkgConfig::XKBCommon)
@@ -335,4 +338,13 @@ target_compile_definitions(laptopcontrollertest PRIVATE UKE_KWIN_PLUGIN_ID="${UK
 if(DBUS_RUN_SESSION)
     set_target_properties(laptopcontrollertest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
     set_tests_properties(laptopcontrollertest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;PLASMA_KEYBOARD_TEST_MODE=1;QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
+endif()
+
+ecm_add_test(tabletposturemonitortest.cpp
+    ../src/laptop/tabletposturemonitor.cpp ../src/laptop/tabletposturemonitor.h
+    TEST_NAME tabletposturemonitortest LINK_LIBRARIES Qt::Core Qt::DBus Qt::Test)
+target_include_directories(tabletposturemonitortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+if(DBUS_RUN_SESSION)
+    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
+    set_tests_properties(tabletposturemonitortest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1" TIMEOUT 30)
 endif()

@@ -18582,10 +18582,10 @@ index 0000000000000000000000000000000000000000..3f5aca82cd95ac86bc7227d0a9bd4b4b
 +}
 diff --git a/src/qml/LaptopSettings.qml b/src/qml/LaptopSettings.qml
 new file mode 100644
-index 0000000000000000000000000000000000000000..91d10cc6aadf583b6f48526b7f95a620cf26fca2
+index 0000000000000000000000000000000000000000..66b453b11d3f388c23119b7829b4a30eb343742c
 --- /dev/null
 +++ b/src/qml/LaptopSettings.qml
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,143 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +import QtQuick
 +import QtQuick.Controls as QQC2
@@ -18620,8 +18620,8 @@ index 0000000000000000000000000000000000000000..91d10cc6aadf583b6f48526b7f95a620
 +            width: parent.width
 +            spacing: Kirigami.Units.largeSpacing
 +            Kirigami.InlineMessage {Layout.fillWidth:true;visible:Keyboard.Laptop.reason.length>0;text:Keyboard.Laptop.reason;type:Kirigami.MessageType.Information;}
-+            QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen and an extended external display. Display power, layout, scale and rotation are never changed.");}
-+            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.available;onClicked:Keyboard.Laptop.toggle();}
++            QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen, an extended external display and a face-up tablet within 45 degrees of horizontal. After tilting upright, lower it below 40 degrees to reopen. The movable panel opens by button only.");}
++            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
 +            Kirigami.FormLayout {
 +                Layout.fillWidth:true
 +                QQC2.ComboBox {
@@ -18635,12 +18635,6 @@ index 0000000000000000000000000000000000000000..91d10cc6aadf583b6f48526b7f95a620
 +                    text:i18nd("uke-plasma-keyboard-custom","Open static mode automatically when its conditions are met")
 +                    checked:Keyboard.Laptop.options.staticAutoShow
 +                    onToggled:Keyboard.Laptop.setOption("staticAutoShow",checked)
-+                }
-+                QQC2.CheckBox {
-+                    visible:Keyboard.Laptop.options.presentation==="dynamic"
-+                    text:i18nd("uke-plasma-keyboard-custom","Open dynamic mode automatically on text focus")
-+                    checked:Keyboard.Laptop.options.dynamicAutoShow
-+                    onToggled:Keyboard.Laptop.setOption("dynamicAutoShow",checked)
 +                }
 +                QQC2.Slider {visible:Keyboard.Laptop.options.presentation==="dynamic";Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom","Dynamic panel width:");from:40;to:95;stepSize:1;value:Keyboard.Laptop.options.dynamicWidthPercent;onMoved:Keyboard.Laptop.setOption("dynamicWidthPercent",Math.round(value));}
 +                QQC2.Slider {visible:Keyboard.Laptop.options.presentation==="dynamic";Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom","Dynamic panel height:");from:40;to:95;stepSize:1;value:Keyboard.Laptop.options.dynamicHeightPercent;onMoved:Keyboard.Laptop.setOption("dynamicHeightPercent",Math.round(value));}
@@ -19591,7 +19585,7 @@ index 0000000000000000000000000000000000000000..fda9733cad641166ea88618655b4489e
 +    }
 +}
 diff --git a/src/qml/main.qml b/src/qml/main.qml
-index 703f6750e351411995a350b2f3b99a9d9199425c..0f660f3ce17434aa1cee6d7a7d9bb68cd999afe9 100644
+index 703f6750e351411995a350b2f3b99a9d9199425c..6addbc0a54439e5c959a6d7a09ffc98f1867cbce 100644
 --- a/src/qml/main.qml
 +++ b/src/qml/main.qml
 @@ -6,13 +6,16 @@
@@ -21103,7 +21097,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..0f660f3ce17434aa1cee6d7a7d9bb68c
 +            width: parent.width
 +            anchors.bottom: parent.bottom
 +            height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
-+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.available; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
++            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
 +            Item { Layout.fillWidth: true; }

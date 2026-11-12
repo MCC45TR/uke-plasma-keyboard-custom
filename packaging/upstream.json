@@ -44,15 +44,15 @@
   "patches": [
     {
       "name": "0001-build-settings-and-identity.patch",
-      "sha256": "1efc46c9292d05cca28adc11dda02d538fb787ac3514fa1870d78b2435e4cac0"
+      "sha256": "b772582757e78acc030dadef982e3f317115bdcf6e51a0c248caf4525f45e091"
     },
     {
       "name": "0002-keyboard-interface-and-input.patch",
-      "sha256": "4fa99fa69aadb06b1a3836efbf867eecc28549e2a93fac3076007486dbd570f0"
+      "sha256": "d1f77dd315b03db2d8cbe164b0fcd9542e37e8f82ea945687a8f767131b364e2"
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "a811995836785470131d770e73d7d695612b651f3feaa016f7616f982312f01d"
+      "sha256": "cf394fbdd0877393325c572bc2d699f3a46034910667aeb79846c56694c46bc9"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "2460aebfec094f2d7c4abc649b658453d0e48be16eb487a60664dbb892dc7fcb"
+      "sha256": "41a90fa35f33e92a085105556a8b20d0370abfe4e2dc937c24f227874fdb117b"
     }
   ],
   "production_files": [
@@ -146,7 +146,7 @@
     },
     {
       "path": "autotests/CMakeLists.txt",
-      "sha256": "5d8ba55da07078265eab51387c84d065d052bb2a5580a085f15920a1e086c6fb"
+      "sha256": "2288ec702c0e94146be99f296df67e94de2a26e540c176c504433aff020f2343"
     },
     {
       "path": "autotests/asyncpredictortest.cpp",
@@ -198,7 +198,7 @@
     },
     {
       "path": "autotests/laptopcontrollertest.cpp",
-      "sha256": "0d3b16899856bfd5ecc3db19677203cd9c74c6d3817e8ff296df447474f8e7d2"
+      "sha256": "aa9d16a231f5c396843325f183a1a02dbf4e10c2c51409bb7ea194fa79ca330d"
     },
     {
       "path": "autotests/laptopinteractiontest.cpp",
@@ -311,6 +311,14 @@
     {
       "path": "autotests/swipeenginetest.cpp",
       "sha256": "86b85cb8f9a9aa9159d2f596f63f9e71ad34c2d5716ecc84f603aa46a31e7ee1"
+    },
+    {
+      "path": "autotests/tabletposturemonitortest.cpp",
+      "sha256": "a29230d8b4195cd7af71964837090fbe6c8158b793ca12526fcdeaedf010e6ee"
+    },
+    {
+      "path": "autotests/tabletposturetest.cpp",
+      "sha256": "971fbdbac68c3883de5cd649a21529ebc7dae8601462db4e066c4a316634a652"
     },
     {
       "path": "autotests/toolbarsettings.qml",
@@ -958,7 +966,7 @@
     },
     {
       "path": "src/CMakeLists.txt",
-      "sha256": "e93d3ce2b9328fe5f6e229d2fedc0e09eafab1904967437d643b798558eae80f"
+      "sha256": "bd883993303c416dd76cf0bed56459e91606ea9ed263859ea873e5c86c322b90"
     },
     {
       "path": "src/Messages.sh",
@@ -1162,11 +1170,11 @@
     },
     {
       "path": "src/laptop/laptopcontroller.cpp",
-      "sha256": "5b72f891176485d97c13c6806c5613fac8c14ff46866911a3bcc8c6aa4e71f18"
+      "sha256": "b1e97ce9e6deb68bd3c37d9b5f7fbb5c67de6082f4ccda58c090b0b099af4c8e"
     },
     {
       "path": "src/laptop/laptopcontroller.h",
-      "sha256": "8e39a5438c9f959ab4ec4e22d54a8715faa0a438c3604f58df6d8ba5e6b49bdb"
+      "sha256": "b91a12f23cdc926018673c742bcc055f7a590001588445172af5623a09bb7a7a"
     },
     {
       "path": "src/laptop/layoutregistry.cpp",
@@ -1191,6 +1199,18 @@
     {
       "path": "src/laptop/protocol.h",
       "sha256": "f5b1a2378b33791b263147f8cd8536e88d84d1dd8b3b24e2477ba9ca79f9c9e2"
+    },
+    {
+      "path": "src/laptop/tabletposture.h",
+      "sha256": "b7fa863fccee8352927d992d3d46b4c9ce27a05ab6898b1c46ea8dc8d970d5ed"
+    },
+    {
+      "path": "src/laptop/tabletposturemonitor.cpp",
+      "sha256": "c38638868d078ccd2cb63048d65e33de5ceb2dcb0afef28eb3fd639416dca4b0"
+    },
+    {
+      "path": "src/laptop/tabletposturemonitor.h",
+      "sha256": "e9e484304a91f2dc3e6d8ae22ea108dcbe97dc358ef0650cbdab7af3d25a9ff3"
     },
     {
       "path": "src/laptop/touchpadmotion.h",
@@ -2578,7 +2598,7 @@
     },
     {
       "path": "src/qml/LaptopSettings.qml",
-      "sha256": "0c65a061e126b6ec16d9c574856738c160eed89ab805579aabf70912b5b609c5"
+      "sha256": "d320438788ebd880dcf811148a9207c4ba220036a8e146a0cfc0e75bc98a6fe9"
     },
     {
       "path": "src/qml/LocaleResolver.js",
@@ -2602,7 +2622,7 @@
     },
     {
       "path": "src/qml/main.qml",
-      "sha256": "5819ecf6ef0fdfa2f1494da8fe229f632c9462291c05b28d7d4ed2f9174bbe82"
+      "sha256": "a36dab5412ab9a3fc7c3be7582a4cbc30953d2fde1410863f0faccfbd0e8d36b"
     },
     {
       "path": "src/qmlplugin/BreezeConstants.qml",

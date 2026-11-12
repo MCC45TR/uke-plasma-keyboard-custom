@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 #include "pixelshift.h"
+#include "tabletposture.h"
 #include "touchpadmotion.h"
 #include <QObject>
 #include <QDBusConnection>
@@ -20,6 +21,7 @@ class QScreen;
 class QWindow;
 class QDBusMessage;
 class QDBusPendingCall;
+class TabletPostureMonitor;
 
 class LaptopController final : public QObject {
     Q_OBJECT
@@ -28,6 +30,7 @@ class LaptopController final : public QObject {
     Q_PROPERTY(bool staticActive READ staticActive NOTIFY stateChanged)
     Q_PROPERTY(bool dynamicActive READ dynamicActive NOTIFY stateChanged)
     Q_PROPERTY(bool available READ available NOTIFY stateChanged)
+    Q_PROPERTY(bool canRequest READ canRequest NOTIFY stateChanged)
     Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
     Q_PROPERTY(bool nativeInputAllowed READ nativeInputAllowed NOTIFY stateChanged)
     Q_PROPERTY(QString reason READ reason NOTIFY stateChanged)
@@ -52,8 +55,10 @@ public:
     bool active() const { return m_active; }
     bool staticActive() const { return m_active && !m_dynamic; }
     bool dynamicActive() const { return m_active && m_dynamic; }
-    bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed &&
+    bool canRequest() const { if(m_preferencesOnly)return m_remoteCanRequest;return m_ready && m_available && !m_locked && !m_lidClosed &&
         (m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic") || (m_usbKeyboardKnown && !m_usbKeyboardPresent)); }
+    bool available() const { if(m_preferencesOnly)return m_remoteAvailable;return canRequest() &&
+        (m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic") || m_posture.allowed()); }
     bool backendReady() const { return m_ready; }
     bool nativeInputAllowed() const { return m_ready && !m_locked; }
     QString reason() const { return m_reason; }
@@ -135,6 +140,8 @@ private:
     void queryUsbKeyboard();
     void updateEligibility();
     void updateAutoStatic();
+    void syncPostureRequest();
+    void postureObserved(bool known, double angle);
     void updateTopology();
     void loadLayouts();
     void rebuildKeymap();
@@ -162,8 +169,12 @@ private:
     uint m_usbKeyboardGeneration=0;
     bool m_usbKeyboardKnown=false,m_usbKeyboardPresent=false;
     bool m_staticAutoAttempted=false,m_staticAutoSuppressed=false;
+    bool m_manualStaticRequest=false;
+    UkeKeyboard::TabletPosture m_posture;
+    std::unique_ptr<TabletPostureMonitor> m_postureMonitor;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
+    bool m_remoteAvailable=false,m_remoteCanRequest=false;
     double m_remoteDensity=0;
     QSet<uint> m_held,m_latched,m_lockedKeys;
     QSet<uint> m_modifierUsed,m_cancelLatch;

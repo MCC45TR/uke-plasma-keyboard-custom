@@ -22,3 +22,9 @@
 - Latest user steering, 12 November: automatic normal-mode opening must require
   touch input. Mouse focus and text/context updates must not open the keyboard.
   Keep persistent static mode and explicit manual show actions separate.
+- Latest user steering, 13 November: movable/window mode opens and closes only
+  through explicit actions, including when legacy dynamicAutoShow is true.
+  Static mode requires fresh admitted screen-normal inclination: initially
+  face up within45 degrees, revoke above45, rearm strictly below40. Unknown,
+  stale or lost data revokes entry. Prepare the numeric client with the owning
+  kernel/DT and existing Control workstream; do not deliver a missing provider.

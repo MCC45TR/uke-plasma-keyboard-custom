@@ -1,6 +1,6 @@
 # Acceptance status
 
-12 November 2026. Work in progress. The user confirms tablet-only placement,
+13 November 2026. Work in progress. The user confirms tablet-only placement,
 persistent keyboard/touchpad visibility and basic pointer movement, clicks and
 typing at35. Release39 implements frame-independent small motion, optional
 acceleration, a borderless Kirigami surface and optional idle pixel shifting.
@@ -48,7 +48,8 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
-| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Native tests and actual USB-connected entry/exit with simulated open cover pass; physical interactions open | Not tested |
+| Dynamic laptop mode | Movable/tray implementation; candidate46 removes focus-driven entry/exit | Earlier native and simulated-cover entry pass; manual-only candidate qualification pending | Not tested |
+| Static posture | Candidate46 client and45/40 hysteresis prepared | Numeric provider/frame admission and client native qualification pending | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -1004,3 +1005,40 @@ termination accepted as success. The official archive/patch round trip and
 source guards pass again. Native45, signed RPM/DNF and physical input remain
 pending. The trial guide now includes mouse/touch, acceleration and bounded
 pixel-shift checks; historical custom-upstream investigation is labeled.
+
+## COPR11318200 /45 — original-source baseline qualified
+
+Source177366ce and published recipe48b7d28e match. All three Fedora aarch64
+targets pass40/40 CTests and RPM assembly, including orderly application exit0.
+The reviewed Rawhide RPM is17,731,533 bytes, SHA256
+`7c04826c065275bceaaae2aaa0ee968ee37abf72274f87f382c99e5c104ad501`.
+Two trusted signatures and payload/header digests pass. Requirements and
+scriptlets remain equal to the earlier26 baseline;489 packaged paths have no
+foreign ownership, Python code or added input access.45 is not installed.
+
+## Candidate46 — manual dynamic mode and numeric posture client
+
+The user confirmed replacing Uke39 while keeping original Fedora Plasma Keyboard
+for rollback, and automatic reentry below40 after closing above45. Source now
+implements manual-only dynamic entry/exit even for legacy auto-focus preferences,
+static45/40 hysteresis, unknown-data revocation and a demand-leased numeric client.
+An explicit entry can wait for posture without bypassing its gate. Normal
+dismissal releases the lease and stays suppressed until an eligibility cycle or
+explicit entry. Settings show the entry action when the other conditions permit
+a request; they do not claim sensors themselves.
+
+Two new native tests bring the expected suite to42 CTests: the actual threshold
+policy and a private-bus client/provider fixture. Controller regressions cover
+tilt input release, automatic reentry, late replies, unknown data, demand release,
+manual requests and legacy focus preferences. The private-bus fixture covers
+leases, owner replacement, stale/reordered/invalid samples, initial-reply races,
+refusal, suspend/resume and process cleanup. These are pending native results,
+not measured Uke motion behavior.
+
+The [provisional IPC contract](tablet-posture.md) is agreed with the owning
+kernel/DT and existing Control workstream. No numeric provider or fitted gravity
+frame is currently admitted. Client qualification uses a separate COPR custom
+directory, preserving the default repository and installed39. Delivery, provider
+admission and actual inclination/mouse/touch testing remain open. No client
+poller, new runtime bridge package, device grant or keyboard-owned kernel build
+is added.

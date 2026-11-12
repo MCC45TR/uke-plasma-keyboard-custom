@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "laptopcontroller.h"
 #include "protocol.h"
+#include "tabletposturemonitor.h"
 #include <QtTest>
 #include <QDBusContext>
 #include <QDBusMessage>
@@ -75,10 +76,83 @@ class LaptopControllerTest final : public QObject {
         controller.m_ready=true;controller.m_available=true;controller.m_locked=false;
         controller.m_lidClosed=false;controller.m_tabletName=QStringLiteral("synthetic-panel");
         controller.m_usbKeyboardKnown=true;controller.m_usbKeyboardPresent=false;
+        controller.m_posture.update(0.0);
         controller.m_options[QStringLiteral("presentation")]=dynamic?QStringLiteral("dynamic"):QStringLiteral("static");
         controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void tiltRevokesInputAndReopensOnlyBelowForty() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        const int before=m_backend.staticBegins;
+        controller.postureObserved(true,45.0);controller.updateEligibility();
+        QTRY_COMPARE(m_backend.staticBegins,before+1);m_backend.reply();QTRY_VERIFY(controller.staticActive());
+        controller.m_held.insert(30);controller.m_pointerButtons.insert(272);
+        controller.postureObserved(true,45.001);
+        QVERIFY(!controller.active());QVERIFY(controller.m_held.isEmpty());QVERIFY(controller.m_pointerButtons.isEmpty());
+        QVERIFY(controller.pixelShift().isNull());QVERIFY(!controller.m_pixelShiftTimer.isActive());
+        controller.postureObserved(true,44.0);controller.postureObserved(true,40.0);
+        QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before+1);
+        controller.postureObserved(true,39.999);QTRY_COMPARE(m_backend.staticBegins,before+2);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
+    }
+    void unknownPostureBlocksEntryAndCancelsALateReply() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        controller.postureObserved(false,0);QVERIFY(!controller.available());QVERIFY(controller.canRequest());
+        const int before=m_backend.staticBegins;
+        controller.updateEligibility();QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+        controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+1);
+        controller.postureObserved(false,0);QVERIFY(!controller.m_starting);
+        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
+        controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+2);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
+    }
+    void manualStaticRequestWaitsForPostureAndNormalStaysDismissed() {
+        LaptopController controller;eligible(controller,false);controller.postureObserved(false,0);
+        const int before=m_backend.staticBegins;
+        controller.enter();QVERIFY(controller.m_manualStaticRequest);
+        QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+        controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+1);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;controller.leave();
+        controller.postureObserved(false,0);controller.postureObserved(true,0);controller.updateEligibility();
+        QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before+1);
+        QVERIFY(controller.m_staticAutoSuppressed);QVERIFY(!controller.active());
+        controller.enter();QTRY_COMPARE(m_backend.staticBegins,before+2);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
+    }
+    void postureDemandFollowsStaticEligibilityAndManualDismissal() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_postureMonitor=std::make_unique<TabletPostureMonitor>();
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        controller.updateEligibility();QVERIFY(controller.m_postureMonitor->requested());
+        controller.leave();QVERIFY(!controller.m_postureMonitor->requested());
+        controller.m_lidClosed=true;controller.updateEligibility();
+        controller.m_lidClosed=false;controller.updateEligibility();QVERIFY(controller.m_postureMonitor->requested());
+        controller.usbKeyboardChanged(true);QVERIFY(!controller.m_postureMonitor->requested());
+        controller.usbKeyboardChanged(false);QVERIFY(controller.m_postureMonitor->requested());
+        controller.m_locked=true;controller.updateEligibility();QVERIFY(!controller.m_postureMonitor->requested());
+        controller.m_locked=false;controller.updateEligibility();QVERIFY(controller.m_postureMonitor->requested());
+        controller.m_available=false;controller.updateEligibility();QVERIFY(!controller.m_postureMonitor->requested());
+        controller.m_available=true;controller.m_options[QStringLiteral("presentation")]=QStringLiteral("dynamic");
+        controller.updateEligibility();QVERIFY(!controller.m_postureMonitor->requested());
+        controller.postureObserved(false,0);QVERIFY(controller.available());
+        controller.leave();
+    }
+    void dynamicModeRequiresManualActionEvenWithLegacyAutoPreference() {
+        LaptopController controller;eligible(controller,true);
+        controller.m_options[QStringLiteral("dynamicAutoShow")]=true;
+        const int before=m_backend.dynamicBegins;
+        controller.textFocusChanged(true);controller.textFocusChanged(false);
+        QCoreApplication::processEvents();QCOMPARE(m_backend.dynamicBegins,before);
+        controller.enter();QTRY_COMPARE(m_backend.dynamicBegins,before+1);
+        controller.textFocusChanged(true);controller.textFocusChanged(false);
+        QVERIFY(controller.m_starting);
+        m_backend.reply();QTRY_VERIFY(controller.dynamicActive());
+        controller.textFocusChanged(false);QVERIFY(controller.dynamicActive());
+        controller.leave();QVERIFY(!controller.active());
+    }
     void pixelShiftStopsAndDefersForTouchesAndButtons() {
         LaptopController controller;eligible(controller,false);controller.m_active=true;
         controller.syncPixelShift();QVERIFY(controller.m_pixelShiftTimer.isActive());

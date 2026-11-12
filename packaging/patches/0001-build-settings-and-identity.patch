@@ -4811,10 +4811,10 @@ index 8b7f68aa3ed2a3136e1b6a0d8ed3f543e5115b5c..58b8ee3378732feeb5b2c72a82aef5d5
 +    }
  }
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2c3dae10a 100644
+index 8114b890df87972fd15efd61b4cbde823fec4c0b..a66df2cbbacb9c22fb7b1488c7df4cc1bb83f77a 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -6,17 +6,138 @@
+@@ -6,17 +6,141 @@
  
  configure_file(config-plasma-keyboard.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-plasma-keyboard.h)
  
@@ -4946,6 +4946,9 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
 +    laptop/layoutregistry.cpp
 +    laptop/layoutregistry.h
 +    laptop/physicalgeometry.h
++    laptop/tabletposture.h
++    laptop/tabletposturemonitor.cpp
++    laptop/tabletposturemonitor.h
      inputpanelintegration.cpp
      inputpanelintegration.h
      inputpanelrole.h
@@ -4958,7 +4961,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
      inputlisteneritem.cpp
      inputlisteneritem.h
      inputmethod.cpp
-@@ -24,7 +145,26 @@ target_sources(plasma-keyboard PRIVATE
+@@ -24,7 +148,26 @@ target_sources(plasma-keyboard PRIVATE
      inputpanelwindow.cpp
      inputpanelwindow.h
      inputplugin.cpp
@@ -4985,7 +4988,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
      qwaylandinputpanelshellintegration.cpp
      qwaylandinputpanelshellintegration_p.h
      qwaylandinputpanelsurface.cpp
-@@ -44,6 +184,38 @@ target_sources(plasma-keyboard PRIVATE
+@@ -44,6 +187,38 @@ target_sources(plasma-keyboard PRIVATE
      overlay/prefixquerytrigger.h
      overlay/textexpansiontrigger.cpp
      overlay/textexpansiontrigger.h
@@ -5024,7 +5027,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
  )
  
  if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
-@@ -51,7 +223,7 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
+@@ -51,7 +226,7 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
      qt_add_dbus_interfaces(dbusinterface_SRCS
          dbus/org.sigxcpu.Feedback.Haptic.xml)
  
@@ -5033,7 +5036,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
          vibration.cpp
          vibration.h
          vibrationevent.h
-@@ -60,45 +232,63 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
+@@ -60,45 +235,63 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
  endif()
  
  if(PLASMA_KEYBOARD_SOUND_ENABLED)
@@ -5108,7 +5111,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..598c00d97675e416c1de06d6b1c3f0f2
      PRIVATE
      KF6::CoreAddons
      KF6::I18n
-@@ -106,29 +296,68 @@ target_link_libraries(plasma-keyboard
+@@ -106,29 +299,68 @@ target_link_libraries(plasma-keyboard
      KF6::ConfigCore
      KF6::ConfigGui
      KF6::Crash

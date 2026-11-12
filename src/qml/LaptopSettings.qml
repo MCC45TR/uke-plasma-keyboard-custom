@@ -32,8 +32,8 @@ Kirigami.ApplicationWindow {
             width: parent.width
             spacing: Kirigami.Units.largeSpacing
             Kirigami.InlineMessage {Layout.fillWidth:true;visible:Keyboard.Laptop.reason.length>0;text:Keyboard.Laptop.reason;type:Kirigami.MessageType.Information;}
-            QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen and an extended external display. Display power, layout, scale and rotation are never changed.");}
-            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.available;onClicked:Keyboard.Laptop.toggle();}
+            QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen, an extended external display and a face-up tablet within 45 degrees of horizontal. After tilting upright, lower it below 40 degrees to reopen. The movable panel opens by button only.");}
+            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
             Kirigami.FormLayout {
                 Layout.fillWidth:true
                 QQC2.ComboBox {
@@ -47,12 +47,6 @@ Kirigami.ApplicationWindow {
                     text:i18nd("uke-plasma-keyboard-custom","Open static mode automatically when its conditions are met")
                     checked:Keyboard.Laptop.options.staticAutoShow
                     onToggled:Keyboard.Laptop.setOption("staticAutoShow",checked)
-                }
-                QQC2.CheckBox {
-                    visible:Keyboard.Laptop.options.presentation==="dynamic"
-                    text:i18nd("uke-plasma-keyboard-custom","Open dynamic mode automatically on text focus")
-                    checked:Keyboard.Laptop.options.dynamicAutoShow
-                    onToggled:Keyboard.Laptop.setOption("dynamicAutoShow",checked)
                 }
                 QQC2.Slider {visible:Keyboard.Laptop.options.presentation==="dynamic";Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom","Dynamic panel width:");from:40;to:95;stepSize:1;value:Keyboard.Laptop.options.dynamicWidthPercent;onMoved:Keyboard.Laptop.setOption("dynamicWidthPercent",Math.round(value));}
                 QQC2.Slider {visible:Keyboard.Laptop.options.presentation==="dynamic";Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom","Dynamic panel height:");from:40;to:95;stepSize:1;value:Keyboard.Laptop.options.dynamicHeightPercent;onMoved:Keyboard.Laptop.setOption("dynamicHeightPercent",Math.round(value));}

@@ -21,13 +21,17 @@ Fedora 44, 45 and Rawhide builds are qualified independently.
   language input engines, themes, gamepad navigation and local voice input.
 - Static laptop: an automatically opened, persistent full-panel keyboard and
   touchpad. Requires an already enabled internal touchscreen and an extended
-  external display. KWin integration keeps pointers and application windows
+  external display. The next posture-qualified candidate also requires a fresh
+  face-up inclination within45 degrees, closes above45 and rearms below40.
+  Its numeric provider is not delivered yet; see [acceptance](docs/acceptance.md).
+  KWin integration keeps pointers and application windows
   on external displays. It never enables a display or changes screen layout,
   scale, orientation or interface language.
   Automatic entry can be disabled in keyboard settings. Choosing Normal keyboard
   keeps it closed until the next eligibility cycle or an explicit manual entry.
 - Dynamic laptop: a movable keyboard/touchpad panel, opened manually from the
-  tray by default, with optional text-focus activation. It leaves desktop
+  tray or its button. The next candidate ignores the legacy focus-activation
+  option while preserving it on disk. It leaves desktop
   pointer, window and refresh policy intact. Initial implementation; hardware
   qualification is pending.
 
