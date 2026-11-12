@@ -580,6 +580,7 @@ public:
             m_context->send_commit_state(contextResource->handle,1);
         }
         qInfo() << "input_method_v1 activated";
+        wl_display_flush_clients(static_cast<QWaylandCompositor *>(extensionContainer())->display());
         Q_EMIT activated();
     }
 
@@ -596,6 +597,7 @@ public:
             }
         }
         m_context.reset();
+        wl_display_flush_clients(static_cast<QWaylandCompositor *>(extensionContainer())->display());
         qInfo() << "input_method_v1 deactivated";
     }
 

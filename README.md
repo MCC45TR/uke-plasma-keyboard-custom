@@ -1,9 +1,14 @@
 # Uke Plasma Keyboard Custom
 
 A tablet virtual keyboard and laptop control surface for Fedora KDE Wayland.
-This is a fork of [mops1k/plasma-keyboard-custom](https://github.com/mops1k/plasma-keyboard-custom),
-based on KDE Plasma Keyboard. Upstream history, SPDX headers and licenses are
-retained. KWin, Plasma and Qt remain original distribution packages.
+The source baseline is original KDE Plasma Keyboard 6.8.3, with an ordered
+[Uke patch series](docs/upstream-maintenance.md). The existing interface and
+optional tools from [mops1k/plasma-keyboard-custom](https://github.com/mops1k/plasma-keyboard-custom)
+are retained with attribution and licenses. The Uke RPM stays separate from
+Fedora's original Plasma Keyboard, KWin, Plasma and Qt packages.
+
+The source-baseline transition is candidate44; its native/package/device
+qualification is pending. The last delivered release is39, described below.
 
 The first target is the POCO Pad X1 (Uke), aarch64. The source discovers display,
 touch and language capabilities rather than hardcoding a connector name.
@@ -100,4 +105,5 @@ qualification remain open; see the
 
 See [architecture and source provenance](docs/architecture.md),
 [acceptance status](docs/acceptance.md) and the retained
-[upstream feature documentation](README.upstream.md).
+[original KDE README](README.upstream.md) and
+[custom-tool documentation](README.custom-tools.md).

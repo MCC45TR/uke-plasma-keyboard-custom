@@ -1,12 +1,24 @@
 # Architecture and provenance
 
-11 November 2026. Baseline: mops1k/plasma-keyboard-custom
-`c64e02591c1db3d973fc3567c62ba47cb2433a0c`. This specific keyboard fork was
-explicitly requested by the user. The delta is independent RPM/application
+12 November 2026. Candidate44 uses the original Plasma Keyboard6.8.3 archive,
+matching all478 tracked files of KDE revision
+`ce74711d51a7d8a83399cf39cec189e0c9161d38`. The user explicitly chose a separate
+Uke application built from this original baseline with portable feature patches.
+The retained custom interface/tools derive from mops1k/plasma-keyboard-custom
+`c64e02591c1db3d973fc3567c62ba47cb2433a0c`, with attribution and asset digests
+preserved in [the source manifest](../packaging/upstream.json).
+The delta is independent RPM/application
 identity, physical sizing, configurable PC keys, laptop surface isolation,
 native input routing and event-driven clipboard integration. Other desktop
 packages are not forked. Upstream-compatible fixes can be proposed upstream;
 feature retirement requires equivalent original-package support.
+
+The [maintenance workflow](upstream-maintenance.md) separates five feature
+patches from unchanged data and integration documentation. The RPM expands the
+original archive and applies those patches; the expanded repository source is
+verified against that result before source submission. Moving the baseline
+does not by itself resolve input policy: the touch-only and hidden-focus fixes
+remain explicit reviewed patches. Native44 and physical acceptance are pending.
 
 The [migration inventory entry](../packaging/native-migration-component.json)
 records this application exception, its exact remaining delta and upstream

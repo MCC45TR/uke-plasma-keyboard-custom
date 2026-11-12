@@ -1,0 +1,119 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2025-2026 Kisaragi Hiu <mail@kisaragi-hiu.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-16 17:04+0900\n"
+"Last-Translator: Kisaragi Hiu <mail@kisaragi-hiu.com>\n"
+"Language-Team: Traditional Chinese <zh-l10n@lists.slat.org>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Lokalize 26.03.70\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "過濾語言…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "過濾語言"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr "未選擇任何語言。將使用系統的預設鍵盤佈局。"
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "語言"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "按鍵回饋："
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "音效"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "震動"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "一般："
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "鍵盤導覽"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "自動大寫"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "替代字元："
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "按住按鍵時彈出顯示"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "長按延遲："
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "毫秒"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "測試虛擬鍵盤…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "回饋"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "是否要在按下按鍵時發出聲音。"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "是否要在按下按鍵時震動。"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "鍵盤語言"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "一般"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "是否要使用方向鍵控制鍵盤"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "自動讓句子開頭第一個字母轉為大寫"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "按鍵回饋"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "一般"

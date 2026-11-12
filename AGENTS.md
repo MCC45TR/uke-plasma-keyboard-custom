@@ -1,7 +1,9 @@
 # Uke keyboard development
 
-- The user explicitly authorized this keyboard fork. Do not fork KWin, Plasma,
-  Qt or another KDE package. Keep upstream attribution and original providers.
+- The user explicitly authorized this keyboard application, then requested an
+  original Plasma Keyboard source baseline with ordered feature patches. Keep
+  the Uke RPM separate and preserve the existing interface/tools. Do not fork
+  KWin, Qt or another KDE package. Keep attribution and original providers.
 - Native application code is C++20 and Qt/QML. No project Python tools or
   runtime dependencies. Build native code in COPR, never on the tablet.
 - Keep the original keyboard installed and preserve the user's input-method,

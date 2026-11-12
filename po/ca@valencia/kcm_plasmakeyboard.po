@@ -1,0 +1,123 @@
+# Translation of kcm_plasmakeyboard.po to Catalan (Valencian)
+# Copyright (C) 2025-2026 This_file_is_part_of_KDE
+# This file is distributed under the license LGPL version 2.1 or
+# version 3 or later versions approved by the membership of KDE e.V.
+#
+# SPDX-FileCopyrightText: 2025-2026 Josep M. Ferrer <txemaq@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 10:05+0100\n"
+"Last-Translator: Josep M. Ferrer <txemaq@gmail.com>\n"
+"Language-Team: Catalan <kde-i18n-ca@kde.org>\n"
+"Language: ca@valencia\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 25.04.0\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtra idiomes…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtra idiomes"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"No s'ha seleccionat cap idioma. Es farà servir la disposició del teclat "
+"predeterminada del sistema."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Idiomes"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Reacció de la tecla premuda:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "So"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibració"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "General:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navegueu amb el teclat"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Primera lletra en majúscula automàtica"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Caràcters alternatius:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Mostra una finestra emergent en mantindre premuda una tecla"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Retard en mantindre premuda:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "mil·lisegons"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Prova el teclat virtual…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Retroalimentació"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Si s'ha d'emetre un so en prémer les tecles"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Si ha de vibrar en prémer les tecles"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Idiomes del teclat"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "General"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Si s'han d'utilitzar les tecles de fletxa per a navegar pel teclat"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Posa en majúscula la primera lletra de les frases"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Reacció de la tecla premuda"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "General"

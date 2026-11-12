@@ -1,15 +1,23 @@
 %global debug_package %{nil}
 %global __provides_exclude_from ^%{_libdir}/%{name}/.*$
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
+%global upstream_version 6.8.3
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 43%{?dist}
+Release: 44%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
-Source0: %{name}-%{version}.tar.xz
+Source0: https://download.kde.org/stable/plasma/%{upstream_version}/plasma-keyboard-%{upstream_version}.tar.xz
 Source1: https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.3.tar.gz#/whisper.cpp-1.9.3.tar.gz
 Source2: https://github.com/handy-computer/transcribe.cpp/archive/5bb2deb2a4afb1fd50534ecb51cfcb521ef94944.tar.gz#/transcribe.cpp-5bb2deb2a4afb1fd50534ecb51cfcb521ef94944.tar.gz
+Source3: %{name}-assets-%{version}.tar.xz
+Source4: %{name}-integration-%{version}.tar.xz
+Patch0: 0001-build-settings-and-identity.patch
+Patch1: 0002-keyboard-interface-and-input.patch
+Patch2: 0003-laptop-and-native-integration.patch
+Patch3: 0004-optional-tools-and-data.patch
+Patch4: 0005-native-regression-coverage.patch
 BuildRequires: gcc-c++ cmake ninja-build extra-cmake-modules gettext git-core bash nodejs
 BuildRequires: cmake(Qt6Core) cmake(Qt6Gui) cmake(Qt6Qml) cmake(Qt6Quick) cmake(Qt6DBus)
 BuildRequires: cmake(Qt6Multimedia) cmake(Qt6Network) cmake(Qt6Concurrent) cmake(Qt6Test)
@@ -35,7 +43,8 @@ Suggests: hunspell-tr hunspell-en-US
 %{?systemd_requires}
 
 %description
-A separately named fork of plasma-keyboard-custom. Includes configurable PC
+A separately named application built from original Plasma Keyboard sources
+with an ordered Uke patch series. Includes configurable PC
 key regions, physical key sizing and a persistent keyboard/touchpad surface
 for an enabled tablet display with an extended external monitor. The original
 Plasma keyboard remains installed. Select this keyboard in System Settings.
@@ -43,7 +52,11 @@ Static mode requires the matching KWin integration. Hardware acceptance and
 refresh qualification are recorded separately from successful builds.
 
 %prep
-%autosetup -n %{name}-%{version}
+%autosetup -S git -n plasma-keyboard-%{upstream_version} -p1
+cp README.md README.upstream.md
+tar xf %{SOURCE3}
+tar xf %{SOURCE4}
+node tools/patch-series.mjs --check
 tar xf %{SOURCE1}
 tar xf %{SOURCE2}
 
@@ -87,7 +100,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 
 %files
 %license LICENSE LICENSES data/emoji/UNICODE-LICENSE.txt
-%doc README.md README.upstream.md docs
+%doc README.md README.upstream.md README.custom-tools.md docs
 %{_bindir}/%{name}
 %{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/UkeBreeze/
 %{_libdir}/qt6/qml/org/uke/plasma/keyboard/lib/
@@ -106,6 +119,11 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-44
+- Build from original Plasma Keyboard 6.8.3 with five ordered feature patches
+- Retain the existing interface and assets without replacing Fedora providers
+- Flush mock Wayland context transitions before testing touch-only activation
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-43
 - Keep hidden layer windows inactive until touch authorization completes
 - Exercise compositor visibility edges in the actual application regression

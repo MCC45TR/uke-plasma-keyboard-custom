@@ -1,0 +1,120 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# SPDX-FileCopyrightText: 2025-2026 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-09-23 19:27+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 26.08.1\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "رشّح اللغات…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "رشّح اللغات"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr "لم تُحدد أي لغات. سيُستخدم تخطيط لوحة المفاتيح المبدئي للنظام."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "اللغات"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "مؤشر ضغط المفاتيح:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "صوت"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "اهتزاز"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "عام:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "التنقل باستخدام لوحة المفاتيح"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "الكتابة بالأحرف الكبيرة آليًا"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "المحارف البديلة:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "أظهر منبثقة عند الاستمرار في ضغط مفتاح"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "تأخير الضغط:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "ميلي ثانية"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "اختبر لوحة المفاتيح الافتراضية…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "مؤشر الاستعمال"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "ما إذا كان سيصدر صوت عند الضغط على المفتاح"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "ما إذا كان سيهتز عند الضغط على المفتاح"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "لغات لوحة المفاتيح"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "عام"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "إذا كنت تريد استخدام مفاتيح الأسهم للتنقل في لوحة المفاتيح أم لا"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "ابدأ كل جملة بحرف كبير آليًا"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "مؤشر ضغط المفاتيح"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "عام"

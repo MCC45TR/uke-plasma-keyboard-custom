@@ -1,0 +1,124 @@
+# Translation for kcm_plasmakeyboard.po to Euskara/Basque (eu).
+# Copyright (C) 2025-2026 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# SPDX-FileCopyrightText: 2025-2026 KDE euskaratzeko proiektuko arduraduna <xalba@ni.eus>
+#
+# Translators:
+# SPDX-FileCopyrightText: Iñigo Salvador Azurmendi <xalba@ni.eus>, 2025, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-20 23:56+0100\n"
+"Last-Translator: Iñigo Salvador Azurmendi <xalba@ni.eus>\n"
+"Language-Team: Basque <kde-i18n-eu@kde.org>\n"
+"Language: eu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 25.12.3\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Hizkuntzak iragazi…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Iragazi hizkuntzak"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Ez da hizkuntzarik hautatu. Sistemaren teklatu-antolaera lehenetsia "
+"erabiliko da."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Hizkuntzak"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Tekla-sakatzearen atzeraelikadura:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Soinua"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Bibrazioa"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Orokorra:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Teklatu-nabigazioa"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Maiuskulaz ipintze automatikoa"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Karaktere alternatiboak:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Erakutsi leiho-gainerakorra tekla sakatuta mantentzean"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Euste-atzerapena:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "milisegundo"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Alegiazko teklatua probatu…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Atzeraelikadura"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Tekla sakatzean soinua igorri edo ez"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Tekla sakatzean dardaratu ala ez"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Teklatu-hizkuntzak"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Orokorra"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Teklatuan nabigatzeko gezi-teklak erabili behar diren edo ez"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Perpausen aurreneko letra automatikoki maiuskula ipini"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Tekla-sakatzearen atzeraelikadura"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Orokorra"

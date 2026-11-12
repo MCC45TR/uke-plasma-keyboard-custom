@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
+node tools/patch-series.mjs --check
 if find src kwin tools autotests -type f -name '*.py' -print | read -r _; then
  printf 'Project Python code is forbidden\n' >&2; exit 1
 fi

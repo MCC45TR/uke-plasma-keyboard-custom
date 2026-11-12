@@ -1,0 +1,119 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# SPDX-FileCopyrightText: 2025, 2026 Tommi Nieminen <translator@legisign.org>
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-08-24 19:59+0300\n"
+"Last-Translator: Tommi Nieminen <translator@legisign.org>\n"
+"Language-Team: Finnish <kde-i18n-doc@kde.org>\n"
+"Language: fi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 25.04.0\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Suodata kieliä…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Suodata kieliä"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr "Kieliä ei ole valittu. Käytetään järjestelmän oletusasettelua."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Kielet"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Näppäinpainalluspalaute:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Ääni"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Värinä"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Perusasetukset:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Näppäinnavigointi"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Automaattinen iso kirjain"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Vaihtoehtoiset merkit:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Näytä ponnahdusikkuna pidettäessä näppäintä alhaalla"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Pitoviive:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "millisekuntia"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Kokeile näyttönäppäimistöä…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Palaute"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Annetaanko näppäinpainalluksista äänipalaute"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Väristäänkö näppäinpainalluksista"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Näppäimistökielet"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Perusasetukset"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Käytetäänkö näppäimistönavigointiin nuolinäppäimiä"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Kirjoita virkkeenalkuiset kirjaimet automaattisesti isolla"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Näppäinpainalluspalaute"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Perusasetukset"

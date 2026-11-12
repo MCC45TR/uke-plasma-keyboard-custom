@@ -1,0 +1,125 @@
+# Spanish translations for kcm_plasmakeyboard.po package.
+# Copyright (C) 2025-2026 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# Automatically generated, 2025.
+#
+# SPDX-FileCopyrightText: 2025, 2026 Eloy Cuadra <ecuadra@eloihr.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_plasmakeyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 12:01+0100\n"
+"Last-Translator: Eloy Cuadra <ecuadra@eloihr.net>\n"
+"Language-Team: Spanish <kde-l10n-es@kde.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 25.12.3\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtrar idiomas…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtrar idiomas"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"No se han seleccionado idiomas. Se usará la distribución de teclado "
+"predeterminada del sistema."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Idiomas"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Reacción de pulsación de tecla:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Sonido"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibración"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "General:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navegación del teclado"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Capitalización automática"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Caracteres alternativos:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Mostrar ventana emergente al mantener pulsada una tecla"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Demora de pulsación:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "milisegundos"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Probar el teclado virtual…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Reacción"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Controla si se debe emitir un sonido al pulsar las teclas"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Controla si se debe vibrar al pulsar las teclas"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Idiomas del teclado"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "General"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr ""
+"Controla si se deben usar las teclas de las flechas para desplazarse por el "
+"teclado"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Poner en mayúsculas automáticamente la primera letra de las frases"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Reacción de pulsación de tecla"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "General"

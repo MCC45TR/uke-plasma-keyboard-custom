@@ -1,0 +1,120 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2025, 2026 Yaron Shahrabani <sh.yaron@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 13:06+0200\n"
+"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
+"Language-Team: צוות התרגום של KDE ישראל\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n == 2) ? 1 : ((n > 10 && "
+"n % 10 == 0) ? 2 : 3));\n"
+"X-Generator: Lokalize 25.12.2\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "סינון שפות…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "סינון שפות"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr "לא נבחרו שפות. פריסת ברירת המחדל של המקלדת תהיה בשימוש."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "שפות"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "משוב לחיצת מקש:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "צליל"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "רטט"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "כללי:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "ניווט עם המקלדת"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "הגדלת אותיות ראשונות אוטומטית"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "תווים חלופיים:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "הצגת חלונית צצה בעת החזקת מקש"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "השהיית לחיצה:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "מילישניות"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "בדיקת המקלדת הווירטואלית…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "משוב"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "האם להשמיע צליל בלחיצות על המקשים"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "האם להפעיל רטט בלחיצות על המקשים"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "שפות המקלדת"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "כללי"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "האם להשתמש במקשי החיצים כדי לנווט במקלדת"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "הגדלה אוטומטית של האות הראשונה במשפטים"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "משוב לחיצת מקש"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "כללי"

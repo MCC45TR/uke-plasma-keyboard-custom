@@ -1,0 +1,121 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 06:33+0100\n"
+"Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
+"Language-Team: Georgian <kde-i18n-doc@kde.org>\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.9\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "ენების გაფილტვრა…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "ენების გაფილტვრა"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"ენა არჩეული არაა. გამოყენებული იქნება ნაგულისხმევი კლავიატურის განლაგება."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "ენები"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "ღილაკზე დაჭერის უკუკავშირი:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "ხმა"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "ვიბრაცია"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "ზოგადი:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "კლავიატურით ნავიგაცია"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "ასოების ავტომატური გადიდება"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "ალტერნატიული სიმბოლოები:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "მხტუნარას ჩვენება, როცა გიჭირავთ ღილაკზე"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "დაჭერის და გაჩერების დაყოვნება:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "მილიწამი"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "ვირტუალური კლავიატურის შემოწმება…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "უკუკავშირი"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "მოხდება თუ არა ღილაკის დაწოლისას ხმის გამოცემა"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "მოხდება თუ არა ღილაკის დაწოლისას ვიბრაცია"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "კლავიატურის ენები"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "ზოგადი"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "გამოიყენება თუ არა ისრის ღილაკები კლავიატურაზე ნავიგაციისთვის"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "წინადადების პირველი ასოს ავტომატური გადიდება"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "ღილაკზე დაჭერის უკუკავშირი"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "ზოგადი"

@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: 2025-2026 Xavier Besnard <xavier.besnard@kde.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-15 17:52+0100\n"
+"Last-Translator: Xavier Besnard <xavier.besnard@kde.org>\n"
+"Language-Team: fr\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Lokalize 26.08.1\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtrer les langues…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtrer les langues"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Aucune langue sélectionnée. La disposition de clavier par défaut au niveau "
+"du système sera utilisée."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Langues"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Retour d'appui de touches :"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Son"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibration"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Général :"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navigation au clavier"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Mise à jour automatique en majuscules"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Caractères alternatifs :"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Afficher une fenêtre contextuelle lors d'un maintien de touche"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Délai de maintien :"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "millisecondes"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Testez le clavier virtuel…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Retours"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Émettre ou non un son en appuyant sur une touche"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Vibrer ou non un son en appuyant sur une touche"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Langues de clavier"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Général"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Utiliser ou non les touches de flèches pour la navigation au clavier"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Mettre automatiquement en majuscule la première lettre des phrases"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Retour d'appui de touches"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Général"

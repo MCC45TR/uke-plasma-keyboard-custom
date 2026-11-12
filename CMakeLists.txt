@@ -10,17 +10,12 @@ project(uke-plasma-keyboard-custom VERSION ${PROJECT_VERSION})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Pinned to the Arch Linux Archive snapshot of 2025-07-28, which matches SteamOS
-# 3.8 (Qt 6.9.1-5, glibc 2.41, KF6 6.16.0, libplasma/Plasma 6.4.3). The release
-# is built against exactly that snapshot because the app uses Qt's private Gui
-# and WaylandClient APIs, whose ABI is not stable across Qt minor releases:
-# building against a newer Qt (e.g. the rolling 6.11) would demand symbols
-# SteamOS does not have, and building against an older one (6.7/6.8) produces
-# private symbols that were removed or changed by Qt 6.9. The floors below
-# therefore declare the versions SteamOS 3.8 actually provides.
-set(PROJECT_DEP_VERSION "6.4.3")
-set(QT_MIN_VERSION "6.9.0")
-set(KF6_MIN_VERSION "6.16.0")
+# Original Plasma Keyboard 6.8.3 dependency floors. The independent Uke
+# application version and package identity remain separate from that baseline.
+set(UKE_UPSTREAM_VERSION "6.8.3")
+set(PROJECT_DEP_VERSION "6.8.0")
+set(QT_MIN_VERSION "6.11.0")
+set(KF6_MIN_VERSION "6.30.0")
 
 find_package(ECM ${KF6_MIN_VERSION} REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -64,7 +59,7 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
 
 # Qt 6.8+ ships the private modules as standalone CMake packages (Qt 6.7 and
 # older defined the Qt6::*Private targets from the base module packages). The
-# declared floor is Qt 6.9, so these are always present and can be required.
+# declared floor is Qt 6.11, so these are always present and can be required.
 find_package(Qt6GuiPrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)
 find_package(Qt6CorePrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)
 find_package(Qt6WaylandClientPrivate ${QT_MIN_VERSION} REQUIRED NO_MODULE)

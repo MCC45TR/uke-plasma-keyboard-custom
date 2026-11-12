@@ -1,0 +1,121 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2025 Matjaž Jeran <matjaz.jeran@amis.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 07:36+0100\n"
+"Last-Translator: Matjaž Jeran <matjaz.jeran@amis.net>\n"
+"Language-Team: Slovenian <lugos-slo@lugos.si>\n"
+"Language: sl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n"
+"%100==4 ? 3 : 0);\n"
+"X-Generator: Poedit 3.8\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtriraj jezike…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtriraj jezike"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Ni izbranega jezika. Uporabljena bo privzeta razporeditev tipkovnice sistema."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Jeziki"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Povratni odziv pritiska tipke:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Zvok"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Tresenje"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Splošno:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Krmarjenje tipkovnice"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Samodejne velike črke"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Alternativni znaki:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Prikaži pojavno okno, ko držite tipko"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Zakasnitev pritiska:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "milisekund"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Preizkusi navidezno tipkovnico…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Povratni odziv"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Ali naj se ob pritisku tipke odda zvok"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Ali naj vibrira ob pritisku tipke"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Jeziki tipkovnice"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Splošno"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Ali naj se za navigacijo po tipkovnici uporabljajo puščične tipke"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Samodejne velike prve črke stavkov"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Povratni odziv pritiska tipke"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Splošno"

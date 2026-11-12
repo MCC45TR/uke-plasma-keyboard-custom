@@ -1,0 +1,2173 @@
+diff --git a/kwin/CMakeLists.txt b/kwin/CMakeLists.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..062764962c4cf4a856de356c5a0703b60aa20506
+--- /dev/null
++++ b/kwin/CMakeLists.txt
+@@ -0,0 +1,23 @@
++# SPDX-License-Identifier: BSD-2-Clause
++find_package(KWin 6.8 REQUIRED COMPONENTS kwin)
++if(NOT KWin_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+")
++    message(FATAL_ERROR "The KWin development package must expose its version")
++endif()
++kcoreaddons_add_plugin(uke_keyboard_backend INSTALL_NAMESPACE "kwin/plugins")
++set(UKE_PLUGIN_BUILD_ID "${PROJECT_VERSION}" CACHE STRING "Package identity for the private KWin module")
++if(NOT UKE_PLUGIN_BUILD_ID MATCHES "^[A-Za-z0-9_.-]+$")
++    message(FATAL_ERROR "The KWin module build identity contains unsupported characters")
++endif()
++string(REGEX REPLACE "[^A-Za-z0-9_]" "_" UKE_PLUGIN_BUILD_SUFFIX "${UKE_PLUGIN_BUILD_ID}")
++set(UKE_KWIN_PLUGIN_ID "uke_keyboard_backend_${UKE_PLUGIN_BUILD_SUFFIX}" CACHE INTERNAL "Native plugin identifier" FORCE)
++# Qt retains loaded plugin libraries. A new package must have a new filename
++# so KWin can load its code without replacing the compositor or user session.
++set_target_properties(uke_keyboard_backend PROPERTIES OUTPUT_NAME "${UKE_KWIN_PLUGIN_ID}")
++target_compile_definitions(uke-plasma-keyboard-custom PRIVATE UKE_KWIN_PLUGIN_ID="${UKE_KWIN_PLUGIN_ID}")
++target_sources(uke_keyboard_backend PRIVATE backend.cpp refreshguard.cpp nativerefreshbackend.cpp)
++target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_BUILD_VERSION="${KWin_VERSION}" UKE_PLUGIN_BUILD_ID="${UKE_PLUGIN_BUILD_ID}")
++target_include_directories(uke_keyboard_backend PRIVATE ../src/laptop)
++target_link_libraries(uke_keyboard_backend PRIVATE KWin::kwin Qt::DBus KF6::ConfigCore)
++if(KWin_VERSION VERSION_GREATER_EQUAL 6.8)
++    target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_68=1)
++endif()
+diff --git a/kwin/backend.cpp b/kwin/backend.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..78383e3833a8c5d4c8031137745b158e5a428b44
+--- /dev/null
++++ b/kwin/backend.cpp
+@@ -0,0 +1,490 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Uses KWin's public-to-plugins InputDevice and Plugin interfaces. The virtual
++// device pattern follows KDE's buttonrebinds plugin (David Redondo, GPL).
++#include "protocol.h"
++#include "processidentity.h"
++#include "refreshguard.h"
++#include "nativerefreshbackend.h"
++#include "versionguard.h"
++#include "usbkeyboardpolicy.h"
++#include "pointerconfinement.h"
++#include "inputclientidentity.h"
++#include <core/inputdevice.h>
++#include <core/output.h>
++#include <core/session.h>
++#include <input.h>
++#include <input_event.h>
++#include <main.h>
++#include <plugin.h>
++#include <pointer_input.h>
++#include <touch_input.h>
++#include <wayland_server.h>
++#include <wayland/seat.h>
++#include <wayland/surface.h>
++#include <window.h>
++#include <workspace.h>
++#include <KConfigGroup>
++#include <KSharedConfig>
++#include <QDBusConnection>
++#include <QDBusConnectionInterface>
++#include <QDBusContext>
++#include <QDBusMessage>
++#include <QDBusServiceWatcher>
++#include <QFileInfo>
++#include <QFile>
++#include <QHash>
++#include <QPointer>
++#include <QSet>
++#include <QVariantMap>
++#include <QCoreApplication>
++#include <algorithm>
++#include <chrono>
++#include <cmath>
++#include <limits>
++#include <functional>
++#include <utility>
++#include <linux/input-event-codes.h>
++#include <unistd.h>
++
++namespace {
++using namespace KWin;
++#ifdef UKE_KWIN_68
++using OutputType = LogicalOutput;
++using WindowRect = RectF;
++#else
++using OutputType = Output;
++using WindowRect = QRectF;
++#endif
++auto now() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()); }
++QRectF rectangle(const auto &r) { return {qreal(r.x()), qreal(r.y()), qreal(r.width()), qreal(r.height())}; }
++
++class VirtualDevice final : public InputDevice {
++public:
++    std::function<void()> locksChanged;
++    LEDs leds() const override { return m_leds; }
++    void setLeds(LEDs leds) override {
++        if (m_leds == leds) return;
++        m_leds = leds;
++        if (locksChanged) locksChanged();
++    }
++    QString name() const override { return QStringLiteral("Uke virtual keyboard and touchpad"); }
++    bool isEnabled() const override { return true; }
++    void setEnabled(bool) override { }
++    bool isKeyboard() const override { return true; }
++    bool isPointer() const override { return true; }
++    bool isTouchpad() const override { return true; }
++    bool isTouch() const override { return false; }
++    bool isTabletTool() const override { return false; }
++    bool isTabletPad() const override { return false; }
++    bool isTabletModeSwitch() const override { return false; }
++    bool isLidSwitch() const override { return false; }
++private:
++    LEDs m_leds;
++};
++
++class Backend final : public Plugin, protected QDBusContext, public InputEventFilter {
++    Q_OBJECT
++    Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
++public:
++    Backend() : InputEventFilter(InputFilterOrder::LockScreen), m_bus(QDBusConnection::sessionBus()),
++        m_watcher(this),m_pointerCorrection([this]{confinePointerNow();},this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);},nativeRefreshBackend())
++    {
++        if (!m_bus.registerService(QLatin1String(UkeKeyboard::service))) return;
++        m_bus.registerObject(QLatin1String(UkeKeyboard::path), this,
++                            QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals);
++        m_watcher.setConnection(m_bus);
++        m_watcher.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
++        connect(&m_watcher, &QDBusServiceWatcher::serviceUnregistered, this, [this] { detach(); });
++        if(kwinApp()->session())connect(kwinApp()->session(),&Session::activeChanged,this,[this](bool active){if(!active){endStatic();endDynamic();release();}});
++        m_device.locksChanged = [this] {
++            if (m_client.isEmpty()) return;
++            auto signal = QDBusMessage::createTargetedSignal(m_client, QLatin1String(UkeKeyboard::path),
++                QLatin1String(UkeKeyboard::interface), QStringLiteral("Locks"));
++            signal << m_device.leds().testFlag(LED::CapsLock) << m_device.leds().testFlag(LED::NumLock)
++                   << m_device.leds().testFlag(LED::ScrollLock);
++            m_bus.send(signal);
++        };
++        input()->addInputDevice(&m_device);
++        m_deviceAdded = true;
++        input()->installInputEventFilter(this);
++        connect(input(), &InputRedirection::deviceAdded, this, [this] { updateUsbKeyboard(); });
++        connect(input(), &InputRedirection::deviceRemoved, this, [this] { updateUsbKeyboard(); });
++        updateUsbKeyboard();
++        connect(workspace(), &Workspace::outputsChanged, this, [this] {
++            if (m_active && !eligible(m_tabletName)) endStatic();
++            if (m_dynamic && !eligible(m_tabletName)) endDynamic();
++            m_refresh.topologyChanged();
++            Q_EMIT TopologyChanged();
++        });
++        connect(workspace(), &Workspace::windowAdded, this, [this](Window *w) { observe(w); });
++        connect(workspace(), &Workspace::windowRemoved, this, [this](Window *w) { m_saved.remove(w); });
++        for (Window *w : workspace()->windows()) observe(w);
++        m_bus.connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
++                      QStringLiteral("org.kde.screensaver"), QStringLiteral("AboutToLock"), this, SLOT(Lock()));
++        m_bus.connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
++                      QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("ActiveChanged"), this, SLOT(Locked(bool)));
++    }
++    ~Backend() override {
++        detach();
++        if (m_deviceAdded) input()->removeInputDevice(&m_device);
++        m_bus.unregisterObject(QLatin1String(UkeKeyboard::path));
++        m_bus.unregisterService(QLatin1String(UkeKeyboard::service));
++    }
++    bool touchDown(TouchDownEvent *event) override {
++        m_touches[event->id]=event->pos;relayTouch(0,event->id,event->pos);
++        if((!m_active&&!m_dynamic)||locked()||!tablet()||!rectangle(tablet()->geometry()).contains(event->pos))return false;
++        auto *window=input()->findToplevel(event->pos);
++        if(!ownWindow(window))return false;
++        // Forward only the keyboard's own surface before the global touchscreen
++        // gesture filter. Three/four-finger actions come from the virtual pad;
++        // ordinary multi-finger typing must not also switch desktops.
++        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);
++        auto *point=seat->notifyTouchDown(window->surface(),window->bufferGeometry().topLeft(),event->id,event->pos);
++        if(!point)return false;
++        m_directTouches.insert(event->id);m_directFrame=true;return true;
++    }
++    bool touchMotion(TouchMotionEvent *event) override {
++        m_touches[event->id]=event->pos;relayTouch(1,event->id,event->pos);
++        if(locked()){endStatic();endDynamic();release();return false;}
++        if(m_cancelledTouches.contains(event->id))return true;
++        if(!m_directTouches.contains(event->id))return false;
++        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchMotion(event->id,event->pos);m_directFrame=true;return true;
++    }
++    bool touchUp(TouchUpEvent *event) override {
++        relayTouch(2,event->id,m_touches.take(event->id));
++        if(locked()){endStatic();endDynamic();release();return false;}
++        if(m_cancelledTouches.remove(event->id))return true;
++        if(!m_directTouches.remove(event->id))return false;
++        auto *seat=waylandServer()->seat();seat->setTimestamp(event->time);seat->notifyTouchUp(event->id);m_directFrame=true;return true;
++    }
++    bool touchFrame() override {if(!std::exchange(m_directFrame,false))return !m_cancelledTouches.isEmpty();waylandServer()->seat()->notifyTouchFrame();return true;}
++    bool touchCancel() override {
++        relayTouch(3,0,{});m_touches.clear();const bool consumed=!m_directTouches.isEmpty()||!m_cancelledTouches.isEmpty();
++        if(!m_directTouches.isEmpty())waylandServer()->seat()->notifyTouchCancel();m_directTouches.clear();m_cancelledTouches.clear();m_directFrame=false;return consumed;
++    }
++    bool pointerMotion(PointerMotionEvent *event) override {
++        if (!m_active || m_warping) return false;
++        if (locked()) { endStatic(); return false; }
++        const QPointF target = constrain(event->position);
++        if (target != event->position) {
++            queuePointerConfinement();
++            return true;
++        }
++        return false;
++    }
++
++public Q_SLOTS:
++    bool TouchActivationAllowed() {
++        return authorized() && input()->lastInputHandler() == input()->touch();
++    }
++    QVariantMap Capabilities() {
++        QStringList internal, external;
++        for (auto *o : workspace()->outputs()) {
++            if (o->isPlaceholder()) continue;
++            (o->isInternal() ? internal : external).append(o->name());
++        }
++        int surfaceCount=0;QRectF largest;QString largestOutput;
++        for(auto *window:workspace()->windows())if(ownWindow(window)){
++            ++surfaceCount;const auto area=rectangle(window->frameGeometry());
++            if(area.width()*area.height()>largest.width()*largest.height()){
++                largest=area;largestOutput=window->output()?window->output()->name():QString();
++            }
++        }
++        return {{QStringLiteral("version"), UkeKeyboard::protocolVersion},
++                {QStringLiteral("build"), QStringLiteral(UKE_PLUGIN_BUILD_ID)},
++                {QStringLiteral("internal"), internal}, {QStringLiteral("external"), external},
++                {QStringLiteral("active"), m_active}, {QStringLiteral("tablet"), m_tabletName},
++                {QStringLiteral("usbKeyboardPresent"), hasUsbKeyboard()},
++                {QStringLiteral("ownSurfaceCount"),surfaceCount},
++                {QStringLiteral("ownSurfaceLargestOutput"),largestOutput},
++                {QStringLiteral("ownSurfaceLargestWidth"),qRound(largest.width())},
++                {QStringLiteral("ownSurfaceLargestHeight"),qRound(largest.height())}};
++    }
++    bool Attach() {
++        if (!calledFromDBus() || locked()) return false;
++        const QString sender = message().service();
++        const auto uid = m_bus.interface()->serviceUid(sender);
++        const auto pid = m_bus.interface()->servicePid(sender);
++        if (!uid.isValid() || uid.value() != getuid() || !pid.isValid()) return false;
++        // The selected input method is launched directly by KWin. An arbitrary
++        // same-UID instance of the executable must not acquire native input.
++        if (!UkeKeyboard::hasProcessParent(pid.value(), getpid())) return false;
++        const QFileInfo executable(QStringLiteral("/proc/%1/exe").arg(pid.value()));
++        const QString target = executable.symLinkTarget();
++        const QFileInfo installed(QStringLiteral("/usr/bin/uke-plasma-keyboard-custom"));
++        if (target != installed.canonicalFilePath() || installed.ownerId() != 0 ||
++            (installed.permissions() & (QFile::WriteGroup | QFile::WriteOther))) return false;
++        const QString selected = KSharedConfig::openConfig(QStringLiteral("kwinrc"))->group(QStringLiteral("Wayland"))
++                                     .readEntry(QStringLiteral("InputMethod"), QString());
++        if (!selected.endsWith(QLatin1String("/org.uke.plasma.keyboard.desktop")) &&
++            selected != QLatin1String("org.uke.plasma.keyboard.desktop")) return false;
++        if (!m_client.isEmpty() && m_client != sender) return false;
++        m_client = sender;
++        m_clientPid = pid.value();
++        m_watcher.addWatchedService(sender);
++        return true;
++    }
++    bool BeginStatic(const QString &tablet) {
++        if (!authorized() || !eligible(tablet) || hasUsbKeyboard()) return false;
++        if (m_active) return m_tabletName == tablet;
++        endDynamic();
++        m_tabletName = tablet;
++        m_active = true;
++        m_refresh.begin(tablet);
++        for (Window *w : workspace()->windows()) moveAway(w);
++        queuePointerConfinement();
++        Q_EMIT StaticChanged(true);
++        return true;
++    }
++    bool BeginDynamic(const QString &tablet) {
++        if (!authorized() || !eligible(tablet)) return false;
++        if (m_dynamic) return m_tabletName == tablet;
++        endStatic();
++        m_tabletName=tablet;m_dynamic=true;
++        Q_EMIT DynamicChanged(true);
++        return true;
++    }
++    void EndDynamic() { if (authorized(false)) endDynamic(); }
++    bool Profile(const QString &profile) { return authorized() && m_refresh.set(profile); }
++    QVariantMap Locks() {
++        if (!authorized()) return {};
++        return {{QStringLiteral("caps"),m_device.leds().testFlag(LED::CapsLock)},
++                {QStringLiteral("num"),m_device.leds().testFlag(LED::NumLock)},
++                {QStringLiteral("scroll"),m_device.leds().testFlag(LED::ScrollLock)}};
++    }
++    void EndStatic() { if (authorized(false)) endStatic(); }
++    void ReleaseAll() { if (authorized(false)) release(); }
++    void Key(uint code, bool pressed) {
++        if (!authorized() || code == 0 || code > KEY_MICMUTE || code == KEY_POWER || code == KEY_SLEEP || code == KEY_SUSPEND || code == KEY_WAKEUP) return;
++        if (pressed) { if (m_keys.contains(code)) return; m_keys.insert(code); }
++        else { if (!m_keys.remove(code)) return; }
++        Q_EMIT m_device.keyChanged(code, pressed ? KeyboardKeyState::Pressed : KeyboardKeyState::Released, now(), &m_device);
++    }
++    void Motion(double dx, double dy) {
++        if (!authorized() || !std::isfinite(dx) || !std::isfinite(dy)) return;
++        const QPointF delta(std::clamp(dx, -2048.0, 2048.0), std::clamp(dy, -2048.0, 2048.0));
++        Q_EMIT m_device.pointerMotion(delta, delta, now(), &m_device);
++        Q_EMIT m_device.pointerFrame(&m_device);
++    }
++    void Button(uint code, bool pressed) {
++        if (!authorized() || code < BTN_LEFT || code > BTN_MIDDLE) return;
++        if (pressed) { if (m_buttons.contains(code)) return; m_buttons.insert(code); }
++        else { if (!m_buttons.remove(code)) return; }
++        Q_EMIT m_device.pointerButtonChanged(code, pressed ? PointerButtonState::Pressed : PointerButtonState::Released, now(), &m_device);
++        Q_EMIT m_device.pointerFrame(&m_device);
++    }
++    void Scroll(double x, double y) {
++        if (!authorized() || !std::isfinite(x) || !std::isfinite(y)) return;
++        axis(PointerAxis::Horizontal, x); axis(PointerAxis::Vertical, y);
++        Q_EMIT m_device.pointerFrame(&m_device);
++    }
++    void Swipe(int fingers, int phase, double x, double y) {
++        if (!authorized() || fingers < 3 || fingers > 4 || !std::isfinite(x) || !std::isfinite(y)) return;
++        if (phase == 0 && !m_swiping) { m_swiping = true; Q_EMIT m_device.swipeGestureBegin(fingers, now(), &m_device); }
++        else if (phase == 1 && m_swiping) Q_EMIT m_device.swipeGestureUpdate(QPointF(std::clamp(x,-2048.0,2048.0),std::clamp(y,-2048.0,2048.0)), now(), &m_device);
++        else if (phase == 2 && m_swiping) { m_swiping = false; Q_EMIT m_device.swipeGestureEnd(now(), &m_device); }
++        else if (phase == 3 && m_swiping) { m_swiping = false; Q_EMIT m_device.swipeGestureCancelled(now(), &m_device); }
++    }
++    void Pinch(int phase, double scale, double angle, double x, double y) {
++        if (!authorized() || !std::isfinite(scale) || !std::isfinite(angle) || !std::isfinite(x) || !std::isfinite(y)) return;
++        if (phase == 0 && !m_pinching) { m_pinching = true; Q_EMIT m_device.pinchGestureBegin(2, now(), &m_device); }
++        else if (phase == 1 && m_pinching) Q_EMIT m_device.pinchGestureUpdate(std::clamp(scale,0.01,100.0),std::clamp(angle,-360.0,360.0),QPointF(x,y),now(),&m_device);
++        else if (phase == 2 && m_pinching) { m_pinching=false; Q_EMIT m_device.pinchGestureEnd(now(),&m_device); }
++        else if (phase == 3 && m_pinching) { m_pinching=false; Q_EMIT m_device.pinchGestureCancelled(now(),&m_device); }
++    }
++    void Lock() { endStatic(); endDynamic(); release(); }
++    void Locked(bool active) { if (active) Lock(); }
++
++Q_SIGNALS:
++    void StaticChanged(bool active);
++    void DynamicChanged(bool active);
++    void TopologyChanged();
++    void UsbKeyboardChanged(bool present);
++    void ProfileError(const QString &reason);
++
++private:
++    bool ownWindow(Window *window) const {
++        auto *server=waylandServer();
++        return !m_client.isEmpty()&&m_clientPid&&server&&window&&window->surface()&&
++            UkeKeyboard::isInputMethodClient(window->surface()->client(),server->inputMethodConnection());
++    }
++    bool hasUsbKeyboard() const {
++        const auto devices = input()->devices();
++        return std::any_of(devices.begin(), devices.end(), UkeKeyboard::isPhysicalUsbKeyboard);
++    }
++    void updateUsbKeyboard() {
++        const bool present = hasUsbKeyboard();
++        if (present == m_usbKeyboardPresent) return;
++        m_usbKeyboardPresent = present;
++        if (present) endStatic();
++        Q_EMIT UsbKeyboardChanged(present);
++    }
++    void relayTouch(int phase,int id,const QPointF &position) {
++        if(m_client.isEmpty()||locked())return;
++        OutputType *output=nullptr;
++        for(auto *o:workspace()->outputs())if(rectangle(o->geometry()).contains(position)){output=o;break;}
++        if(!output&&phase!=3)return;
++        const QRectF area=output?rectangle(output->geometry()):QRectF(0,0,1,1);
++        const QSize mm=output?output->physicalSize():QSize(200,140);
++        auto signal=QDBusMessage::createTargetedSignal(m_client,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Touch"));
++        signal<<phase<<id<<(position.x()-area.x())/std::max(1.0,area.width())<<(position.y()-area.y())/std::max(1.0,area.height())<<8.0/std::max(60,mm.width())<<8.0/std::max(60,mm.height());
++        m_bus.send(signal);
++    }
++    struct Saved { QPointer<OutputType> output; QRectF before; QRectF moved; QRectF requested; };
++    bool locked() const { return !waylandServer() || waylandServer()->isScreenLocked() || !kwinApp()->session() || !kwinApp()->session()->isActive(); }
++    bool authorized(bool requireUnlocked = true) {
++        const bool own = calledFromDBus() && !m_client.isEmpty() && message().service() == m_client;
++        if (own && requireUnlocked && locked()) { endStatic(); endDynamic(); release(); return false; }
++        return own;
++    }
++    OutputType *tablet() const {
++        for (auto *o : workspace()->outputs()) if (o->name() == m_tabletName && o->isInternal()) return o;
++        return nullptr;
++    }
++    QList<OutputType *> external() const {
++        QList<OutputType *> result;
++        for (auto *o : workspace()->outputs()) if (!o->isInternal() && !o->isPlaceholder()) result.append(o);
++        return result;
++    }
++    bool eligible(const QString &name) const {
++        OutputType *panel = nullptr;
++        for (auto *o : workspace()->outputs()) if (o->name() == name && o->isInternal()) panel = o;
++        if (!panel || locked()) return false;
++        const QRectF area = rectangle(panel->geometry());
++        const auto screens = external();
++        return !screens.isEmpty() && std::none_of(screens.begin(), screens.end(), [&area](auto *o) { return rectangle(o->geometry()).intersects(area); });
++    }
++    QPointF constrain(QPointF p) const {
++        QList<QRectF> areas;
++        for (auto *output : external()) areas.append(rectangle(output->geometry()));
++        return UkeKeyboard::externalPointerPosition(areas,p);
++    }
++    void queuePointerConfinement() {
++        // KWin drains warps requested inside an input filter recursively.
++        // Coalesce the correction outside that stack, then recheck current
++        // topology and stop static mode if native confinement cannot succeed.
++        m_pointerCorrection.request();
++    }
++    void confinePointerNow() {
++            if (!m_active) return;
++            if (!eligible(m_tabletName)) {endStatic();return;}
++            const auto position=input()->globalPointer();
++            const auto target=constrain(position);
++            if (target==position) return;
++            m_warping=true;input()->pointer()->warp(target);m_warping=false;
++            if (constrain(input()->globalPointer())!=input()->globalPointer()) {
++                endStatic();
++                Q_EMIT ProfileError(QStringLiteral("Static mode stopped because the pointer could not be confined to an external display."));
++            }
++    }
++    void observe(Window *w) {
++        connect(w,&Window::bufferGeometryChanged,this,[this,w] {
++            // TouchPoint's position setter is private to KWin. A panel move or
++            // rotation cancels this sequence instead of calling hidden ABI.
++            if((m_active||m_dynamic)&&ownWindow(w)&&!m_directTouches.isEmpty())release();
++        });
++        connect(w, &Window::frameGeometryChanged, this, [this,w] {
++            auto saved=m_saved.find(w);
++            if(saved!=m_saved.end()&&rectangle(w->frameGeometry())==saved->requested)saved->moved=saved->requested;
++            moveAway(w);
++        });
++        connect(w, &Window::outputChanged, this, [this,w] { moveAway(w); });
++        moveAway(w);
++    }
++    void moveAway(Window *w) {
++        if (!m_active || m_moving || !tablet() || !w || w->isSpecialWindow() || ownWindow(w)) return;
++        const QRectF old = rectangle(w->frameGeometry());
++        if (!old.intersects(rectangle(tablet()->geometry()))) return;
++        const auto screens = external();
++        if (screens.isEmpty()) return;
++        auto *target = screens.first();
++        for (auto *o : screens) if (rectangle(o->geometry()).contains(old.center())) { target=o; break; }
++        if (!m_saved.contains(w)) m_saved.insert(w, {w->output(), old, {}, {}});
++        m_moving = true;
++        w->sendToOutput(target);
++        QRectF moved = rectangle(w->frameGeometry());
++        const QRectF area = rectangle(target->geometry());
++        moved.setSize(QSizeF(std::min(moved.width(),area.width()),std::min(moved.height(),area.height())));
++        moved.moveLeft(std::clamp(moved.x(),area.left(),area.right()-moved.width()));
++        moved.moveTop(std::clamp(moved.y(),area.top(),area.bottom()-moved.height()));
++        m_saved[w].requested=moved;
++        w->moveResize(WindowRect(moved));
++        m_saved[w].moved = rectangle(w->frameGeometry());
++        m_moving = false;
++    }
++    void endStatic() {
++        if (!m_active) return;
++        m_active = false;
++        m_refresh.end();
++        release();
++        const auto outputs = workspace()->outputs();
++        for (auto it=m_saved.begin();it!=m_saved.end();++it) {
++            Window *w=it.key(); const Saved &s=it.value();
++            if (s.output && outputs.contains(s.output.data()) && rectangle(w->frameGeometry())==s.moved) {
++                w->sendToOutput(s.output); w->moveResize(WindowRect(s.before));
++            }
++        }
++        m_saved.clear(); m_tabletName.clear();
++        Q_EMIT StaticChanged(false);
++    }
++    void endDynamic() {
++        if(!m_dynamic)return;
++        m_dynamic=false;release();m_tabletName.clear();
++        Q_EMIT DynamicChanged(false);
++    }
++    void release() {
++        if(!m_directTouches.isEmpty()){
++            waylandServer()->seat()->notifyTouchCancel();m_cancelledTouches.unite(std::exchange(m_directTouches,{}));m_directFrame=false;
++        }
++        const auto keys=std::exchange(m_keys,{});
++        const auto buttons=std::exchange(m_buttons,{});
++        for(uint k:keys) Q_EMIT m_device.keyChanged(k,KeyboardKeyState::Released,now(),&m_device);
++        for(uint b:buttons) Q_EMIT m_device.pointerButtonChanged(b,PointerButtonState::Released,now(),&m_device);
++        if(m_swiping) Q_EMIT m_device.swipeGestureCancelled(now(),&m_device);
++        if(m_pinching) Q_EMIT m_device.pinchGestureCancelled(now(),&m_device);
++        m_swiping=false; m_pinching=false;
++        axis(PointerAxis::Horizontal,0); axis(PointerAxis::Vertical,0);
++        Q_EMIT m_device.pointerFrame(&m_device);
++    }
++    void detach() {
++        endStatic(); endDynamic(); release();
++        if(!m_client.isEmpty())m_watcher.removeWatchedService(m_client);
++        m_client.clear(); m_clientPid=0;
++    }
++    void axis(PointerAxis orientation,double value) {
++#ifdef UKE_KWIN_68
++        Q_EMIT m_device.pointerAxisChanged(orientation,std::clamp(value,-4096.0,4096.0),0,PointerAxisSource::Finger,false,false,now(),&m_device);
++#else
++        Q_EMIT m_device.pointerAxisChanged(orientation,std::clamp(value,-4096.0,4096.0),0,PointerAxisSource::Finger,false,now(),&m_device);
++#endif
++    }
++    QDBusConnection m_bus;
++    QDBusServiceWatcher m_watcher;
++    VirtualDevice m_device;
++    UkeKeyboard::DeferredPointerCorrection m_pointerCorrection;
++    RefreshGuard m_refresh;
++    QString m_client,m_tabletName;
++    uint m_clientPid=0;
++    bool m_active=false,m_dynamic=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false,m_usbKeyboardPresent=false;
++    QSet<uint> m_keys,m_buttons;
++    QHash<int,QPointF>m_touches;
++    QSet<int>m_directTouches,m_cancelledTouches;
++    bool m_directFrame=false;
++    QHash<Window *,Saved> m_saved;
++};
++}
++
++class KWIN_EXPORT UkeKeyboardFactory final : public KWin::PluginFactory {
++    Q_OBJECT
++    Q_PLUGIN_METADATA(IID PluginFactory_iid FILE "metadata.json")
++    Q_INTERFACES(KWin::PluginFactory)
++public:
++    std::unique_ptr<KWin::Plugin> create() const override {
++        if (!UkeKeyboard::compatibleKWin(QCoreApplication::applicationVersion(), QStringLiteral(UKE_KWIN_BUILD_VERSION))) {
++            qWarning("Uke keyboard: rebuild the integration for the running KWin version");
++            return {};
++        }
++        return std::make_unique<Backend>();
++    }
++};
++#include "backend.moc"
+diff --git a/kwin/inputclientidentity.h b/kwin/inputclientidentity.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..e91adde200aaafdbd1af7dcea684ac41faf3a128
+--- /dev/null
++++ b/kwin/inputclientidentity.h
+@@ -0,0 +1,11 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++namespace KWin { class ClientConnection; }
++namespace UkeKeyboard {
++inline bool isInputMethodClient(const KWin::ClientConnection *client,const KWin::ClientConnection *selected)
++{
++    // A compositor-created socketpair reports the compositor's peer PID.
++    // Only the exact connection selected by KWin identifies its input method.
++    return client && selected && client==selected;
++}
++}
+diff --git a/kwin/metadata.json b/kwin/metadata.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..a249224a9ef04ec5b56eac894e269db4e9fce40c
+--- /dev/null
++++ b/kwin/metadata.json
+@@ -0,0 +1,8 @@
++{
++    "KPlugin": {
++        "Name": "Uke keyboard integration",
++        "Description": "Session-scoped virtual input and tablet keyboard surface isolation",
++        "License": "GPL-2.0-or-later",
++        "EnabledByDefault": false
++    }
++}
+diff --git a/kwin/nativerefreshbackend.cpp b/kwin/nativerefreshbackend.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..c002d24c2b6f3431793ec651c4defec1e9221989
+--- /dev/null
++++ b/kwin/nativerefreshbackend.cpp
+@@ -0,0 +1,48 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "nativerefreshbackend.h"
++#include "nativerefreshrequest.h"
++#include <core/backendoutput.h>
++#include <core/output.h>
++#include <workspace.h>
++
++namespace {
++KWin::BackendOutput *findPanel(const QString &name)
++{
++ if(!KWin::workspace())return nullptr;
++ for(auto *output:KWin::workspace()->outputs()){
++  auto *panel=output->backendOutput();
++  if(output->name()==name&&output->isInternal()&&panel&&panel->isInternal()&&panel->isEnabled()&&panel->currentMode())return panel;
++ }
++ return nullptr;
++}
++RefreshGuard::Mode describe(const std::shared_ptr<KWin::OutputMode> &mode)
++{
++ return {mode->size(),int(mode->refreshRate())};
++}
++}
++
++RefreshGuard::Backend nativeRefreshBackend()
++{
++ static_assert(int(KWin::VrrPolicy::Never)==0&&int(KWin::VrrPolicy::Always)==1&&int(KWin::VrrPolicy::Automatic)==2);
++ return {
++  [](const QString &name)->std::optional<RefreshGuard::Snapshot>{
++   auto *panel=findPanel(name);if(!panel)return std::nullopt;
++   RefreshGuard::Snapshot state{describe(panel->currentMode()),{},int(panel->vrrPolicy())};
++   for(const auto &mode:panel->modes())if(!mode->isRemoved())state.modes.append(describe(mode));
++   return state;
++  },
++  [](const QString &name,const RefreshGuard::Mode &requested,int policy){
++   auto *panel=findPanel(name);if(!panel||policy<0||policy>2)return false;
++   for(const auto &mode:panel->modes()){
++    if(mode->isRemoved()||describe(mode)!=requested)continue;
++    KWin::OutputConfiguration config;
++    config.source=KWin::OutputConfiguration::Source::System;
++    *config.changeSet(panel)=UkeKeyboard::refreshChanges(mode->modeline(),KWin::VrrPolicy(policy));
++    // Resolve and apply synchronously on the compositor thread. No copied
++    // KScreen graph can overwrite intervening user/display configuration.
++    return bool(KWin::workspace()->applyOutputConfiguration(config));
++   }
++   return false;
++  }
++ };
++}
+diff --git a/kwin/nativerefreshbackend.h b/kwin/nativerefreshbackend.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..f53230d5b1cce8b8470ece91ba6b1c008d337abf
+--- /dev/null
++++ b/kwin/nativerefreshbackend.h
+@@ -0,0 +1,4 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include "refreshguard.h"
++RefreshGuard::Backend nativeRefreshBackend();
+diff --git a/kwin/nativerefreshrequest.h b/kwin/nativerefreshrequest.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..06f18e0e1b52ddad039993b4cbbfb1ed689a7864
+--- /dev/null
++++ b/kwin/nativerefreshrequest.h
+@@ -0,0 +1,15 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <core/outputconfiguration.h>
++
++namespace UkeKeyboard {
++inline KWin::OutputChangeSet refreshChanges(const KWin::OutputModeline &mode,KWin::VrrPolicy policy)
++{
++ KWin::OutputChangeSet change;
++ // currentMode is temporary. Leave the user's persistent desiredMode and all
++ // geometry, power, scale, rotation, color and other-output fields untouched.
++ change.currentMode=mode;
++ change.vrrPolicy=policy;
++ return change;
++}
++}
+diff --git a/kwin/pointerconfinement.h b/kwin/pointerconfinement.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..151d60fa60da54a0aa62364f4807a830ae64a08f
+--- /dev/null
++++ b/kwin/pointerconfinement.h
+@@ -0,0 +1,50 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QList>
++#include <QPointF>
++#include <QRectF>
++#include <QObject>
++#include <algorithm>
++#include <cmath>
++#include <limits>
++#include <functional>
++#include <utility>
++
++namespace UkeKeyboard {
++class DeferredPointerCorrection final : public QObject {
++public:
++    DeferredPointerCorrection(std::function<void()> apply,QObject *parent=nullptr)
++        :QObject(parent),m_apply(std::move(apply)){}
++    void request() {
++        if(std::exchange(m_pending,true))return;
++        QMetaObject::invokeMethod(this,[this]{m_pending=false;m_apply();},Qt::QueuedConnection);
++    }
++private:
++    std::function<void()> m_apply;
++    bool m_pending=false;
++};
++inline QPointF externalPointerPosition(const QList<QRectF> &outputs, QPointF position)
++{
++    // Match KWin's floored-point, half-open output membership. A position
++    // already on an external output must stay exactly unchanged.
++    const QPointF pixel(std::floor(position.x()), std::floor(position.y()));
++    for (const auto &area : outputs) {
++        if (pixel.x() >= area.left() && pixel.x() < area.right() &&
++            pixel.y() >= area.top() && pixel.y() < area.bottom()) return position;
++    }
++    QPointF nearest = position;
++    double distance = std::numeric_limits<double>::max();
++    for (const auto &area : outputs) {
++        // Integer interior targets survive KWin's own right/bottom minus-one
++        // confinement. Fractional edge targets can otherwise request a warp
++        // repeatedly after the compositor has adjusted the requested point.
++        const double left=std::ceil(area.left()), right=std::floor(area.right()-1.0);
++        const double top=std::ceil(area.top()), bottom=std::floor(area.bottom()-1.0);
++        if (left>right || top>bottom) continue;
++        const QPointF target(std::clamp(position.x(),left,right),std::clamp(position.y(),top,bottom));
++        const double d=std::hypot(target.x()-position.x(),target.y()-position.y());
++        if (d<distance) {distance=d;nearest=target;}
++    }
++    return nearest;
++}
++}
+diff --git a/kwin/refreshguard.cpp b/kwin/refreshguard.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..36036db4b720b73541a779994457dabb70d0b355
+--- /dev/null
++++ b/kwin/refreshguard.cpp
+@@ -0,0 +1,193 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "refreshguard.h"
++#include <QFile>
++#include <QFileInfo>
++#include <QDir>
++#include <QDateTime>
++#include <QJsonDocument>
++#include <QJsonObject>
++#include <QSaveFile>
++#include <QStandardPaths>
++#include <QStringList>
++#include <cmath>
++#include <fcntl.h>
++#include <unistd.h>
++#include <utility>
++
++namespace {
++RefreshGuard::Mode recordedMode(const QVariantMap &saved,bool applied)
++{
++ const QString prefix=applied?QStringLiteral("applied"):QString();
++ const auto key=[&prefix](const char *plain,const char *capital){return prefix.isEmpty()?QString::fromLatin1(plain):prefix+QString::fromLatin1(capital);};
++ return {{saved.value(key("width","Width")).toInt(),saved.value(key("height","Height")).toInt()},qRound(saved.value(key("hz","Hz")).toDouble()*1000)};
++}
++std::optional<RefreshGuard::Mode> findMode(const QList<RefreshGuard::Mode>&modes,const QSize &size,int milliHz,int tolerance=0)
++{
++ std::optional<RefreshGuard::Mode> best;
++ for(const auto &mode:modes){
++  const int distance=std::abs(mode.milliHz-milliHz);
++  if(mode.size==size&&distance<=tolerance&&(!best||distance<std::abs(best->milliHz-milliHz)))best=mode;
++ }
++ return best;
++}
++bool ownsMode(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
++{
++ return current.current==recordedMode(saved,true);
++}
++bool ownsPolicy(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
++{
++ return current.policy==saved.value(QStringLiteral("appliedPolicy")).toInt();
++}
++QVariantMap readRecord(const QString &path)
++{
++ const QFileInfo info(path);
++ if(!info.exists()||info.isSymLink()||!info.isFile()||info.ownerId()!=getuid()||info.size()>4096||(info.permissions()&(QFile::ReadGroup|QFile::WriteGroup|QFile::ReadOther|QFile::WriteOther)))return {};
++ QFile file(path);if(!file.open(QIODevice::ReadOnly))return {};
++ const auto data=QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
++ if(data.value(QStringLiteral("version")).toInt()!=1||data.value(QStringLiteral("name")).toString().size()>128||data.value(QStringLiteral("name")).toString().isEmpty())return {};
++ for(const QString &key:{QStringLiteral("width"),QStringLiteral("height"),QStringLiteral("appliedWidth"),QStringLiteral("appliedHeight")})if(data.value(key).toInt()<100||data.value(key).toInt()>16000)return {};
++ for(const QString &key:{QStringLiteral("hz"),QStringLiteral("appliedHz")})if(!std::isfinite(data.value(key).toDouble())||data.value(key).toDouble()<1||data.value(key).toDouble()>1000)return {};
++ if(data.value(QStringLiteral("policy")).toInt()<0||data.value(QStringLiteral("policy")).toInt()>2||data.value(QStringLiteral("appliedPolicy")).toInt()<0||data.value(QStringLiteral("appliedPolicy")).toInt()>2)return {};
++ return data;
++}
++bool writeRecord(const QString &path,const QVariantMap &data)
++{
++ QSaveFile file(path);
++ if(!file.open(QIODevice::WriteOnly)||!file.setPermissions(QFile::ReadOwner|QFile::WriteOwner))return false;
++ const auto bytes=QJsonDocument(QJsonObject::fromVariantMap(data)).toJson(QJsonDocument::Compact);
++ if(file.write(bytes)!=bytes.size()||!file.flush()||::fsync(file.handle())!=0||!file.commit())return false;
++ const auto directory=QFile::encodeName(QFileInfo(path).absolutePath());
++ const int fd=::open(directory.constData(),O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
++ if(fd<0)return false;
++ const bool synced=::fsync(fd)==0;
++ ::close(fd);
++ return synced;
++}
++}
++
++RefreshGuard::RefreshGuard(QObject *parent,std::function<void(const QString&)> error,Backend backend)
++ :QObject(parent),m_error(std::move(error)),m_backend(std::move(backend))
++{
++ load();
++ if(!m_saved.isEmpty()){m_pending=true;process();}
++}
++QString RefreshGuard::journal()const
++{
++ return QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation)+QStringLiteral("/uke-plasma-keyboard-custom/refresh.json");
++}
++QString RefreshGuard::legacyJournal()const
++{
++ return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)+QStringLiteral("/uke-keyboard-refresh.json");
++}
++void RefreshGuard::load()
++{
++ const auto durable=readRecord(journal()),legacy=readRecord(legacyJournal());
++ m_saved=durable;
++ if(!legacy.isEmpty()&&(durable.isEmpty()||QFileInfo(legacyJournal()).lastModified()>=QFileInfo(journal()).lastModified()))m_saved=legacy;
++ // An older installed provider may have the newest runtime record. Migrate it
++ // before waiting for a disabled panel, so a reboot does not lose that state.
++ if(!m_saved.isEmpty()&&m_saved!=durable)save();
++}
++bool RefreshGuard::save()
++{
++ const QString directory=QFileInfo(journal()).absolutePath();
++ const auto fail=[this]{m_error(QStringLiteral("Cannot save private refresh recovery state; no new refresh setting was changed."));return false;};
++ if(!QDir().mkpath(directory))return fail();
++ const QFileInfo info(directory);
++ if(info.isSymLink()||!info.isDir()||info.ownerId()!=getuid()||!QFile::setPermissions(directory,QFile::ReadOwner|QFile::WriteOwner|QFile::ExeOwner))return fail();
++ const auto previous=readRecord(journal());
++ if(!writeRecord(journal(),m_saved))return fail();
++ // Preserve version1 runtime recovery for supported in-session downgrades.
++ if(!writeRecord(legacyJournal(),m_saved)){
++  if(previous.isEmpty())QFile::remove(journal());else writeRecord(journal(),previous);
++  return fail();
++ }
++ return true;
++}
++void RefreshGuard::clear()
++{
++ m_saved.clear();
++ for(const auto &path:{journal(),legacyJournal()})if(QFile::exists(path)&&!QFile::remove(path))m_error(QStringLiteral("Could not remove restored refresh recovery state."));
++}
++void RefreshGuard::begin(const QString &name){m_name=name;m_active=true;}
++bool RefreshGuard::set(const QString &profile)
++{
++ if(!m_active||!QStringList{QStringLiteral("keep"),QStringLiteral("30"),QStringLiteral("60"),QStringLiteral("adaptive")}.contains(profile))return false;
++ if(profile==QLatin1String("adaptive")){
++  m_error(QStringLiteral("30–60 Hz VRR requires physical kernel/display qualification; no display setting was changed."));return false;
++ }
++ m_wanted=profile;m_pending=true;process();return true;
++}
++void RefreshGuard::end()
++{
++ // A synchronous compositor apply can emit topology callbacks. Do not queue
++ // the same failed restoration repeatedly from an already-finished session.
++ if(!m_active&&m_wanted==QLatin1String("keep")&&m_busy)return;
++ m_active=false;m_wanted=QStringLiteral("keep");m_pending=true;process();
++}
++bool RefreshGuard::needsRestoration()const
++{
++ return !m_active||m_wanted==QLatin1String("keep")||(!m_saved.isEmpty()&&m_saved.value(QStringLiteral("name")).toString()!=m_name);
++}
++void RefreshGuard::topologyChanged()
++{
++ if(!m_busy&&!m_saved.isEmpty()&&needsRestoration()){m_pending=true;process();}
++}
++void RefreshGuard::process()
++{
++ if(m_busy||!m_pending)return;
++ m_busy=true;
++ while(m_pending){m_pending=false;step();}
++ m_busy=false;
++}
++void RefreshGuard::step()
++{
++ const bool restore=needsRestoration();
++ if(restore&&m_saved.isEmpty())return;
++ const QString target=restore?m_saved.value(QStringLiteral("name")).toString():m_name;
++ const auto current=m_backend.read(target);
++ if(!current)return; // A missing/disabled panel is never enabled for recovery.
++ if(restore){
++  const bool modeOwned=ownsMode(*current,m_saved);
++  const bool policyOwned=ownsPolicy(*current,m_saved);
++  if(!modeOwned&&!policyOwned)clear();
++  else{
++   const auto original=recordedMode(m_saved,false);
++   const auto mode=modeOwned?findMode(current->modes,original.size,original.milliHz):std::optional<Mode>(current->current);
++   if(!mode){m_error(QStringLiteral("The original refresh mode is no longer advertised; the display was left unchanged."));return;}
++   const int policy=policyOwned?m_saved.value(QStringLiteral("policy")).toInt():current->policy;
++   if(!m_backend.apply(target,*mode,policy)){
++    m_error(QStringLiteral("KWin refused the temporary refresh configuration."));return;
++   }
++   clear();
++  }
++  if(m_active&&m_wanted!=QLatin1String("keep"))m_pending=true;
++  return;
++ }
++
++ const auto next=findMode(current->modes,current->current.size,m_wanted.toInt()*1000,600);
++ if(!next){m_error(QStringLiteral("This display does not advertise the requested fixed refresh rate."));return;}
++ if(!m_saved.isEmpty()){
++  const bool modeOwned=ownsMode(*current,m_saved);
++  const bool policyOwned=ownsPolicy(*current,m_saved);
++  if(!modeOwned&&!policyOwned)clear();
++  else{
++   // A user edit relinquishes only that field. Keep the other field's original
++   // baseline across later profile switches and restoration.
++   if(!modeOwned){m_saved[QStringLiteral("width")]=current->current.size.width();m_saved[QStringLiteral("height")]=current->current.size.height();m_saved[QStringLiteral("hz")]=current->current.milliHz/1000.0;}
++   if(!policyOwned)m_saved[QStringLiteral("policy")]=current->policy;
++  }
++ }
++ if(current->current==*next&&current->policy==0){if(!m_saved.isEmpty())save();return;}
++ const auto previous=m_saved;
++ if(m_saved.isEmpty())m_saved={{QStringLiteral("version"),1},{QStringLiteral("name"),target},{QStringLiteral("width"),current->current.size.width()},{QStringLiteral("height"),current->current.size.height()},{QStringLiteral("hz"),current->current.milliHz/1000.0},{QStringLiteral("policy"),current->policy}};
++ m_saved[QStringLiteral("appliedWidth")]=next->size.width();m_saved[QStringLiteral("appliedHeight")]=next->size.height();m_saved[QStringLiteral("appliedHz")]=next->milliHz/1000.0;m_saved[QStringLiteral("appliedPolicy")]=0;
++ if(!save()){m_saved=previous;return;}
++ if(!m_backend.apply(target,*next,0)){
++  // Keep the last successfully owned setting when a subsequent 30/60 switch
++  // fails. Recording the failed target would otherwise lose the original mode.
++  m_saved=previous;
++  if(m_saved.isEmpty())clear();else save();
++  m_error(QStringLiteral("KWin refused the temporary refresh configuration."));
++ }
++}
+diff --git a/kwin/refreshguard.h b/kwin/refreshguard.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..d7b5798a3ab85c9d7968f8f943d085f0ffcc180a
+--- /dev/null
++++ b/kwin/refreshguard.h
+@@ -0,0 +1,46 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QObject>
++#include <QList>
++#include <QSize>
++#include <QVariantMap>
++#include <functional>
++#include <optional>
++// Temporary output-mode ownership survives input-method crashes. Private user
++// state also outlives the runtime directory; recovery never enables an output.
++class RefreshGuard final : public QObject {
++public:
++ struct Mode {
++  QSize size;
++  int milliHz=0;
++  bool operator==(const Mode&)const=default;
++ };
++ struct Snapshot {
++  Mode current;
++  QList<Mode> modes;
++  int policy=0;
++ };
++ struct Backend {
++  std::function<std::optional<Snapshot>(const QString&)> read;
++  std::function<bool(const QString&,const Mode&,int)> apply;
++ };
++ explicit RefreshGuard(QObject *parent,std::function<void(const QString&)> error,Backend backend);
++ void begin(const QString &name);
++ bool set(const QString &profile);
++ void end();
++ void topologyChanged();
++private:
++ void process();
++ void step();
++ bool needsRestoration()const;
++ void load();
++ bool save();
++ void clear();
++ QString journal()const;
++ QString legacyJournal()const;
++ std::function<void(const QString&)>m_error;
++ Backend m_backend;
++ QVariantMap m_saved;
++ QString m_name,m_wanted=QStringLiteral("keep");
++ bool m_active=false,m_busy=false,m_pending=false;
++};
+diff --git a/kwin/usbkeyboardpolicy.h b/kwin/usbkeyboardpolicy.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..29c87d29baf14d149b8d41b93fc0195da9d82ba5
+--- /dev/null
++++ b/kwin/usbkeyboardpolicy.h
+@@ -0,0 +1,20 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <core/inputdevice.h>
++#include <QVariant>
++#include <linux/input.h>
++
++namespace UkeKeyboard {
++inline bool isPhysicalUsbKeyboard(const KWin::InputDevice *device)
++{
++    if (!device || !device->isKeyboard() || device->busType() != BUS_USB) return false;
++    // A real USB receiver also counts. Exclude uinput/UHID and the plugin's
++    // own device; neither is evidence of a physically attached USB keyboard.
++    const auto path = device->sysPath();
++    if (!path.startsWith(QLatin1String("/sys/devices/")) ||
++        path.startsWith(QLatin1String("/sys/devices/virtual/"))) return false;
++    // Libinput's generic keyboard capability includes media buttons on mice.
++    // Use the original KWin full-keyboard classification, independent of layout.
++    return device->property("alphaNumericKeyboard").toBool();
++}
++}
+diff --git a/kwin/versionguard.h b/kwin/versionguard.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c1dea163fac9d812009b10a60cd1949f51e54f4
+--- /dev/null
++++ b/kwin/versionguard.h
+@@ -0,0 +1,8 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QString>
++namespace UkeKeyboard {
++inline bool compatibleKWin(const QString &running,const QString &built) {
++    return !built.isEmpty() && running==built;
++}
++}
+diff --git a/plasmoid/org.uke.plasma.keyboard.toggle/contents/ui/main.qml b/plasmoid/org.uke.plasma.keyboard.toggle/contents/ui/main.qml
+new file mode 100644
+index 0000000000000000000000000000000000000000..78a4f466371bf26a142fbc274f1a718ba794d49b
+--- /dev/null
++++ b/plasmoid/org.uke.plasma.keyboard.toggle/contents/ui/main.qml
+@@ -0,0 +1,125 @@
++/*
++    SPDX-FileCopyrightText: 2026 Chechulin Serhii
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++
++import QtQuick
++import QtQuick.Layouts
++
++import org.kde.kirigami as Kirigami
++import org.kde.plasma.core as PlasmaCore
++import org.kde.plasma.plasma5support as Plasma5Support
++import org.kde.plasma.plasmoid
++
++// A panel button for tablets without a hardware keyboard: it triggers the
++// keyboard's own "Show Virtual Keyboard" global action (the Meta+Shift+K
++// shortcut), which toggles the keyboard and also works for text fields that
++// never activate it by themselves.
++PlasmoidItem {
++    id: root
++
++    readonly property string iconName: "input-keyboard-virtual"
++    readonly property string toggleCommand: "/bin/sh -c 'for q in qdbus6 qdbus; do command -v $q >/dev/null && exec $q org.kde.kglobalaccel /component/org_kde_plasma_keyboard_custom org.kde.kglobalaccel.Component.invokeShortcut show-virtual-keyboard; done'"
++    property bool busy: false
++
++    Plasmoid.icon: iconName
++    Plasmoid.title: i18n("Virtual Keyboard")
++    toolTipMainText: Plasmoid.title
++    toolTipSubText: i18n("Show or hide the on-screen keyboard")
++    preferredRepresentation: Plasmoid.formFactor === PlasmaCore.Types.Planar ? fullRepresentation : compactRepresentation
++
++    function handleActivationKey(event) {
++        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
++            root.toggleKeyboard();
++            event.accepted = true;
++        }
++    }
++
++    function toggleKeyboard() {
++        if (busy) {
++            return;
++        }
++        busy = true;
++        executable.connectSource(toggleCommand);
++    }
++
++    Plasma5Support.DataSource {
++        id: executable
++
++        engine: "executable"
++
++        onNewData: function (sourceName, data) {
++            disconnectSource(sourceName);
++            root.busy = false;
++        }
++
++        onSourceDisconnected: function (sourceName) {
++            root.busy = false;
++        }
++    }
++
++    TapHandler {
++        acceptedButtons: Qt.LeftButton
++        gesturePolicy: TapHandler.ReleaseWithinBounds
++        onTapped: root.toggleKeyboard()
++    }
++
++    HoverHandler {
++        id: hoverHandler
++
++        cursorShape: Qt.PointingHandCursor
++    }
++
++    compactRepresentation: Item {
++        id: compactButton
++
++        implicitWidth: Kirigami.Units.iconSizes.medium
++        implicitHeight: Kirigami.Units.iconSizes.medium
++        Layout.minimumWidth: Kirigami.Units.iconSizes.medium
++        Layout.minimumHeight: Kirigami.Units.iconSizes.medium
++        Layout.preferredWidth: Kirigami.Units.iconSizes.medium
++        Layout.preferredHeight: Kirigami.Units.iconSizes.medium
++        activeFocusOnTab: true
++
++        Accessible.name: root.toolTipSubText
++        Accessible.role: Accessible.Button
++
++        Keys.onPressed: function (event) {
++            root.handleActivationKey(event);
++        }
++
++        Kirigami.Icon {
++            anchors.centerIn: parent
++            width: Math.min(parent.width, parent.height) * 1.3
++            height: width
++            source: root.iconName
++            active: hoverHandler.hovered || compactButton.activeFocus
++            opacity: root.busy ? 0.6 : 1.0
++        }
++    }
++
++    fullRepresentation: Item {
++        id: button
++
++        Layout.minimumWidth: Kirigami.Units.iconSizes.medium
++        Layout.minimumHeight: Kirigami.Units.iconSizes.medium
++        Layout.preferredWidth: Kirigami.Units.iconSizes.large
++        Layout.preferredHeight: Kirigami.Units.iconSizes.large
++        activeFocusOnTab: true
++
++        Accessible.name: root.toolTipSubText
++        Accessible.role: Accessible.Button
++
++        Keys.onPressed: function (event) {
++            root.handleActivationKey(event);
++        }
++
++        Kirigami.Icon {
++            anchors.fill: parent
++            anchors.margins: Kirigami.Units.smallSpacing
++            active: hoverHandler.hovered || button.activeFocus
++            opacity: root.busy ? 0.6 : 1.0
++            source: root.iconName
++        }
++    }
++}
+diff --git a/plasmoid/org.uke.plasma.keyboard.toggle/metadata.json b/plasmoid/org.uke.plasma.keyboard.toggle/metadata.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc77b58689a929692f84924326ba3047ff5c3b54
+--- /dev/null
++++ b/plasmoid/org.uke.plasma.keyboard.toggle/metadata.json
+@@ -0,0 +1,21 @@
++{
++    "KPackageStructure": "Plasma/Applet",
++    "KPlugin": {
++        "Authors": [
++            {
++                "Name": "Chechulin Serhii"
++            }
++        ],
++        "Category": "Utilities",
++        "Description": "Show or hide the uke-plasma-keyboard-custom on-screen keyboard",
++        "Description[uk]": "Показати або приховати екранну клавіатуру uke-plasma-keyboard-custom",
++        "Icon": "input-keyboard-virtual",
++        "Id": "org.uke.plasma.keyboard.toggle",
++        "License": "GPL-2.0-or-later",
++        "Name": "Virtual Keyboard (custom)",
++        "Name[uk]": "Екранна клавіатура (custom)",
++        "Version": "1.0",
++        "Website": "https://github.com/mops1k/uke-plasma-keyboard-custom"
++    },
++    "X-Plasma-API-Minimum-Version": "6.0"
++}
+diff --git a/src/laptop/controladaptor.cpp b/src/laptop/controladaptor.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..b967b18d0dafa98324eb0bfba581e572bd5a9289
+--- /dev/null
++++ b/src/laptop/controladaptor.cpp
+@@ -0,0 +1,21 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "controladaptor.h"
++#include <QDBusConnection>
++#include <QDBusConnectionInterface>
++#include <QDBusMessage>
++#include <QFileInfo>
++#include <unistd.h>
++KeyboardControlAdaptor::KeyboardControlAdaptor(QObject*parent,std::function<QVariantMap()>status,std::function<void()>toggle,CallerVerifier verifier):QDBusAbstractAdaptor(parent),m_verifier(std::move(verifier)),m_status(std::move(status)),m_toggle(std::move(toggle)){setAutoRelaySignals(false);}
++QVariantMap KeyboardControlAdaptor::status()const{return m_status();}
++bool KeyboardControlAdaptor::trustedCaller(const QDBusMessage &request)const{
++ if(request.type()!=QDBusMessage::MethodCallMessage||request.service().isEmpty())return false;
++ auto *interface=m_bus.interface();if(!interface)return false;
++ const auto uid=interface->serviceUid(request.service()),pid=interface->servicePid(request.service());
++ if(!uid.isValid()||uid.value()!=getuid()||!pid.isValid())return false;
++ const QFileInfo installed(QStringLiteral("/usr/bin/uke-plasma-keyboard-custom"));
++ const QFileInfo process(QStringLiteral("/proc/%1/exe").arg(pid.value()));
++ return installed.ownerId()==0&&!(installed.permissions()&(QFile::WriteGroup|QFile::WriteOther))&&process.symLinkTarget()==installed.canonicalFilePath();
++}
++bool KeyboardControlAdaptor::toggle(const QDBusMessage &request){if(!(m_verifier?m_verifier(m_bus,request):trustedCaller(request)))return false;m_toggle();return true;}
++
++bool KeyboardControlAdaptor::publish(QDBusConnection bus,const QString&path){m_bus=bus;return bus.registerObject(path,parent(),QDBusConnection::ExportAdaptors);}
+diff --git a/src/laptop/controladaptor.h b/src/laptop/controladaptor.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..416081f74c2059e6a49d49fcf0dde3bec93dc624
+--- /dev/null
++++ b/src/laptop/controladaptor.h
+@@ -0,0 +1,28 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QDBusAbstractAdaptor>
++#include <QDBusConnection>
++#include <QDBusMessage>
++#include <QVariantMap>
++#include <functional>
++// Only these methods are exported. Native input methods on the parent QObject
++// must never become a D-Bus proxy around the compositor's caller checks.
++class KeyboardControlAdaptor final : public QDBusAbstractAdaptor {
++ Q_OBJECT
++ Q_CLASSINFO("D-Bus Interface","org.uke.PlasmaKeyboard.Control1")
++public:
++ using CallerVerifier=std::function<bool(const QDBusConnection &,const QDBusMessage &)>;
++ KeyboardControlAdaptor(QObject *parent,std::function<QVariantMap()>status,std::function<void()>toggle,CallerVerifier verifier={});
++ bool publish(QDBusConnection bus,const QString &path);
++public Q_SLOTS:
++ QVariantMap status()const;
++ bool toggle(const QDBusMessage &request);
++Q_SIGNALS:
++ void stateChanged();
++private:
++ bool trustedCaller(const QDBusMessage &request)const;
++ QDBusConnection m_bus{QDBusConnection::sessionBus()};
++ CallerVerifier m_verifier;
++ std::function<QVariantMap()>m_status;
++ std::function<void()>m_toggle;
++};
+diff --git a/src/laptop/laptopcontroller.cpp b/src/laptop/laptopcontroller.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..7ac6b66b085f193060eedb52d0f5687f4ac74a00
+--- /dev/null
++++ b/src/laptop/laptopcontroller.cpp
+@@ -0,0 +1,499 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "laptopcontroller.h"
++#include "controladaptor.h"
++#include "physicalgeometry.h"
++#include "layoutregistry.h"
++#include "protocol.h"
++#include "sessionlockstate.h"
++#include "prediction/hunspelldictionary.h"
++#include <KConfigGroup>
++#include <KLocalizedString>
++#include <KSharedConfig>
++#include <KScreen/ConfigMonitor>
++#include <KScreen/GetConfigOperation>
++#include <KScreen/SetConfigOperation>
++#include <KScreen/Output>
++#include <KScreen/Mode>
++#include <QCoreApplication>
++#include <QDBusArgument>
++#include <QDBusConnectionInterface>
++#include <QDBusError>
++#include <QDBusMessage>
++#include <QDBusPendingCallWatcher>
++#include <QDBusPendingReply>
++#include <QDBusServiceWatcher>
++#include <QDBusVariant>
++#include <QDir>
++#include <QFile>
++#include <QGuiApplication>
++#include <QInputDevice>
++#include <QLocale>
++#include <QProcess>
++#include <QScreen>
++#include <QStandardPaths>
++#include <QTimer>
++#include <QXmlStreamReader>
++#include <linux/input-event-codes.h>
++#include <unistd.h>
++#include <xkbcommon/xkbcommon-names.h>
++#include <algorithm>
++#include <tuple>
++#include <cmath>
++
++namespace {
++bool modifier(uint code) { return code==KEY_LEFTSHIFT||code==KEY_RIGHTSHIFT||code==KEY_LEFTCTRL||code==KEY_RIGHTCTRL||code==KEY_LEFTALT||code==KEY_RIGHTALT||code==KEY_LEFTMETA||code==KEY_RIGHTMETA; }
++QDBusMessage layoutCall(const QString &method,const QVariantList &args={}) {
++ auto m=QDBusMessage::createMethodCall(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),method);m.setArguments(args);return m;
++}
++
++}
++LaptopController *LaptopController::s_instance=nullptr;
++LaptopController *LaptopController::instance(){return s_instance;}
++QVariantMap LaptopController::defaults() {
++ return {{"keyWidthMm",14.0},{"keyHeightMm",12.0},{"gapMm",0.8},{"touchpadHeightMm",45.0},
++ {"touchpadWidthPercent",60},{"touchpadFullWidth",false},{"pointerSpeed",1.3},{"pointerAcceleration",true},{"pixelShift",true},{"naturalScroll",true},{"palmGuard",true},
++ {"leftButton",false},{"middleButton",false},{"rightButton",false},{"functionRow",true},{"modifierRow",true},{"arrowRow",true},
++ {"navigationRow",true},{"systemRow",true},{"nativePcLayout",true},{"normalPcLayout",false},{"spaceGesture",true},{"deleteGesture",true},
++ {"keyPreview",false},{"calibrationRuler",false},{"refreshProfile",QStringLiteral("keep")},{"physicalWidthMm",0.0},{"physicalHeightMm",0.0},
++ {"syncLayout",true},{"presentation",QStringLiteral("static")},{"staticAutoShow",true},{"dynamicAutoShow",false},{"dynamicWidthPercent",85},{"dynamicHeightPercent",80},
++ {"toolbar",QStringList{"volume","brightness","media","clipboard","emoji","language","settings"}}};
++}
++LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusConnection::sessionBus()),m_files(this),m_xkb(xkb_context_new(XKB_CONTEXT_NO_FLAGS)) {
++ s_instance=this;m_clock.start();reload();loadLayouts();
++ m_typingTimer.setSingleShot(true);m_typingTimer.setInterval(250);
++ connect(&m_typingTimer,&QTimer::timeout,this,[this]{m_typing=false;Q_EMIT typingChanged();});
++ m_pixelShiftTimer.setSingleShot(true);m_pixelShiftTimer.setInterval(60000);m_pixelShiftTimer.setTimerType(Qt::VeryCoarseTimer);
++ connect(&m_pixelShiftTimer,&QTimer::timeout,this,&LaptopController::advancePixelShift);
++ connect(this,&LaptopController::stateChanged,this,&LaptopController::syncPixelShift);
++ connect(this,&LaptopController::optionsChanged,this,&LaptopController::syncPixelShift);
++ connect(this,&LaptopController::keyStateChanged,this,&LaptopController::updatePixelShiftBusy);
++ connect(this,&LaptopController::typingChanged,this,&LaptopController::updatePixelShiftBusy);
++ const QString config=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
++ m_files.addPath(config);
++ if(QFile::exists(QStringLiteral("/usr/share/hunspell")))m_files.addPath(QStringLiteral("/usr/share/hunspell"));
++ connect(&m_files,&QFileSystemWatcher::directoryChanged,this,[this](const QString &path){reload();loadLayouts();if(path==QLatin1String("/usr/share/hunspell"))Q_EMIT layoutChanged();});
++ m_bus.connect(QStringLiteral("org.kde.keyboard"),QStringLiteral("/Layouts"),QStringLiteral("org.kde.KeyboardLayouts"),QStringLiteral("layoutChanged"),this,SLOT(systemLayout(uint)));
++ auto *lock=SessionLockState::instance();
++ connect(lock,&SessionLockState::stateChanged,this,[this,lock]{m_locked=!lock->isKnown()||lock->isLocked()||lock->isPreparingLock();if(m_locked){leave(false);releaseAll();}else if(!m_ready&&!m_preferencesOnly&&!qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))connectBackend();updateEligibility();});
++ m_locked=!lock->isKnown()||lock->isLocked();
++ m_preferencesOnly=QCoreApplication::arguments().contains(QStringLiteral("--preferences"));
++ if(m_preferencesOnly){
++  m_bus.connect(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("stateChanged"),this,SLOT(refreshRemote()));
++  refreshRemote();return;
++ }
++ if(qEnvironmentVariableIsSet("PLASMA_KEYBOARD_TEST_MODE"))return;
++ m_bus.registerService(QStringLiteral("org.uke.plasma.keyboard"));
++ auto *adaptor=new KeyboardControlAdaptor(this,[this]{return status();},[this]{toggle();});
++ connect(this,&LaptopController::stateChanged,adaptor,&KeyboardControlAdaptor::stateChanged);
++ adaptor->publish(m_bus,QStringLiteral("/Laptop"));
++ auto system=QDBusConnection::systemBus();
++ system.connect(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("PropertiesChanged"),this,SLOT(propertiesChanged(QString,QVariantMap,QStringList)));
++ auto *powerWatcher=new QDBusServiceWatcher(QStringLiteral("org.freedesktop.UPower"),system,QDBusServiceWatcher::WatchForOwnerChange,this);
++ connect(powerWatcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString&owner){++m_lidGeneration;m_lidClosed=true;updateTopology();if(!owner.isEmpty())queryLid();});
++ queryLid();
++ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("StaticChanged"),this,SLOT(backendStatic(bool)));
++ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("DynamicChanged"),this,SLOT(backendDynamic(bool)));
++ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("UsbKeyboardChanged"),this,SLOT(usbKeyboardChanged(bool)));
++ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("ProfileError"),this,SLOT(profileError(QString)));
++ m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Locks"),this,SLOT(syncLocks(bool,bool,bool)));
++ auto *watcher=new QDBusServiceWatcher(QLatin1String(UkeKeyboard::service),m_bus,QDBusServiceWatcher::WatchForOwnerChange,this);
++ connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){++m_backendGeneration;m_ready=false;m_backendOwner.clear();if(owner.isEmpty()){leave(false);m_reason=i18nd("uke-plasma-keyboard-custom", "The KWin integration is unavailable or needs rebuilding for this KWin version.");updateEligibility();}else connectBackend();});
++ loadBackend();
++ requestTopology();
++ connect(KScreen::ConfigMonitor::instance(),&KScreen::ConfigMonitor::configurationChanged,this,&LaptopController::updateTopology);
++ const auto watchScreen=[this](QScreen *screen){
++  connect(screen,&QScreen::geometryChanged,this,[this]{if(m_active)releaseAll();Q_EMIT stateChanged();});
++  connect(screen,&QScreen::physicalSizeChanged,this,[this]{Q_EMIT stateChanged();});
++ };
++ for(auto *screen:qGuiApp->screens())watchScreen(screen);
++ connect(qGuiApp,&QGuiApplication::screenAdded,this,[this,watchScreen](QScreen *screen){watchScreen(screen);updateTopology();});
++ connect(qGuiApp,&QGuiApplication::screenRemoved,this,[this]{updateTopology();});
++}
++LaptopController::~LaptopController(){leave(false);releaseAll();if(s_instance==this)s_instance=nullptr;}
++void LaptopController::queryLid(){
++ const auto generation=++m_lidGeneration;
++ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),QStringLiteral("/org/freedesktop/UPower"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("GetAll"));request<<QStringLiteral("org.freedesktop.UPower");
++ auto *watcher=new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(request),this);
++ connect(watcher,&QDBusPendingCallWatcher::finished,this,[this,generation](auto *call){
++  QDBusPendingReply<QVariantMap> reply=*call;call->deleteLater();if(generation!=m_lidGeneration||reply.isError())return;
++  const auto properties=reply.value();
++  if(!properties.contains("LidIsPresent")||!properties.contains("LidIsClosed"))return;
++  m_lidClosed=properties.value("LidIsPresent").toBool()&&properties.value("LidIsClosed").toBool();updateTopology();
++ });
++}
++void LaptopController::loadBackend(){
++ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("Get"));request<<QStringLiteral("org.kde.KWin.Plugins")<<QStringLiteral("LoadedPlugins");
++ auto *reader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
++ connect(reader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){
++  QDBusPendingReply<QDBusVariant> reply=*w;w->deleteLater();QStringList owned;
++  if(!reply.isError())for(const auto&id:qdbus_cast<QStringList>(reply.value().variant()))
++   if(id==QLatin1String("uke_keyboard_backend")||id.startsWith(QLatin1String("uke_keyboard_backend_")))owned.append(id);
++  replaceBackend(owned);
++ });
++}
++void LaptopController::replaceBackend(QStringList remaining){
++ if(!remaining.isEmpty()) {
++  auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("UnloadPlugin"));request<<remaining.takeFirst();
++  auto *unloader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
++  connect(unloader,&QDBusPendingCallWatcher::finished,this,[this,remaining](auto*w){w->deleteLater();replaceBackend(remaining);});
++  return;
++ }
++ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("LoadPlugin"));request<<QLatin1String(UkeKeyboard::pluginId);
++ auto *loader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
++ connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
++}
++void LaptopController::connectBackend(){
++ const auto generation=++m_backendGeneration;
++ m_ready=false;m_backendOwner.clear();m_usbKeyboardKnown=false;++m_usbKeyboardGeneration;
++ m_reason=i18nd("uke-plasma-keyboard-custom", "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");
++ auto *bus=m_bus.interface();
++ if(!bus){updateTopology();return;}
++ const auto owner=bus->serviceOwner(QLatin1String(UkeKeyboard::service));
++ if(!owner.isValid()||owner.value().isEmpty()){updateTopology();return;}
++ const auto pid=bus->servicePid(owner.value());
++ if(!pid.isValid()||pid.value()!=uint(getppid())){updateTopology();return;}
++ m_backendOwner=owner.value();
++ auto *w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Attach")),this);
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this,generation](auto*call){
++  QDBusPendingReply<bool> reply=*call;call->deleteLater();if(generation!=m_backendGeneration)return;
++  m_ready=!reply.isError()&&reply.value();
++  if(m_ready){
++   queryUsbKeyboard();
++   auto*locks=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Locks")),this);
++   connect(locks,&QDBusPendingCallWatcher::finished,this,[this,generation](auto*w){
++    QDBusPendingReply<QVariantMap>r=*w;w->deleteLater();if(generation!=m_backendGeneration||r.isError())return;
++    const auto p=r.value();syncLocks(p.value("caps").toBool(),p.value("num").toBool(),p.value("scroll").toBool());
++   });
++  }
++  updateTopology();
++ });
++}
++void LaptopController::queryUsbKeyboard(){
++ const auto backend=m_backendGeneration;
++ const auto generation=++m_usbKeyboardGeneration;
++ auto*w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Capabilities")),this);
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this,backend,generation](auto*call){
++  QDBusPendingReply<QVariantMap>reply=*call;call->deleteLater();
++  if(backend!=m_backendGeneration||generation!=m_usbKeyboardGeneration)return;
++  const auto properties=reply.isError()?QVariantMap():reply.value();
++  const auto present=properties.value(QStringLiteral("usbKeyboardPresent"));
++  m_usbKeyboardKnown=present.metaType()==QMetaType::fromType<bool>();
++  m_usbKeyboardPresent=m_usbKeyboardKnown&&present.toBool();if(m_config)updateTopology();else updateEligibility();
++ });
++}
++void LaptopController::usbKeyboardChanged(bool present){
++ ++m_usbKeyboardGeneration;m_usbKeyboardKnown=true;m_usbKeyboardPresent=present;if(m_config)updateTopology();else updateEligibility();
++}
++QDBusPendingCall LaptopController::backendCall(const QString &method,const QVariantList &args)const {
++ if(m_backendOwner.isEmpty())return QDBusPendingCall::fromError(QDBusError(QDBusError::Disconnected,QStringLiteral("No trusted KWin integration is attached.")));
++ auto m=QDBusMessage::createMethodCall(m_backendOwner,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);m.setArguments(args);m.setAutoStartService(false);return m_bus.asyncCall(m);
++}
++void LaptopController::backendInput(const QString &method,const QVariantList &args)const {
++ if(m_backendOwner.isEmpty())return;
++ auto m=QDBusMessage::createMethodCall(m_backendOwner,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);
++ m.setArguments(args);m.setAutoStartService(false);
++ // Input has no return value. Keep ordering on this connection without a
++ // pending call and a reply dispatch for every high-frequency touch update.
++ m_bus.send(m);
++}
++void LaptopController::requestTopology(){
++ auto *op=new KScreen::GetConfigOperation(KScreen::GetConfigOperation::NoEDID,this);
++ connect(op,&KScreen::ConfigOperation::finished,this,[this,op](KScreen::ConfigOperation*){if(!op->hasError()){m_config=op->config();KScreen::ConfigMonitor::instance()->addConfig(m_config);updateTopology();}});
++}
++void LaptopController::updateTopology(){
++ m_available=false; m_screen=nullptr; m_tabletName.clear();
++ if(m_config){
++  QList<KScreen::OutputPtr> external;
++  KScreen::OutputPtr panel;
++  for(const auto&o:m_config->outputs()) {
++   if(!o->isEnabled()||!o->isConnected())continue;
++   if(o->type()==KScreen::Output::Panel){if(panel){panel.reset();break;}panel=o;}
++   else external.append(o);
++  }
++  if(panel){
++   m_tabletName=panel->name();
++   for(auto*s:qGuiApp->screens())if(s->name()==m_tabletName)m_screen=s;
++   bool touch=false;for(const auto*d:QInputDevice::devices())if(d->type()==QInputDevice::DeviceType::TouchScreen)touch=true;
++   bool mirrored=panel->replicationSource()!=0;
++   for(const auto&o:external)if(o->replicationSource()!=0||o->geometry().intersects(panel->geometry()))mirrored=true;
++   m_available=touch&&m_screen&&!external.isEmpty()&&!mirrored;
++   if(!touch)m_reason=i18nd("uke-plasma-keyboard-custom", "A touchscreen is required.");
++   else if(external.isEmpty())m_reason=i18nd("uke-plasma-keyboard-custom", "Connect and enable an external display.");
++   else if(mirrored)m_reason=i18nd("uke-plasma-keyboard-custom", "Use extended displays instead of mirroring.");
++  }else m_reason=i18nd("uke-plasma-keyboard-custom", "The tablet touchscreen must already be enabled. This application does not enable displays.");
++ }
++ updateEligibility();
++}
++void LaptopController::updateEligibility(){
++ const bool staticMode=m_options.value(QStringLiteral("presentation"))!=QLatin1String("dynamic");
++ if(m_lidClosed)m_reason=i18nd("uke-plasma-keyboard-custom", "Open the tablet cover before entering laptop mode.");
++ else if(m_locked)m_reason=i18nd("uke-plasma-keyboard-custom", "Unlock the session before entering laptop mode.");
++ else if(m_ready&&staticMode&&!m_usbKeyboardKnown)m_reason=i18nd("uke-plasma-keyboard-custom", "Checking for a connected USB keyboard.");
++ else if(m_ready&&staticMode&&m_usbKeyboardPresent)m_reason=i18nd("uke-plasma-keyboard-custom", "Disconnect the USB keyboard before entering static laptop mode. Pogo keyboards are excluded.");
++ else if(m_available&&m_ready)m_reason.clear();
++ if((m_active||m_starting)&&!available())leave(false);
++ updateAutoStatic();
++ Q_EMIT stateChanged();
++}
++void LaptopController::updateAutoStatic(){
++ const bool enabled=m_options.value(QStringLiteral("presentation"))==QLatin1String("static")&&m_options.value(QStringLiteral("staticAutoShow")).toBool();
++ if(!enabled||!available()){m_staticAutoAttempted=false;m_staticAutoSuppressed=false;return;}
++ if(m_active||m_starting||m_staticAutoAttempted||m_staticAutoSuppressed)return;
++ m_staticAutoAttempted=true;
++ const auto transition=m_transition;
++ QMetaObject::invokeMethod(this,[this,transition]{
++  if(transition!=m_transition||m_active||m_starting||m_staticAutoSuppressed||!available()||
++     m_options.value(QStringLiteral("presentation"))!=QLatin1String("static")||!m_options.value(QStringLiteral("staticAutoShow")).toBool())return;
++  enter();
++ },Qt::QueuedConnection);
++}
++void LaptopController::propertiesChanged(const QString &iface,const QVariantMap&changed,const QStringList&invalidated){
++ if(iface!=QLatin1String("org.freedesktop.UPower"))return;
++ if(changed.contains("LidIsClosed")){++m_lidGeneration;m_lidClosed=changed.value("LidIsClosed").toBool();updateTopology();}
++ else if(changed.contains("LidIsPresent")||invalidated.contains(QStringLiteral("LidIsClosed"))||invalidated.contains(QStringLiteral("LidIsPresent"))){m_lidClosed=true;updateTopology();queryLid();}
++}
++void LaptopController::toggle(){if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("toggle")));return;}if(m_active)leave();else enter();}
++void LaptopController::enter(){
++ if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("enter")));return;}
++ if(!available()||m_active||m_starting)return;
++ m_staticAutoSuppressed=false;
++ const bool dynamic=m_options.value("presentation")==QLatin1String("dynamic");
++ const auto transition=++m_transition;m_starting=true;
++ auto*w=new QDBusPendingCallWatcher(backendCall(dynamic?QStringLiteral("BeginDynamic"):QStringLiteral("BeginStatic"),{m_tabletName}),this);
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this,dynamic,transition](auto*call){
++  QDBusPendingReply<bool>reply=*call;call->deleteLater();
++  if(transition!=m_transition)return;
++  m_starting=false;
++  if(!reply.isError()&&reply.value()&&available()){m_dynamic=dynamic;m_active=true;if(!dynamic)refreshProfile();Q_EMIT stateChanged();}
++  else{backendCall(dynamic?QStringLiteral("EndDynamic"):QStringLiteral("EndStatic"));m_reason=i18nd("uke-plasma-keyboard-custom", "KWin refused the current display layout.");Q_EMIT stateChanged();}
++ });
++}
++void LaptopController::leave(bool manual){
++ if(m_preferencesOnly)return;
++ if(manual)m_staticAutoSuppressed=true;
++ ++m_transition;
++ if(m_starting){backendCall(QStringLiteral("EndDynamic"));backendCall(QStringLiteral("EndStatic"));m_starting=false;}
++ if(!m_active)return;
++ const bool dynamic=m_dynamic;m_active=false;m_dynamic=false;
++ backendCall(dynamic?QStringLiteral("EndDynamic"):QStringLiteral("EndStatic"));releaseAll();Q_EMIT stateChanged();
++}
++void LaptopController::backendStatic(bool active){
++ // Replies own entry; signals revoke an existing surface.
++ if(active||m_dynamic||(!m_active&&!m_starting)||(m_starting&&m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic")))return;
++ m_active=false;++m_transition;m_starting=false;releaseAll();Q_EMIT stateChanged();
++}
++void LaptopController::backendDynamic(bool active){
++ if(active||(!m_dynamic&&!(m_starting&&m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic")))||(!m_active&&!m_starting))return;
++ m_active=false;m_dynamic=false;++m_transition;m_starting=false;releaseAll();Q_EMIT stateChanged();
++}
++void LaptopController::textFocusChanged(bool focused){
++ const bool changed=m_textFocused!=focused;m_textFocused=focused;
++ if(!changed||m_options.value("presentation")!=QLatin1String("dynamic")||!m_options.value("dynamicAutoShow").toBool())return;
++ if(focused)enter();else if(dynamicActive()||m_starting)leave(false);
++}
++QVariantMap LaptopController::options()const{return m_options;}
++void LaptopController::reload(){
++ const auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->reparseConfiguration();const auto g=config->group(QStringLiteral("Laptop"));auto next=defaults();
++ for(auto i=next.begin();i!=next.end();++i)i.value()=g.readEntry(i.key(),i.value());
++ if(next!=m_options){if(!m_options.isEmpty()&&m_options.value("presentation")!=next.value("presentation"))leave(false);const bool syncChanged=!m_options.isEmpty()&&m_options.value("syncLayout")!=next.value("syncLayout");const bool autoChanged=m_options.value(QStringLiteral("staticAutoShow"))!=next.value(QStringLiteral("staticAutoShow"));m_options=next;if(autoChanged){m_staticAutoAttempted=false;m_staticAutoSuppressed=false;}if(syncChanged&&!m_layoutCodes.isEmpty()){releaseAll();m_layoutCodes.clear();loadLayouts();}updateEligibility();Q_EMIT optionsChanged();Q_EMIT layoutChanged();Q_EMIT stateChanged();}
++}
++void LaptopController::setOption(const QString&name,const QVariant&value){
++ const auto d=defaults();if(!d.contains(name))return;QVariant v=value;
++ const QHash<QString,QPair<double,double>> ranges{{"keyWidthMm",{7,24}},{"keyHeightMm",{7,24}},{"gapMm",{0,4}},{"touchpadHeightMm",{20,150}},{"touchpadWidthPercent",{30,100}},{"pointerSpeed",{0.2,4}},{"physicalWidthMm",{0,1000}},{"physicalHeightMm",{0,1000}}};
++ if(ranges.contains(name)){const double n=value.toDouble();if(!std::isfinite(n))return;v=std::clamp(n,ranges.value(name).first,ranges.value(name).second);}
++ if(name==QLatin1String("refreshProfile")&&!QStringList{"keep","30","60","adaptive"}.contains(value.toString()))return;
++ if(name==QLatin1String("presentation")&&!QStringList{"static","dynamic"}.contains(value.toString()))return;
++ if(name==QLatin1String("dynamicWidthPercent")||name==QLatin1String("dynamicHeightPercent"))v=std::clamp(value.toInt(),40,95);
++ if(name==QLatin1String("toolbar")){const QStringList allowed=defaults().value("toolbar").toStringList();QStringList selected;for(const auto&x:value.toStringList())if(allowed.contains(x)&&!selected.contains(x))selected.append(x);v=selected;}
++ auto c=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));c->group(QStringLiteral("Laptop")).writeEntry(name,v,KConfig::Notify);c->sync();reload();
++ if(m_active&&name==QLatin1String("refreshProfile"))refreshProfile();
++}
++double LaptopController::pixelsPerMm()const{
++ if(!m_screen)return m_remoteDensity>0?m_remoteDensity:96.0/25.4;
++ QSizeF mm(m_options.value("physicalWidthMm").toDouble(),m_options.value("physicalHeightMm").toDouble());
++ if(!UkeKeyboard::plausibleSize(mm))mm=m_screen->physicalSize();
++ const bool portrait=m_screen->geometry().height()>m_screen->geometry().width();
++ if((portrait&&mm.width()>mm.height())||(!portrait&&mm.height()>mm.width()))mm.transpose();
++ return UkeKeyboard::unitsPerMm(m_screen->geometry().width(),mm.width());
++}
++void LaptopController::loadLayouts(){
++ const auto c=KSharedConfig::openConfig(QStringLiteral("kxkbrc"));c->reparseConfiguration();const auto g=c->group(QStringLiteral("Layout"));
++ auto codes=g.readEntry(QStringLiteral("LayoutList"),QStringList{});auto variants=g.readEntry(QStringLiteral("VariantList"),QStringList{});
++ if(!m_options.value("syncLayout").toBool()){
++  const auto own=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"))->group(QStringLiteral("Laptop"));
++  codes=own.readEntry(QStringLiteral("VirtualLayoutList"),codes);variants=own.readEntry(QStringLiteral("VirtualVariantList"),variants);
++  m_layoutIndex=own.readEntry(QStringLiteral("IndependentLayout"),0);
++ }
++ if(codes.isEmpty())codes={UkeKeyboard::LayoutRegistry::system().defaultLayout()};
++ if(codes==m_layoutCodes&&variants==m_variants&&!m_layouts.isEmpty())return;
++ m_layoutCodes=codes;m_variants=variants;m_layouts.clear();const auto all=allLayouts();
++ for(int i=0;i<codes.size();i++){QString title=codes[i];for(const auto&v:all){const auto m=v.toMap();if(m.value("code")==codes[i])title=m.value("label").toString();}if(!variants.value(i).isEmpty())title+=QStringLiteral(" (%1)").arg(variants[i]);m_layouts.append(QVariantMap{{"code",codes[i]},{"variant",variants.value(i)},{"locale",UkeKeyboard::LayoutRegistry::system().locale(codes[i],variants.value(i))},{"label",title}});}
++ m_layoutIndex=std::clamp(m_layoutIndex,0,int(codes.size())-1);rebuildKeymap();
++ auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(layoutCall(QStringLiteral("getLayout"))),this);
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<uint>r=*call;if(!r.isError())systemLayout(r.value());call->deleteLater();});
++}
++void LaptopController::rebuildKeymap(){
++ if(!m_xkb)return;
++ const QByteArray code=m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")).toLatin1(),variant=m_variants.value(m_layoutIndex).toLatin1();
++ const auto c=KSharedConfig::openConfig(QStringLiteral("kxkbrc"));const QByteArray options=c->group(QStringLiteral("Layout")).readEntry(QStringLiteral("Options"),QString()).toLatin1();
++ const xkb_rule_names names{"evdev","pc105",code.constData(),variant.constData(),options.constData()};
++ m_state.reset();m_keymap.reset(xkb_keymap_new_from_names(m_xkb.get(),&names,XKB_KEYMAP_COMPILE_NO_FLAGS));if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));updateModifiers();Q_EMIT layoutChanged();
++}
++void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held|m_latched;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);applyLocks();Q_EMIT layoutChanged();}
++void LaptopController::applyLocks(){
++ if(!m_state||!m_keymap)return;
++ auto locked=xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LOCKED);
++ const auto caps=xkb_keymap_mod_get_index(m_keymap.get(),XKB_MOD_NAME_CAPS);
++ const auto num=xkb_keymap_mod_get_index(m_keymap.get(),XKB_MOD_NAME_NUM);
++ for(const auto&entry:{std::pair{caps,m_caps},std::pair{num,m_num}})if(entry.first!=XKB_MOD_INVALID){const xkb_mod_mask_t mask=xkb_mod_mask_t(1)<<entry.first;if(entry.second)locked|=mask;else locked&=~mask;}
++ xkb_state_update_mask(m_state.get(),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_DEPRESSED),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LATCHED),locked,0,0,0);
++}
++void LaptopController::syncLocks(bool caps,bool num,bool scroll){m_caps=caps;m_num=num;m_scroll=scroll;applyLocks();++m_revision;Q_EMIT keyStateChanged();}
++bool LaptopController::latched(uint code)const{return code==KEY_CAPSLOCK?m_caps:code==KEY_SCROLLLOCK?m_scroll:m_latched.contains(code)||m_lockedKeys.contains(code);}
++bool LaptopController::modifierActive()const{const auto keys=m_held|m_latched;return std::any_of(keys.begin(),keys.end(),modifier);}
++QString LaptopController::layoutName()const{return m_layouts.value(m_layoutIndex).toMap().value("label").toString();}
++QString LaptopController::locale()const{return UkeKeyboard::LayoutRegistry::system().locale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")),m_variants.value(m_layoutIndex));}
++bool LaptopController::complexLayout()const{const auto language=QLocale(locale()).language();return language==QLocale::Japanese||language==QLocale::Korean||language==QLocale::Chinese||language==QLocale::Thai;}
++bool LaptopController::dictionaryAvailable()const{
++ return HunspellDictionary::hasDictionaryFiles(locale());
++}
++QString LaptopController::dictionaryPackage()const{return QStringLiteral("hunspell-%1").arg(locale().section('_',0,0));}
++void LaptopController::systemLayout(uint index){if(!m_options.value("syncLayout").toBool()||index>=uint(m_layoutCodes.size())||int(index)==m_layoutIndex)return;m_layoutIndex=int(index);releaseAll();rebuildKeymap();}
++void LaptopController::selectLayout(int index){if(index<0||index>=m_layoutCodes.size())return;releaseAll();m_layoutIndex=index;rebuildKeymap();if(m_options.value("syncLayout").toBool())m_bus.asyncCall(layoutCall(QStringLiteral("setLayout"),{uint(index)}));else{auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));config->group(QStringLiteral("Laptop")).writeEntry(QStringLiteral("IndependentLayout"),index);config->sync();}}
++void LaptopController::nextLayout(){selectLayout((m_layoutIndex+1)%std::max(1,int(m_layoutCodes.size())));}
++QVariantList LaptopController::allLayouts()const{return UkeKeyboard::LayoutRegistry::system().layouts();}
++QVariantList LaptopController::variants(const QString&code)const{return UkeKeyboard::LayoutRegistry::system().variants(code);}
++void LaptopController::addLayout(const QString&layout,const QString&variant){
++ bool found=false;for(const auto&v:allLayouts())if(v.toMap().value("code")==layout)found=true;if(!found)return;
++ if(!variant.isEmpty()){found=false;for(const auto&v:variants(layout))if(v.toMap().value("code")==variant)found=true;if(!found)return;}
++ if(m_layoutCodes.size()>=4)return;
++ if(!m_options.value("syncLayout").toBool()){
++  auto config=KSharedConfig::openConfig(QStringLiteral("uke-plasma-keyboard-customrc"));auto group=config->group(QStringLiteral("Laptop"));auto codes=m_layoutCodes;auto variants=m_variants;
++  while(variants.size()<codes.size())variants.append(QString());codes.append(layout);variants.append(variant);
++  group.writeEntry(QStringLiteral("VirtualLayoutList"),codes);group.writeEntry(QStringLiteral("VirtualVariantList"),variants);config->sync();loadLayouts();return;
++ }
++ auto c=KSharedConfig::openConfig(QStringLiteral("kxkbrc"));auto g=c->group(QStringLiteral("Layout"));auto codes=m_layoutCodes;auto vars=m_variants;while(vars.size()<codes.size())vars.append(QString());codes.append(layout);vars.append(variant);
++ g.writeEntry(QStringLiteral("Use"),true,KConfig::Notify);g.writeEntry(QStringLiteral("LayoutList"),codes,KConfig::Notify);g.writeEntry(QStringLiteral("VariantList"),vars,KConfig::Notify);c->sync();
++ auto signal=QDBusMessage::createSignal(QStringLiteral("/Layouts"),QStringLiteral("org.kde.keyboard"),QStringLiteral("reloadConfig"));m_bus.send(signal);loadLayouts();
++}
++QVariantList LaptopController::rows()const{
++ QVariantList rows;auto row=[&](const std::initializer_list<std::tuple<uint,const char*,double>>&keys){QVariantList r;for(const auto&[code,title,units]:keys){QString text;char buffer[128]{};if(m_state&&code&&xkb_state_key_get_utf8(m_state.get(),code+8,buffer,sizeof(buffer))>0)text=QString::fromUtf8(buffer);QString label=QString::fromUtf8(title);if(label.isEmpty())label=text;if(label.isEmpty())label=QStringLiteral("·");r.append(QVariantMap{{"code",code},{"label",label},{"text",text},{"units",units},{"modifier",modifier(code)},{"dynamic",title[0]==0},{"latched",m_latched.contains(code)||m_lockedKeys.contains(code)}});}rows.append(QVariant(r));};
++ if(m_options.value("functionRow").toBool())row({{KEY_ESC,"Esc",1},{KEY_F1,"F1",1},{KEY_F2,"F2",1},{KEY_F3,"F3",1},{KEY_F4,"F4",1},{KEY_F5,"F5",1},{KEY_F6,"F6",1},{KEY_F7,"F7",1},{KEY_F8,"F8",1},{KEY_F9,"F9",1},{KEY_F10,"F10",1},{KEY_F11,"F11",1},{KEY_F12,"F12",1}});
++ row({{KEY_GRAVE,"",1},{KEY_1,"",1},{KEY_2,"",1},{KEY_3,"",1},{KEY_4,"",1},{KEY_5,"",1},{KEY_6,"",1},{KEY_7,"",1},{KEY_8,"",1},{KEY_9,"",1},{KEY_0,"",1},{KEY_MINUS,"",1},{KEY_EQUAL,"",1},{KEY_BACKSPACE,"⌫",1.6}});
++ row({{KEY_TAB,"Tab",1.4},{KEY_Q,"",1},{KEY_W,"",1},{KEY_E,"",1},{KEY_R,"",1},{KEY_T,"",1},{KEY_Y,"",1},{KEY_U,"",1},{KEY_I,"",1},{KEY_O,"",1},{KEY_P,"",1},{KEY_LEFTBRACE,"",1},{KEY_RIGHTBRACE,"",1},{KEY_BACKSLASH,"",1.2}});
++ row({{KEY_CAPSLOCK,"Caps",1.6},{KEY_A,"",1},{KEY_S,"",1},{KEY_D,"",1},{KEY_F,"",1},{KEY_G,"",1},{KEY_H,"",1},{KEY_J,"",1},{KEY_K,"",1},{KEY_L,"",1},{KEY_SEMICOLON,"",1},{KEY_APOSTROPHE,"",1},{KEY_ENTER,"Enter",2}});
++ row({{KEY_LEFTSHIFT,"Shift",1.5},{KEY_102ND,"",1},{KEY_Z,"",1},{KEY_X,"",1},{KEY_C,"",1},{KEY_V,"",1},{KEY_B,"",1},{KEY_N,"",1},{KEY_M,"",1},{KEY_COMMA,"",1},{KEY_DOT,"",1},{KEY_SLASH,"",1},{KEY_RIGHTSHIFT,"Shift",2.1}});
++ if(m_options.value("modifierRow").toBool())row({{KEY_LEFTCTRL,"Ctrl",1.2},{KEY_LEFTMETA,"Meta",1.2},{KEY_LEFTALT,"Alt",1.2},{KEY_SPACE,"",6.2},{KEY_RIGHTALT,"AltGr",1.2},{KEY_RIGHTCTRL,"Ctrl",1.2},{KEY_COMPOSE,"Menu",1.2}});else row({{KEY_SPACE,"",14.4}});
++ if(m_options.value("arrowRow").toBool()||m_options.value("navigationRow").toBool()||m_options.value("systemRow").toBool()){
++  QVariantList r;auto add=[&](uint code,const QString&label){r.append(QVariantMap{{"code",code},{"label",label},{"text",QString()},{"units",1},{"modifier",false},{"dynamic",false},{"latched",false}});};
++  if(m_options.value("arrowRow").toBool()){add(KEY_LEFT,QStringLiteral("←"));add(KEY_UP,QStringLiteral("↑"));add(KEY_DOWN,QStringLiteral("↓"));add(KEY_RIGHT,QStringLiteral("→"));}
++  if(m_options.value("navigationRow").toBool()){add(KEY_INSERT,QStringLiteral("Ins"));add(KEY_DELETE,QStringLiteral("Del"));add(KEY_HOME,QStringLiteral("Home"));add(KEY_END,QStringLiteral("End"));add(KEY_PAGEUP,QStringLiteral("PgUp"));add(KEY_PAGEDOWN,QStringLiteral("PgDn"));}
++  if(m_options.value("systemRow").toBool()){add(KEY_SYSRQ,QStringLiteral("PrtSc"));add(KEY_SCROLLLOCK,QStringLiteral("ScrLk"));add(KEY_PAUSE,QStringLiteral("Pause"));}
++  rows.append(QVariant(r));
++ }
++ return rows;
++}
++void LaptopController::setRawKey(uint code,bool pressed){backendInput(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}
++void LaptopController::key(uint code,bool pressed){
++ if(!m_ready||m_locked)return;
++ const auto time=m_clock.elapsed();
++ if(pressed){
++  if(m_held.contains(code))return;m_held.insert(code);m_pressTimes[code]=time;
++  if(modifier(code)){
++   if(m_lockedKeys.remove(code)){m_latched.remove(code);m_cancelLatch.insert(code);setRawKey(code,false);}
++   else if(!m_latched.contains(code))setRawKey(code,true);
++  }else{for(uint k:m_held)if(modifier(k))m_modifierUsed.insert(k);setRawKey(code,true);markTyping();}
++ }else{
++  if(!m_held.remove(code))return;
++  if(modifier(code)){
++   if(m_cancelLatch.remove(code)){}
++   else if(m_modifierUsed.remove(code)||time-m_pressTimes.value(code)>250){m_latched.remove(code);m_lockedKeys.remove(code);setRawKey(code,false);}
++   else if(m_latched.contains(code)&&time-m_tapTimes.value(code)<400){m_lockedKeys.insert(code);}
++   else if(m_latched.remove(code)){setRawKey(code,false);}
++   else{m_latched.insert(code);m_tapTimes[code]=time;}
++  }else{setRawKey(code,false);consumeLatched();}
++ }
++ ++m_revision;Q_EMIT keyStateChanged();
++}
++void LaptopController::tap(uint code){key(code,true);key(code,false);}
++void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingChanged();}m_typingTimer.start();}
++void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
++bool LaptopController::consumeLatched(){bool changed=false;const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);changed=true;}return changed;}
++void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);consumeLatched();markTyping();++m_revision;Q_EMIT keyStateChanged();}
++void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_pointerButtons.clear();resetPadMotion();m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
++void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendInput(QStringLiteral("Motion"),{x*speed,y*speed});}
++void LaptopController::resetPadMotion(){m_padMotion.reset(m_clock.nsecsElapsed()/1000);}
++void LaptopController::padMotion(double x,double y){
++ if(!nativeInputAllowed())return;
++ const auto delta=m_padMotion.map(QPointF(x,y),m_clock.nsecsElapsed()/1000,m_options.value("pointerAcceleration").toBool());
++ if(!delta.isNull())motion(delta.x(),delta.y());
++}
++void LaptopController::setTouchActive(bool active){m_touchActive=active;updatePixelShiftBusy();}
++void LaptopController::syncPixelShift(){
++ const bool enabled=!m_preferencesOnly&&staticActive()&&m_options.value("pixelShift").toBool();
++ if(m_pixelShift.setActive(enabled))Q_EMIT pixelShiftChanged();
++ updatePixelShiftBusy();
++ if(!enabled)m_pixelShiftTimer.stop();
++ else if(!m_pixelShift.pending()&&!m_pixelShiftTimer.isActive())m_pixelShiftTimer.start();
++}
++void LaptopController::updatePixelShiftBusy(){
++ if(m_pixelShift.setBusy(m_touchActive||m_typing||!m_held.isEmpty()||!m_pointerButtons.isEmpty())){
++  Q_EMIT pixelShiftChanged();if(m_pixelShift.active())m_pixelShiftTimer.start();
++ }
++}
++void LaptopController::advancePixelShift(){
++ m_pixelShiftTimer.stop();
++ if(m_pixelShift.step())Q_EMIT pixelShiftChanged();
++ if(m_pixelShift.active()&&!m_pixelShift.pending())m_pixelShiftTimer.start();
++}
++void LaptopController::button(uint code,bool pressed){if(code<BTN_LEFT||code>BTN_MIDDLE||(pressed&&!nativeInputAllowed()))return;if(pressed)m_pointerButtons.insert(code);else m_pointerButtons.remove(code);updatePixelShiftBusy();backendInput(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
++void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendInput(QStringLiteral("Scroll"),{x*sign,y*sign});}
++void LaptopController::swipe(int fingers,int phase,double x,double y){backendInput(QStringLiteral("Swipe"),{fingers,phase,x,y});}
++void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendInput(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
++void LaptopController::openPreferences(){Q_EMIT preferencesRequested();}
++QString LaptopController::toolLabel(const QString&name)const{
++ const QHash<QString,QString> labels{{"volume",i18nd("uke-plasma-keyboard-custom", "Volume")},{"brightness",i18nd("uke-plasma-keyboard-custom", "Brightness")},{"media",i18nd("uke-plasma-keyboard-custom", "Media")},{"volume-down",i18nd("uke-plasma-keyboard-custom", "Volume down")},{"volume-up",i18nd("uke-plasma-keyboard-custom", "Volume up")},{"mute",i18nd("uke-plasma-keyboard-custom", "Mute")},{"brightness-down",i18nd("uke-plasma-keyboard-custom", "Decrease brightness")},{"brightness-up",i18nd("uke-plasma-keyboard-custom", "Increase brightness")},{"previous",i18nd("uke-plasma-keyboard-custom", "Previous track")},{"play",i18nd("uke-plasma-keyboard-custom", "Play or pause")},{"next",i18nd("uke-plasma-keyboard-custom", "Next track")},{"clipboard",i18nd("uke-plasma-keyboard-custom", "Clipboard")},{"emoji",i18nd("uke-plasma-keyboard-custom", "Emoji")},{"language",i18nd("uke-plasma-keyboard-custom", "Input language")},{"settings",i18nd("uke-plasma-keyboard-custom", "Keyboard settings")}};
++ return labels.value(name,name);
++}
++void LaptopController::tool(const QString&name){
++ const QHash<QString,uint> keys{{"volume-down",KEY_VOLUMEDOWN},{"volume-up",KEY_VOLUMEUP},{"mute",KEY_MUTE},{"brightness-down",KEY_BRIGHTNESSDOWN},{"brightness-up",KEY_BRIGHTNESSUP},{"play",KEY_PLAYPAUSE},{"previous",KEY_PREVIOUSSONG},{"next",KEY_NEXTSONG}};
++ if(keys.contains(name)){tap(keys.value(name));return;}
++ if(name==QLatin1String("settings"))openPreferences();else if(name==QLatin1String("language"))nextLayout();
++}
++void LaptopController::refreshProfile(bool restore){if(!restore&&staticActive())backendCall(QStringLiteral("Profile"),{m_options.value("refreshProfile").toString()});}
++void LaptopController::profileError(const QString&reason){m_reason=reason;Q_EMIT stateChanged();}
++
++QString LaptopController::keyLabel(uint code,const QString&fallback)const{
++ if(!fallback.isEmpty())return fallback;
++ if(code==KEY_SPACE)return layoutName();
++ char text[128]{};if(m_state&&xkb_keysym_to_utf8(xkb_state_key_get_one_sym(m_state.get(),code+8),text,sizeof(text))>1)return QString::fromUtf8(text);return QStringLiteral("·");
++}
++QStringList LaptopController::alternatives(const QString&text)const{
++ static const QHash<QString,QString> values{{"a","áàâäãåæā"},{"e","éèêëē"},{"i","ıíìîïī"},{"ı","iíìîï"},{"o","öóòôõøœō"},{"u","üúùûū"},{"c","çćč"},{"g","ğǧ"},{"s","şßśš"},{"n","ñń"},{"y","ýÿ"},{"z","źžż"}};
++ const QString variants=values.value(text.toLower());QStringList result;for(QChar c:variants)result.append(text==text.toUpper()?QString(c).toUpper():QString(c));return result;
++}
++QVariantMap LaptopController::status()const{return {{"active",active()},{"dynamic",dynamicActive()},{"available",available()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()},{"usbKeyboardKnown",m_usbKeyboardKnown},{"usbKeyboardPresent",m_usbKeyboardPresent},{"presentation",m_options.value(QStringLiteral("presentation"))},{"staticAutoShow",m_options.value(QStringLiteral("staticAutoShow"))},{"pointerAcceleration",m_options.value(QStringLiteral("pointerAcceleration"))},{"pixelShiftEnabled",m_pixelShift.active()},{"pixelShiftX",m_pixelShift.offset().x()},{"pixelShiftY",m_pixelShift.offset().y()}};}
++void LaptopController::refreshRemote(){
++ auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("status"))),this);
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_dynamic=p.value("dynamic").toBool();m_ready=p.value("ready").toBool();m_available=p.value("available").toBool();m_usbKeyboardKnown=p.value("usbKeyboardKnown").toBool();m_usbKeyboardPresent=p.value("usbKeyboardPresent").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=i18nd("uke-plasma-keyboard-custom", "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});
++}
++QVariantList LaptopController::emojiMatches(const QString&query)const{
++ struct Entry{QString emoji,name;};
++ static QList<Entry> entries;
++ static QHash<QString,QString> turkish;
++ if(entries.isEmpty()){
++  QFile annotations(QStandardPaths::locate(QStandardPaths::GenericDataLocation,QStringLiteral("uke-plasma-keyboard-custom/emoji/tr.xml")));
++  if(annotations.open(QIODevice::ReadOnly)){QXmlStreamReader xml(&annotations);while(!xml.atEnd()){xml.readNext();if(xml.isStartElement()&&xml.name()==QLatin1String("annotation")){const QString cp=xml.attributes().value(QLatin1String("cp")).toString();turkish[cp]+=QStringLiteral(" ")+xml.readElementText();}}}
++  QFile file(QStandardPaths::locate(QStandardPaths::GenericDataLocation,QStringLiteral("uke-plasma-keyboard-custom/emoji/emoji-test.txt")));
++  if(file.open(QIODevice::ReadOnly|QIODevice::Text))while(!file.atEnd()){
++   const QString line=QString::fromUtf8(file.readLine());
++   if(!line.contains(QLatin1String("; fully-qualified")))continue;
++   const QString metadata=line.section('#',1).trimmed();const int space=metadata.indexOf(' ');if(space<0)continue;
++   const QString emoji=metadata.left(space);const QString name=metadata.mid(space+1).section(' ',1).trimmed();
++   entries.append({emoji,name});
++  }
++ }
++ QVariantList result;const QString needle=query.trimmed().toCaseFolded();
++ for(const auto&e:entries)if(needle.isEmpty()||e.name.toCaseFolded().contains(needle)||turkish.value(e.emoji).toCaseFolded().contains(needle)||e.emoji==needle){result.append(QVariantMap{{"emoji",e.emoji},{"name",e.name}});if(result.size()>=120)break;}
++ return result;
++}
+diff --git a/src/laptop/laptopcontroller.h b/src/laptop/laptopcontroller.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8b7ddefa9c728f7a2eba338c392666c96e5cc8d
+--- /dev/null
++++ b/src/laptop/laptopcontroller.h
+@@ -0,0 +1,183 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include "pixelshift.h"
++#include "touchpadmotion.h"
++#include <QObject>
++#include <QDBusConnection>
++#include <QElapsedTimer>
++#include <QFileSystemWatcher>
++#include <QPointer>
++#include <QScreen>
++#include <QSet>
++#include <QTimer>
++#include <QVariantList>
++#include <QVariantMap>
++#include <KScreen/Config>
++#include <KScreen/Output>
++#include <memory>
++#include <xkbcommon/xkbcommon.h>
++class QScreen;
++class QWindow;
++class QDBusMessage;
++class QDBusPendingCall;
++
++class LaptopController final : public QObject {
++    Q_OBJECT
++    Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Control1")
++    Q_PROPERTY(bool active READ active NOTIFY stateChanged)
++    Q_PROPERTY(bool staticActive READ staticActive NOTIFY stateChanged)
++    Q_PROPERTY(bool dynamicActive READ dynamicActive NOTIFY stateChanged)
++    Q_PROPERTY(bool available READ available NOTIFY stateChanged)
++    Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
++    Q_PROPERTY(bool nativeInputAllowed READ nativeInputAllowed NOTIFY stateChanged)
++    Q_PROPERTY(QString reason READ reason NOTIFY stateChanged)
++    Q_PROPERTY(QScreen *tabletScreen READ tabletScreen NOTIFY stateChanged)
++    Q_PROPERTY(double pixelsPerMm READ pixelsPerMm NOTIFY stateChanged)
++    Q_PROPERTY(QVariantMap options READ options NOTIFY optionsChanged)
++    Q_PROPERTY(QVariantList rows READ rows NOTIFY layoutChanged)
++    Q_PROPERTY(QVariantList layouts READ layouts NOTIFY layoutChanged)
++    Q_PROPERTY(QString layoutName READ layoutName NOTIFY layoutChanged)
++    Q_PROPERTY(QString locale READ locale NOTIFY layoutChanged)
++    Q_PROPERTY(bool complexLayout READ complexLayout NOTIFY layoutChanged)
++    Q_PROPERTY(bool dictionaryAvailable READ dictionaryAvailable NOTIFY layoutChanged)
++    Q_PROPERTY(QString dictionaryPackage READ dictionaryPackage NOTIFY layoutChanged)
++    Q_PROPERTY(bool typing READ typing NOTIFY typingChanged)
++    Q_PROPERTY(int keyRevision READ keyRevision NOTIFY keyStateChanged)
++    Q_PROPERTY(bool modifierActive READ modifierActive NOTIFY keyStateChanged)
++    Q_PROPERTY(QPoint pixelShift READ pixelShift NOTIFY pixelShiftChanged)
++public:
++    explicit LaptopController(QObject *parent=nullptr);
++    ~LaptopController() override;
++    static LaptopController *instance();
++    bool active() const { return m_active; }
++    bool staticActive() const { return m_active && !m_dynamic; }
++    bool dynamicActive() const { return m_active && m_dynamic; }
++    bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed &&
++        (m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic") || (m_usbKeyboardKnown && !m_usbKeyboardPresent)); }
++    bool backendReady() const { return m_ready; }
++    bool nativeInputAllowed() const { return m_ready && !m_locked; }
++    QString reason() const { return m_reason; }
++    QScreen *tabletScreen() const { return m_screen; }
++    double pixelsPerMm() const;
++    QVariantMap options() const;
++    QVariantList rows() const;
++    QVariantList layouts() const { return m_layouts; }
++    QString layoutName() const;
++    QString locale() const;
++    bool complexLayout() const;
++    bool dictionaryAvailable() const;
++    QString dictionaryPackage() const;
++    bool typing() const { return m_typing; }
++    int keyRevision() const { return m_revision; }
++    bool modifierActive() const;
++    QPoint pixelShift()const{return m_pixelShift.offset();}
++    Q_INVOKABLE QString keyLabel(uint code,const QString &fallback) const;
++    Q_INVOKABLE bool latched(uint code) const;
++    Q_INVOKABLE QStringList alternatives(const QString &text) const;
++    Q_INVOKABLE void toggle();
++    Q_INVOKABLE void enter();
++    Q_INVOKABLE void leave(bool manual=true);
++    void textFocusChanged(bool focused);
++    Q_INVOKABLE void setOption(const QString &key,const QVariant &value);
++    Q_INVOKABLE void reload();
++    Q_INVOKABLE void key(uint code,bool pressed);
++    Q_INVOKABLE void tap(uint code);
++    Q_INVOKABLE void moveCursor(int steps);
++    Q_INVOKABLE void deleteWords(int count);
++    Q_INVOKABLE void releaseAll();
++    Q_INVOKABLE void motion(double x,double y);
++    Q_INVOKABLE void padMotion(double millimetresX,double millimetresY);
++    Q_INVOKABLE void resetPadMotion();
++    void setTouchActive(bool active);
++    Q_INVOKABLE void button(uint code,bool pressed);
++    Q_INVOKABLE void scroll(double x,double y);
++    Q_INVOKABLE void swipe(int fingers,int phase,double x,double y);
++    Q_INVOKABLE void pinch(int phase,double scale,double angle,double x,double y);
++    Q_INVOKABLE void selectLayout(int index);
++    Q_INVOKABLE void nextLayout();
++    Q_INVOKABLE void addLayout(const QString &layout,const QString &variant);
++    Q_INVOKABLE QVariantList allLayouts() const;
++    Q_INVOKABLE QVariantList variants(const QString &layout) const;
++    Q_INVOKABLE void openPreferences();
++    Q_INVOKABLE void tool(const QString &name);
++    Q_INVOKABLE QString toolLabel(const QString &name) const;
++    Q_INVOKABLE void requestTopology();
++    Q_INVOKABLE QVariantMap status() const;
++    Q_INVOKABLE QVariantList emojiMatches(const QString &query) const;
++    QDBusPendingCall backendCall(const QString &method,const QVariantList &args={}) const;
++    void backendInput(const QString &method,const QVariantList &args={}) const;
++Q_SIGNALS:
++    void pixelShiftChanged();
++    void stateChanged();
++    void optionsChanged();
++    void layoutChanged();
++    void typingChanged();
++    void keyStateChanged();
++    void preferencesRequested();
++private Q_SLOTS:
++    void syncPixelShift();
++    void updatePixelShiftBusy();
++    void advancePixelShift();
++    void backendStatic(bool active);
++    void backendDynamic(bool active);
++    void systemLayout(uint index);
++    void propertiesChanged(const QString &iface,const QVariantMap &changed,const QStringList &invalidated);
++    void usbKeyboardChanged(bool present);
++    void refreshRemote();
++    void profileError(const QString &reason);
++    void syncLocks(bool caps,bool num,bool scroll);
++private:
++    friend class LaptopControllerTest;
++    void loadBackend();
++    void replaceBackend(QStringList remaining);
++    void connectBackend();
++    void queryLid();
++    void queryUsbKeyboard();
++    void updateEligibility();
++    void updateAutoStatic();
++    void updateTopology();
++    void loadLayouts();
++    void rebuildKeymap();
++    void refreshProfile(bool restore=false);
++    void setRawKey(uint code,bool pressed);
++    void updateModifiers();
++    void applyLocks();
++    void markTyping();
++    bool consumeLatched();
++    static QVariantMap defaults();
++    static LaptopController *s_instance;
++    QDBusConnection m_bus;
++    KScreen::ConfigPtr m_config;
++    QPointer<QScreen> m_screen;
++    QString m_reason,m_tabletName,m_backendOwner;
++    QVariantMap m_options;
++    QVariantList m_layouts;
++    QStringList m_layoutCodes,m_variants;
++    int m_layoutIndex=0;
++    bool m_active=false,m_ready=false,m_available=false,m_locked=true,m_lidClosed=true,m_typing=false;
++    bool m_dynamic=false,m_textFocused=false,m_starting=false;
++    uint m_transition=0;
++    uint m_lidGeneration=0;
++    uint m_backendGeneration=0;
++    uint m_usbKeyboardGeneration=0;
++    bool m_usbKeyboardKnown=false,m_usbKeyboardPresent=false;
++    bool m_staticAutoAttempted=false,m_staticAutoSuppressed=false;
++    bool m_caps=false,m_num=false,m_scroll=false;
++    bool m_preferencesOnly=false;
++    double m_remoteDensity=0;
++    QSet<uint> m_held,m_latched,m_lockedKeys;
++    QSet<uint> m_modifierUsed,m_cancelLatch;
++    QHash<uint,qint64> m_pressTimes,m_tapTimes;
++    QElapsedTimer m_clock;
++    QTimer m_typingTimer,m_pixelShiftTimer;
++    UkeKeyboard::TouchpadMotion m_padMotion;
++    UkeKeyboard::PixelShift m_pixelShift;
++    QSet<uint> m_pointerButtons;
++    bool m_touchActive=false;
++    int m_revision=0;
++    QFileSystemWatcher m_files;
++    struct XkbDeleter { void operator()(xkb_context *p) const {xkb_context_unref(p);} void operator()(xkb_keymap *p) const {xkb_keymap_unref(p);} void operator()(xkb_state *p) const {xkb_state_unref(p);} };
++    std::unique_ptr<xkb_context,XkbDeleter> m_xkb;
++    std::unique_ptr<xkb_keymap,XkbDeleter> m_keymap;
++    std::unique_ptr<xkb_state,XkbDeleter> m_state;
++};
+diff --git a/src/laptop/layoutregistry.cpp b/src/laptop/layoutregistry.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..dd186739fd8a970e4e82c6f9fe85220794b64c22
+--- /dev/null
++++ b/src/laptop/layoutregistry.cpp
+@@ -0,0 +1,90 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "layoutregistry.h"
++#include <QFile>
++#include <QXmlStreamReader>
++namespace {
++QVariantMap configItem(QXmlStreamReader &xml) {
++    QVariantMap item;
++    QStringList languages,countries;
++    while(!xml.atEnd()) {
++        xml.readNext();
++        if(xml.isEndElement()&&xml.name()==QLatin1String("configItem"))break;
++        if(!xml.isStartElement())continue;
++        const auto name=xml.name().toString();
++        if(name==QLatin1String("name"))item.insert(QStringLiteral("code"),xml.readElementText());
++        else if(name==QLatin1String("description"))item.insert(QStringLiteral("label"),xml.readElementText());
++        else if(name==QLatin1String("shortDescription"))item.insert(QStringLiteral("short"),xml.readElementText());
++        else if(name==QLatin1String("iso639Id"))languages.append(xml.readElementText());
++        else if(name==QLatin1String("iso3166Id"))countries.append(xml.readElementText());
++    }
++    if(!languages.isEmpty())item.insert(QStringLiteral("languages"),languages);
++    if(!countries.isEmpty())item.insert(QStringLiteral("countries"),countries);
++    return item;
++}
++QLocale::Language language(const QVariantMap &item,QLocale preferred) {
++    const auto codes=item.value(QStringLiteral("languages")).toStringList();
++    auto first=QLocale::AnyLanguage;
++    for(const auto &code:codes){
++        const auto candidate=QLocale::codeToLanguage(code);
++        if(candidate==preferred.language())return candidate;
++        if(first==QLocale::AnyLanguage&&candidate!=QLocale::AnyLanguage)first=candidate;
++    }
++    const auto shortLanguage=QLocale::codeToLanguage(item.value(QStringLiteral("short")).toString());
++    if(shortLanguage!=QLocale::AnyLanguage)for(const auto &code:codes)if(QLocale::codeToLanguage(code)==shortLanguage)return shortLanguage;
++    return first;
++}
++}
++namespace UkeKeyboard {
++LayoutRegistry::LayoutRegistry(QIODevice *device) {
++    QXmlStreamReader xml(device);
++    QVariantMap layout;
++    QVariantList variants;
++    bool inLayout=false,inVariant=false;
++    while(!xml.atEnd()){
++        xml.readNext();
++        if(xml.isStartElement()){
++            if(xml.name()==QLatin1String("layout")){inLayout=true;layout.clear();variants.clear();}
++            else if(inLayout&&xml.name()==QLatin1String("variant"))inVariant=true;
++            else if(inLayout&&xml.name()==QLatin1String("configItem")){const auto item=configItem(xml);if(inVariant)variants.append(item);else layout=item;}
++        }else if(xml.isEndElement()){
++            if(xml.name()==QLatin1String("variant"))inVariant=false;
++            else if(xml.name()==QLatin1String("layout")){layout.insert(QStringLiteral("variants"),variants);if(!layout.value(QStringLiteral("code")).toString().isEmpty())m_layouts.append(layout);inLayout=false;}
++        }
++    }
++    if(xml.hasError())m_layouts.clear();
++}
++const LayoutRegistry &LayoutRegistry::system(){
++    static const LayoutRegistry registry=[] {
++        QFile file(QStringLiteral("/usr/share/X11/xkb/rules/evdev.xml"));
++        if(!file.open(QIODevice::ReadOnly)){file.setFileName(QStringLiteral("/usr/share/X11/xkb/rules/base.xml"));file.open(QIODevice::ReadOnly);}
++        return LayoutRegistry(&file);
++    }();
++    return registry;
++}
++QVariantList LayoutRegistry::layouts()const{return m_layouts;}
++QVariantList LayoutRegistry::variants(const QString &layout)const{return entry(layout,{}).value(QStringLiteral("variants")).toList();}
++QVariantMap LayoutRegistry::entry(const QString &code,const QString &variant)const{
++    for(const auto &value:m_layouts){auto item=value.toMap();if(item.value(QStringLiteral("code"))!=code)continue;
++        if(!variant.isEmpty())for(const auto &value:item.value(QStringLiteral("variants")).toList()){
++            const auto override=value.toMap();if(override.value(QStringLiteral("code"))==variant){for(auto i=override.begin();i!=override.end();++i)item.insert(i.key(),i.value());break;}
++        }
++        return item;
++    }
++    return {};
++}
++QString LayoutRegistry::locale(const QString &code,const QString &variant,QLocale preferred)const{
++    const auto item=entry(code,variant);const auto lang=language(item,preferred);
++    if(lang==QLocale::AnyLanguage||lang==QLocale::C)return QStringLiteral("en_US");
++    auto territory=QLocale::AnyTerritory;const auto countries=item.value(QStringLiteral("countries")).toStringList();
++    for(const auto &country:countries){const auto candidate=QLocale::codeToTerritory(country);if(territory==QLocale::AnyTerritory)territory=candidate;if(candidate==preferred.territory()){territory=candidate;break;}}
++    return QLocale(lang,territory).name();
++}
++QString LayoutRegistry::defaultLayout(QLocale preferred)const{
++    QString fallback;
++    for(const auto &value:m_layouts){const auto item=value.toMap();if(language(item,preferred)!=preferred.language())continue;
++        const auto code=item.value(QStringLiteral("code")).toString();if(fallback.isEmpty())fallback=code;
++        for(const auto &country:item.value(QStringLiteral("countries")).toStringList())if(QLocale::codeToTerritory(country)==preferred.territory())return code;
++    }
++    return fallback.isEmpty()?QStringLiteral("us"):fallback;
++}
++}
+diff --git a/src/laptop/layoutregistry.h b/src/laptop/layoutregistry.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..27805ad9e3810a9deae7fde8f08922b6e5e4e88a
+--- /dev/null
++++ b/src/laptop/layoutregistry.h
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QLocale>
++#include <QVariantList>
++#include <QVariantMap>
++class QIODevice;
++namespace UkeKeyboard {
++// XKB layout identifiers denote hardware regions, not ISO language codes.
++// Keep registry metadata and variant overrides as the language source.
++class LayoutRegistry {
++public:
++    explicit LayoutRegistry(QIODevice *device);
++    static const LayoutRegistry &system();
++    QVariantList layouts() const;
++    QVariantList variants(const QString &layout) const;
++    QString locale(const QString &layout,const QString &variant={},QLocale preferred=QLocale::system()) const;
++    QString defaultLayout(QLocale preferred=QLocale::system()) const;
++private:
++    QVariantMap entry(const QString &layout,const QString &variant) const;
++    QVariantList m_layouts;
++};
++}
+diff --git a/src/laptop/physicalgeometry.h b/src/laptop/physicalgeometry.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..befa74473f005d8e5793442b70c6577fb41125ec
+--- /dev/null
++++ b/src/laptop/physicalgeometry.h
+@@ -0,0 +1,13 @@
++// SPDX-License-Identifier: MIT
++#pragma once
++#include <QSizeF>
++#include <algorithm>
++#include <cmath>
++namespace UkeKeyboard {
++inline bool plausibleSize(QSizeF mm) {
++    return std::isfinite(mm.width()) && std::isfinite(mm.height()) && mm.width() >= 60 && mm.height() >= 60 && mm.width() <= 1000 && mm.height() <= 1000;
++}
++inline double unitsPerMm(double logicalWidth, double widthMm) {
++    return logicalWidth > 0 && widthMm >= 60 && widthMm <= 1000 ? logicalWidth / widthMm : 96.0 / 25.4;
++}
++}
+diff --git a/src/laptop/pixelshift.h b/src/laptop/pixelshift.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..df96763185a37413aad5b9e43b719b7a6ff6f8b5
+--- /dev/null
++++ b/src/laptop/pixelshift.h
+@@ -0,0 +1,31 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QPoint>
++#include <array>
++#include <cstddef>
++
++namespace UkeKeyboard {
++class PixelShift {
++public:
++    QPoint offset()const{return m_offset;}
++    bool active()const{return m_active;}
++    bool pending()const{return m_pending;}
++    bool setActive(bool active) {
++        if(active==m_active)return false;
++        m_active=active;m_pending=false;m_index=0;
++        const bool changed=!m_offset.isNull();m_offset={};return changed;
++    }
++    bool setBusy(bool busy) {m_busy=busy;return !busy&&m_pending?step():false;}
++    bool step() {
++        if(!m_active)return false;
++        if(m_busy){m_pending=true;return false;}
++        m_pending=false;m_index=(m_index+1)%pattern.size();
++        m_offset=pattern[m_index];return true;
++    }
++private:
++    inline static const std::array<QPoint,9> pattern{{{0,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}}};
++    QPoint m_offset;
++    std::size_t m_index=0;
++    bool m_active=false,m_busy=false,m_pending=false;
++};
++}
+diff --git a/src/laptop/processidentity.h b/src/laptop/processidentity.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..5d9192903ffd7abada763f3c71fa6b5698218d18
+--- /dev/null
++++ b/src/laptop/processidentity.h
+@@ -0,0 +1,29 @@
++// SPDX-FileCopyrightText: 2026 uke-plasma-keyboard-custom contributors
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++#include <QFile>
++#include <QString>
++
++namespace UkeKeyboard {
++inline bool hasProcessParent(qint64 pid, qint64 expectedParent)
++{
++    if (pid <= 0 || expectedParent <= 0) {
++        return false;
++    }
++    QFile status(QStringLiteral("/proc/%1/status").arg(pid));
++    if (!status.open(QIODevice::ReadOnly)) {
++        return false;
++    }
++    // procfs reports size zero. QFile::atEnd() therefore cannot tell whether
++    // status has readable data; read until the kernel returns no more bytes.
++    for (QByteArray line; !(line = status.readLine(1024)).isEmpty();) {
++        if (line.startsWith("PPid:")) {
++            bool valid = false;
++            const auto parent = line.mid(5).trimmed().toLongLong(&valid);
++            return valid && parent == expectedParent;
++        }
++    }
++    return false;
++}
++}
+diff --git a/src/laptop/protocol.h b/src/laptop/protocol.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..02a4e3f273fedcd79f9b6d12043ff7367f765868
+--- /dev/null
++++ b/src/laptop/protocol.h
+@@ -0,0 +1,12 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#ifndef UKE_KWIN_PLUGIN_ID
++#define UKE_KWIN_PLUGIN_ID "uke_keyboard_backend"
++#endif
++namespace UkeKeyboard {
++inline constexpr auto pluginId = UKE_KWIN_PLUGIN_ID;
++inline constexpr auto service = "org.uke.PlasmaKeyboard.Backend";
++inline constexpr auto path = "/org/uke/PlasmaKeyboard/Backend";
++inline constexpr auto interface = "org.uke.PlasmaKeyboard.Backend1";
++inline constexpr int protocolVersion = 1;
++}
+diff --git a/src/laptop/touchpadmotion.h b/src/laptop/touchpadmotion.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..f79ea48f3cdcc21f53735d4b0ae201bf65ca3d36
+--- /dev/null
++++ b/src/laptop/touchpadmotion.h
+@@ -0,0 +1,33 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++#include <QPointF>
++#include <QtGlobal>
++#include <algorithm>
++#include <cmath>
++
++namespace UkeKeyboard {
++class TouchpadMotion {
++public:
++    void reset(qint64 timestampUs=-1) {m_last=timestampUs;m_velocity=0;m_direction={};}
++    QPointF map(QPointF millimetres,qint64 timestampUs,bool accelerated=true) {
++        if(!std::isfinite(millimetres.x())||!std::isfinite(millimetres.y())){reset(timestampUs);return {};}
++        const auto elapsed=m_last>=0?timestampUs-m_last:8333;
++        const double seconds=std::clamp(double(elapsed)/1000000.0,0.001,0.25);
++        if(elapsed<=0||elapsed>120000||QPointF::dotProduct(millimetres,m_direction)<0)m_velocity=0;
++        m_last=timestampUs;
++        const double speed=std::hypot(millimetres.x(),millimetres.y())/seconds;
++        if(speed<m_velocity*0.25)m_velocity=speed;
++        else m_velocity+=(speed-m_velocity)*(1-std::exp(-seconds/0.025));
++        if(!millimetres.isNull())m_direction=millimetres;
++        const double t=std::clamp((m_velocity-12.0)/130.0,0.0,1.0);
++        // Preserve the existing precision gain; fast swipes smoothly gain up
++        // to five times that distance. Never round or introduce a dead zone.
++        const double gain=8.0+(accelerated?32.0*t*t*(3.0-2.0*t):0.0);
++        return millimetres*gain;
++    }
++private:
++    qint64 m_last=-1;
++    double m_velocity=0;
++    QPointF m_direction;
++};
++}

@@ -53,16 +53,6 @@ msgstr "Aleix Pol Gonzalez"
 msgid "Author"
 msgstr "Автор"
 
-#: main.cpp:331
-#, kde-format
-msgid "Show Virtual Keyboard"
-msgstr "Показать виртуальную клавиатуру"
-
-#: main.cpp:333
-#, kde-format
-msgid "Plasma Keyboard (custom)"
-msgstr "Экранная клавиатура (custom)"
-
 #: overlay/longpresstrigger.cpp:40
 #, kde-format
 msgctxt "@label Name of the diacritics overlay trigger"
@@ -84,43 +74,3 @@ msgstr "Расширение текста"
 #: qml/LanguagePopup.qml:116
 msgid "Settings"
 msgstr "Параметры"
-
-#: qmlplugin/Theme.qml:15
-msgid "System"
-msgstr "Системная"
-
-#: qmlplugin/Theme.qml:16
-msgid "Light"
-msgstr "Светлая"
-
-#: qmlplugin/Theme.qml:17
-msgid "Dark"
-msgstr "Тёмная"
-
-#: qmlplugin/Theme.qml:18
-msgid "iOS (light)"
-msgstr "iOS (светлая)"
-
-#: qmlplugin/Theme.qml:19
-msgid "iOS (dark)"
-msgstr "iOS (тёмная)"
-
-#: qmlplugin/Theme.qml:20
-msgid "Material (light)"
-msgstr "Material (светлая)"
-
-#: qmlplugin/Theme.qml:21
-msgid "Material (dark)"
-msgstr "Material (тёмная)"
-
-#: qmlplugin/Theme.qml:22
-msgid "Catppuccin Mocha"
-msgstr "Catppuccin Mocha"
-
-#: qmlplugin/Theme.qml:23
-msgid "Google Light"
-msgstr "Google Light"
-
-#: qmlplugin/Theme.qml:24
-msgid "Google Dark"
-msgstr "Google Dark"

@@ -955,3 +955,33 @@ the asynchronous decision. The real-application regression now supplies that
 compositor visibility edge while refusing touch authorization and requires the
 layer surface to stay unmapped.42 is not delivered while this known route
 remains; the cumulative43 native and delivery gates remain pending.
+
+## COPR11318055 /42 — protocol fixture fails after reactivation
+
+All three targets compile and pass39/40 CTests. The new actual-application
+scenario fails because its manually sent second Wayland activation is not
+flushed to the client while the test waits for its native touch query. Later
+input cases then run against the hidden context.42 has no accepted RPM/device
+delivery. The fixture now explicitly flushes both activation and deactivation;
+the touch, stale-reply and existing input assertions remain required.
+
+## Candidate44 — original6.8.3 source plus ordered patches
+
+The user chose the separate Uke RPM with an original Plasma Keyboard baseline
+and portable patches. The original6.8.3 archive has SHA256
+`ec54e6b2d163daf5288cab20ccc7043823dc0e2a3fa431eb2499d7945fa820bb` and
+matches all478 tracked files at KDE revisionce74711d. The RPM uses this archive
+as Source0 and applies five ordered patches. Unchanged attributed data is a
+separate asset source; integration metadata/documentation is another source.
+
+Source checks verify patch order/digests, all production paths/content and five
+asset digests. Applying the series to the pristine official archive reproduces
+the reviewed expanded production tree. The interface, optional tools, laptop
+and touch policies remain; the inherited SteamOS dependency floors follow the
+selected original release instead. Original-only metadata/translations remain
+in source and are not installed into Fedora-owned namespaces.
+
+This is source/package preparation only. Native44, signatures/dependencies,
+DNF renewal, actual mouse/touch and the wider physical/VRR/image gates remain
+pending. Source43 was not submitted as a separate native build; its hidden-focus
+fix and the protocol-fixture correction are cumulative in44.

@@ -1,0 +1,121 @@
+# Copyright (C) 2026 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2026 giovanni <g.sora@tiscali.it>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-17 11:42+0100\n"
+"Last-Translator: giovanni <g.sora@tiscali.it>\n"
+"Language-Team: Interlingua <kde-i18n-doc@kde.org>\n"
+"Language: ia\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtra Linguages…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtra Linguages"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Necun linguages selectionate. Le disposition de claviero predefinite per le "
+"systema essera usate "
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Linguages"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Retorno de pression de clave:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Sono"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibration"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "General:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navigation de claviero"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Passar automaticamente a litteras majusculas"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Characteres alternate:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Monstra popup quando mentenente un clave "
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Retardo de mantener:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "millisecundas"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Essaya le claviero virtual..."
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Retorno "
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Si emitter un sono sur pression de clave"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Si vibrar sur pression de clave"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Linguages de Claviero"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "General"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Si usar leclaves de flecha per navigar le claviero"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Capitalisa (Il pone in majuscule) le prime littera de phrases"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Retorno de pression de clave"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "General"

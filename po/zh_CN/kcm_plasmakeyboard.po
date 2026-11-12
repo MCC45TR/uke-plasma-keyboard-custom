@@ -1,0 +1,119 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: kdeorg\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: Chinese Simplified\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: kdeorg\n"
+"X-Crowdin-Project-ID: 269464\n"
+"X-Crowdin-Language: zh-CN\n"
+"X-Crowdin-File: /kf6-trunk/messages/plasma-keyboard/kcm_plasmakeyboard.pot\n"
+"X-Crowdin-File-ID: 58300\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "过滤语言…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "过滤语言"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr "没有选择语言。系统将使用的默认键盘布局。"
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "语言"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "按键反馈："
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "声音"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "振动"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "常规："
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "键盘导航"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "自动首字母大写"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "备选字符："
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "按住按键时弹出"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "按住延迟："
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "毫秒"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "测试虚拟键盘…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "反馈"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "是否在按键时发声"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "是否在按键时震动"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "键盘语言"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "常规"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "是否使用方向键导航键盘"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "自动将句子的首字母大写"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "按键反馈"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "常规"

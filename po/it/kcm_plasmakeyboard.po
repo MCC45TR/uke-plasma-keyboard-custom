@@ -1,0 +1,121 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# SPDX-FileCopyrightText: 2025-2026 Paolo Zamponi <feus73@gmail.com>
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-16 07:59+0100\n"
+"Last-Translator: Paolo Zamponi <feus73@gmail.com>\n"
+"Language-Team: Italian <kde-i18n-it@kde.org>\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 26.08.2\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtra lingue…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtra lingue"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Nessuna lingua selezionata, verrà usata la mappatura di tastiera predefinita "
+"di sistema."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Lingue"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Riscontro alla pressione dei tasti:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Suono"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibrazione"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Generale:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navigazione da tastiera"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Maiuscole automatiche"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Alterna i caratteri:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Mostra una finestra a comparsa quando viene tenuto premuto un tasto"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Ritardo al mantenimento:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "millisecondi"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Prova la tastiera virtuale…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Riscontro"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Se emettere un suono alla pressione di un tasto"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Se vibrare alla pressione di un tasto"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Lingue della tastiera"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Generale"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Se utilizzare i tasti freccia per navigare sulla tastiera"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Scrivi automaticamente in maiuscolo la prima lettera delle frasi"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Riscontro alla pressione dei tasti:"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Generale"

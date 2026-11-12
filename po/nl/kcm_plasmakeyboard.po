@@ -1,0 +1,121 @@
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+#
+# SPDX-FileCopyrightText: 2025, 2026 Freek de Kruijf <freekdekruijf@kde.nl>
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-14 12:03+0100\n"
+"Last-Translator: Freek de Kruijf <freekdekruijf@kde.nl>\n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 25.12.3\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Talen filteren…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Talen filteren"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Geen talen geselecteerd. De standaard toetsenbordindeling voor het systeem "
+"zal gebruikt worden."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Talen"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Terugkoppeling van toets indrukken:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Geluid"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibratie"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Algemeen:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Navigatie met het toetsenbord"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Automatisch van hoofdletters voorzien"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Alternatieve tekens:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Pop-up tonen bij ingedrukt houden van een toets"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Vertraging van ingedrukt houden:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "milliseconden"
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Test het virtuele toetsenbord…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Terugkoppeling"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Of er een geluid klinkt bij indrukken van een toets"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Of er vibratie is bij indrukken van een toets"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Talen van toetsenbord"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Algemeen"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Of de pijltjestoetsen te gebruiken om het toetsenbord te navigeren"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Automatisch de eerste letter van elke zin naar een hoofdletter zetten"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Terugkoppeling van toets indrukken:"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Algemeen"

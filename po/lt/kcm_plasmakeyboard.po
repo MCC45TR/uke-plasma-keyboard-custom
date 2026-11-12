@@ -1,0 +1,123 @@
+# Lithuanian translations for plasma-keyboard package.
+# Copyright (C) 2025 This file is copyright:
+# This file is distributed under the same license as the plasma-keyboard package.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma-keyboard\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-03-14 00:46+0000\n"
+"PO-Revision-Date: 2026-03-21 01:41+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: lt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n%10>=2 && (n%100<10 || n"
+"%100>=20) ? 1 : n%10==0 || (n%100>10 && n%100<20) ? 2 : 3);\n"
+"X-Generator: Poedit 3.8\n"
+
+#: ui/LocaleSelectorListView.qml:68
+msgid "Filter languages…"
+msgstr "Filtruoti kalbas…"
+
+#: ui/LocaleSelectorListView.qml:69
+msgid "Filter languages"
+msgstr "Filtruoti kalbas"
+
+#: ui/LocaleSelectorListView.qml:82
+msgid ""
+"No languages selected. The default keyboard layout for the system will be "
+"used."
+msgstr ""
+"Nepasirinkta jokia kalba. Bus naudojamas sistemos numatytasis klaviatūros "
+"išdėstymas."
+
+#: ui/LocaleSelectorSidebar.qml:25 ui/main_handset.qml:70
+#: ui/main_mediacenter.qml:40
+msgid "Languages"
+msgstr "Kalbos"
+
+#: ui/main.qml:33
+msgid "Key press feedback:"
+msgstr "Klavišų paspaudimo atsakas:"
+
+#: ui/main.qml:34 ui/main_handset.qml:40
+msgid "Sound"
+msgstr "Garsas"
+
+#: ui/main.qml:45 ui/main_handset.qml:54
+msgid "Vibration"
+msgstr "Vibracija"
+
+#: ui/main.qml:56
+msgid "General:"
+msgstr "Bendra:"
+
+#: ui/main.qml:57 ui/main_handset.qml:90
+msgid "Keyboard navigation"
+msgstr "Naršymas klaviatūroje"
+
+#: ui/main.qml:68 ui/main_handset.qml:104 ui/main_mediacenter.qml:91
+msgid "Auto-capitalization"
+msgstr "Automatinis rašymas iš didžiųjų raidžių"
+
+#: ui/main.qml:79
+msgid "Alternate characters:"
+msgstr "Alternatyvūs simboliai:"
+
+#: ui/main.qml:80
+msgid "Show popup when holding a key"
+msgstr "Rodyti iškylantįjį langą, kai klavišas laikomas nuspaustas"
+
+#: ui/main.qml:91
+msgid "Hold delay:"
+msgstr "Laikymo delsa:"
+
+#: ui/main.qml:101
+msgid "milliseconds"
+msgstr "milisek."
+
+#: ui/main_handset.qml:29
+msgid "Test the virtual keyboard…"
+msgstr "Išbandykite virtualią klaviatūrą…"
+
+#: ui/main_handset.qml:34
+msgctxt "@title:group"
+msgid "Feedback"
+msgstr "Atsakas"
+
+#: ui/main_handset.qml:41
+msgid "Whether to emit a sound on key press"
+msgstr "Ar skleisti garsą, kai paspaudžiami klavišai"
+
+#: ui/main_handset.qml:55
+msgid "Whether to vibrate on key press"
+msgstr "Ar vibruoti, kai paspaudžiami klavišai"
+
+#: ui/main_handset.qml:76
+msgid "Keyboard Languages"
+msgstr "Klaviatūros kalbos"
+
+#: ui/main_handset.qml:84
+msgctxt "@title:group"
+msgid "General"
+msgstr "Bendra"
+
+#: ui/main_handset.qml:91
+msgid "Whether to use the arrow keys to navigate the keyboard"
+msgstr "Ar naudoti rodyklių klavišus naršymui klaviatūroje"
+
+#: ui/main_handset.qml:105
+msgid "Automatically capitalize the first letter of sentences"
+msgstr "Automatiškai rašyti pirmąją sakinio raidę didžiąja raide"
+
+#: ui/main_mediacenter.qml:47
+msgid "Key press feedback"
+msgstr "Klavišų paspaudimo atsakas"
+
+#: ui/main_mediacenter.qml:82
+msgid "General"
+msgstr "Bendra"

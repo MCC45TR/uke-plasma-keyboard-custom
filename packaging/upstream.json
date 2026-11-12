@@ -1,0 +1,3068 @@
+{
+  "schema": 1,
+  "upstream": {
+    "project": "KDE Plasma Keyboard",
+    "version": "6.8.3",
+    "commit": "ce74711d51a7d8a83399cf39cec189e0c9161d38",
+    "repository": "https://invent.kde.org/plasma/plasma-keyboard",
+    "url": "https://download.kde.org/stable/plasma/6.8.3/plasma-keyboard-6.8.3.tar.xz",
+    "sha256": "ec54e6b2d163daf5288cab20ccc7043823dc0e2a3fa431eb2499d7945fa820bb"
+  },
+  "custom_tools": {
+    "repository": "https://github.com/mops1k/plasma-keyboard-custom",
+    "commit": "c64e02591c1db3d973fc3567c62ba47cb2433a0c",
+    "readme": "README.custom-tools.md",
+    "asset_note": "Unmodified attributed data is carried once in the source asset archive, not embedded in feature patches."
+  },
+  "assets": [
+    {
+      "path": "src/prediction/data/en.bin",
+      "git_blob": "3246d03bb6321aa48665651c2c9f81eb235ce33a",
+      "sha256": "bc31e066d147f5625399e02352492f52a9d6a52e0792fd7eac128fc441d3b180"
+    },
+    {
+      "path": "src/prediction/data/en.ngrams",
+      "git_blob": "2200411b53169c32201b6fc7f9a832864e96a21b",
+      "sha256": "9219e9bce9d0a5ebf017bdd4ebfc0ce343fb60d04df9cf590e420b4f0e32d435"
+    },
+    {
+      "path": "src/prediction/data/ru.bin",
+      "git_blob": "08a427b19fb11465ae1eed117499a3da8f566675",
+      "sha256": "62d6f764922a752e901448aab6d0ff407182e42768b1394220047ea65bc78872"
+    },
+    {
+      "path": "src/prediction/data/ru.ngrams",
+      "git_blob": "bb9cd1dfdd23aa2572b58260b676c00cbc69a61c",
+      "sha256": "8d18aa065e9f9b4b64b3d5e1fb75db0fdc3f99b85bc3db02d987f51b60633ece"
+    },
+    {
+      "path": "src/swipekb/model/swipe-model.bin",
+      "git_blob": "1e3890348dab16e9257d1c152d2e36740824abbe",
+      "sha256": "941272a7017229a73e07d1c0bd766757e739174db3a42fb622c26256b8c46110"
+    }
+  ],
+  "patches": [
+    {
+      "name": "0001-build-settings-and-identity.patch",
+      "sha256": "1efc46c9292d05cca28adc11dda02d538fb787ac3514fa1870d78b2435e4cac0"
+    },
+    {
+      "name": "0002-keyboard-interface-and-input.patch",
+      "sha256": "4fa99fa69aadb06b1a3836efbf867eecc28549e2a93fac3076007486dbd570f0"
+    },
+    {
+      "name": "0003-laptop-and-native-integration.patch",
+      "sha256": "a811995836785470131d770e73d7d695612b651f3feaa016f7616f982312f01d"
+    },
+    {
+      "name": "0004-optional-tools-and-data.patch",
+      "sha256": "c1167c77d5fb62134e0f285559e99d3ba5b01fdf219c4239f59e33682f11a607"
+    },
+    {
+      "name": "0005-native-regression-coverage.patch",
+      "sha256": "015ab9c2a801a8e65bd52a083cc6cd8396177ec739d734a8a446fefaa5ffd457"
+    }
+  ],
+  "production_files": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "2367fa376d5355961104364b0224a888ce9304b4a8b7ed9393a17a8e84356c09"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "7961d7f9b214006e45a1c34cf7f83127fde4f00214de896208a0a899899e8606"
+    },
+    {
+      "path": "LICENSES/BSD-2-Clause.txt",
+      "sha256": "3c888365efe48c3c09de2980ce406cfa18c09a17169c24dcf7031202408fdbe2"
+    },
+    {
+      "path": "LICENSES/BSD-3-Clause.txt",
+      "sha256": "e11af671c491efac2f94c1d752bea92f4308ca2450c7d11e582e4b48c40e4de1"
+    },
+    {
+      "path": "LICENSES/CC0-1.0.txt",
+      "sha256": "7179683e8000e6bdc9bbc60d85edf0a4ac8e76f951857f54fcb775d5886f1309"
+    },
+    {
+      "path": "LICENSES/FSFAP.txt",
+      "sha256": "99cb91dacd5714a701749ec47239015726beec5fc86a5c94a4873778824b16d7"
+    },
+    {
+      "path": "LICENSES/GPL-2.0-only.txt",
+      "sha256": "d1cf0896da7045d841fe45b0991cf35540bac1a17b5d11f4afcf8fcb950246b5"
+    },
+    {
+      "path": "LICENSES/GPL-2.0-or-later.txt",
+      "sha256": "b58671fb4d9e9efeb9a6af1bdba02e61ac69af654855b45a372efe8f52413f83"
+    },
+    {
+      "path": "LICENSES/GPL-3.0-only.txt",
+      "sha256": "2ca9503d76d1ffab14f599b4741382eec11face60ad1f0d7a41897809003a286"
+    },
+    {
+      "path": "LICENSES/GPL-3.0-or-later.txt",
+      "sha256": "203c10ae2f92356d658522ee61db97e5daad634c5dc4190bc0bd23a1511a33b4"
+    },
+    {
+      "path": "LICENSES/LGPL-2.1-only.txt",
+      "sha256": "5749785c8bdefafcb5d798270ed0a967036fe2ca63dcedade1627565dfef81d2"
+    },
+    {
+      "path": "LICENSES/LGPL-2.1-or-later.txt",
+      "sha256": "5749785c8bdefafcb5d798270ed0a967036fe2ca63dcedade1627565dfef81d2"
+    },
+    {
+      "path": "LICENSES/LGPL-3.0-only.txt",
+      "sha256": "996af0513df21f7496288951c41428a03c174e9e4a9d63665c57d670f845ccb1"
+    },
+    {
+      "path": "LICENSES/LGPL-3.0-or-later.txt",
+      "sha256": "996af0513df21f7496288951c41428a03c174e9e4a9d63665c57d670f845ccb1"
+    },
+    {
+      "path": "LICENSES/LicenseRef-CC-BY-2.0-FR.txt",
+      "sha256": "67a23c95f7d9e6ba539bf301f7ebe8a7f3d2d8f9ce05dbf6944b4d9efda88a30"
+    },
+    {
+      "path": "LICENSES/LicenseRef-KDE-Accepted-GPL.txt",
+      "sha256": "ef839531eb65b0168f9aed14047c84be13e9ea38801a73bc18abe24dc93e6ac9"
+    },
+    {
+      "path": "LICENSES/LicenseRef-KDE-Accepted-LGPL.txt",
+      "sha256": "d9f25707d20e804f15005be46527366b0604bd739754d144a83d3983d94a9a6a"
+    },
+    {
+      "path": "LICENSES/LicenseRef-Qt-Commercial.txt",
+      "sha256": "9b1f50aae6267f9d5e0ceb6775ee86450262c25ec7c0573e151fe5d3f18a4700"
+    },
+    {
+      "path": "LICENSES/MIT.txt",
+      "sha256": "24f09d6d1dc1534b8efcaca939ddec1969cac255471aae25d299ab8e81ada29f"
+    },
+    {
+      "path": "REUSE.toml",
+      "sha256": "2e4a210ba8a13340692d3201d62420abeb2d2f3edfaed1c8d6d39161c22c8b32"
+    },
+    {
+      "path": "autotests/CMakeLists.txt",
+      "sha256": "5d8ba55da07078265eab51387c84d065d052bb2a5580a085f15920a1e086c6fb"
+    },
+    {
+      "path": "autotests/asyncpredictortest.cpp",
+      "sha256": "31b8a2832ad94284c8e8c3b531f96907f899ee1584b25fd1d3461ec49138983b"
+    },
+    {
+      "path": "autotests/clipboardhistorytest.cpp",
+      "sha256": "3bda140ac93c5888b89b9c42437233dc6467350d3d4123af801594af5d6d7f87"
+    },
+    {
+      "path": "autotests/clipboardtestsupport/plasmakeyboardsettings.h",
+      "sha256": "653193d2cca7c6ab5fb3b716119047d42f7fb2d6a6040215a707b6ca4137af90"
+    },
+    {
+      "path": "autotests/controladaptortest.cpp",
+      "sha256": "0a125baf5d1fb7b24bd8dfde4da68bb1ac98f5456241223a60053c3eed7099e9"
+    },
+    {
+      "path": "autotests/editingtexttest.cpp",
+      "sha256": "d35a3f9a89fda35a3ecff5429d822db7e9163e55cb062f586c35acbfb7f6f622"
+    },
+    {
+      "path": "autotests/fileidentitytest.cpp",
+      "sha256": "e7452688bd06efda4f6ec798b18d34e01c78141d094f354edd7d6b411f0b2f51"
+    },
+    {
+      "path": "autotests/focusededitabletrackertest.cpp",
+      "sha256": "f8b5d26c55f9a03a0013653dbd0010738fb3191ec3b36eb8d95bdf630739dfc2"
+    },
+    {
+      "path": "autotests/hunspelldictionarytest.cpp",
+      "sha256": "0603a672fc0f74896c548a034e91dae1f04d9c424e63f2814c8b1d15e930a514"
+    },
+    {
+      "path": "autotests/inputclientidentitytest.cpp",
+      "sha256": "5288ad3d87402645f92898e77c7011b8327268b6750a0143222f0ac2253a040c"
+    },
+    {
+      "path": "autotests/inputcontentpolicytest.cpp",
+      "sha256": "87da238187f5b6da1aa850c45f56ab62b2016a4623bbd66b347befc9c5029721"
+    },
+    {
+      "path": "autotests/keyboardvisibilitystatetest.cpp",
+      "sha256": "51cd33ded21186f652256ea2d7457343370d10d8085239108b53de7ef1b2c373"
+    },
+    {
+      "path": "autotests/kwinversiontest.cpp",
+      "sha256": "c62b4a28c2e92c1e2bea68294db8634d001870ffe5116ada1ea54ee25fd343ed"
+    },
+    {
+      "path": "autotests/laptopcontrollertest.cpp",
+      "sha256": "0d3b16899856bfd5ecc3db19677203cd9c74c6d3817e8ff296df447474f8e7d2"
+    },
+    {
+      "path": "autotests/laptopinteractiontest.cpp",
+      "sha256": "1d93d0dba0b5281259929635f0d8b8b2008368ada934a9d1684898c7ec4c16cc"
+    },
+    {
+      "path": "autotests/laptopsmoke.qml",
+      "sha256": "fa0caf13766e07b16ce9b4ffa98c3deeec73db37a56746e8a7c054e6a069bdbe"
+    },
+    {
+      "path": "autotests/layoutregistrytest.cpp",
+      "sha256": "a8d49b503aa0a68f07c3588b171ebfedca04a0190d232579fce1e5a437f322d9"
+    },
+    {
+      "path": "autotests/layoutshiftqttest.cpp",
+      "sha256": "917dfae4a4b161c3340c09cd14b2a1b41716f09801cb0c2196cde5c5da45025c"
+    },
+    {
+      "path": "autotests/layoutshifttest.mjs",
+      "sha256": "829f7b42459001576ff81f8ece5a63b21d07f454436aef155ca8e8f67f962a67"
+    },
+    {
+      "path": "autotests/localeresolvertest.mjs",
+      "sha256": "5ee09464875ce3f640b60ac5e25e4347274edad913d3681010e320a9aa44460f"
+    },
+    {
+      "path": "autotests/lockscreenfocustest.cpp",
+      "sha256": "7aad82581f430c123897f0e2d246e7123d78800dedc6806e3c6f722fa45be9bc"
+    },
+    {
+      "path": "autotests/lockswitchertest.sh",
+      "sha256": "6957c79692c3f2d569512570c15dfbe21c6fa94df94d20489bd116d7ed80c9fd"
+    },
+    {
+      "path": "autotests/mainpolicysourcetest.sh",
+      "sha256": "9165e6b2e3346c70a0692acb564fa0724df54e513f0cf2ac837757be56d7779b"
+    },
+    {
+      "path": "autotests/mockinputmethodcompositor.cpp",
+      "sha256": "953e89362a3d03f775f6f4e1d3d03e71206f3ee7032eec2eca2f52d913c7e75c"
+    },
+    {
+      "path": "autotests/nativerefreshrequesttest.cpp",
+      "sha256": "bc55caf6c91805eb788dd4901d9ea26bab036fc07309609950c73a53642530fe"
+    },
+    {
+      "path": "autotests/overlaycontrollertest.cpp",
+      "sha256": "2bb3a04eafd46dece8f319bccb6284172885ca511b61345c7e667a2c2c648be6"
+    },
+    {
+      "path": "autotests/overlaytestsupport/inputplugin.h",
+      "sha256": "73ab45ce60059fc068dd2eb5ee61af650edc9d878234cc04b7271f61cd0efc7c"
+    },
+    {
+      "path": "autotests/overlaytestsupport/logging.h",
+      "sha256": "5f214c0b954c8773eb1afa3093112832b0cbd21e6f11dab871908656a76cda86"
+    },
+    {
+      "path": "autotests/panelstubgeometrytest.cpp",
+      "sha256": "77408fcb287604ef0b551386d89bcaa1b6d6f627f2d9f54c2cc326d62ce7ef64"
+    },
+    {
+      "path": "autotests/physicalgeometrytest.cpp",
+      "sha256": "955a19e9a0a65c9ee1ddf79c399a7fea4aee60a2b880afa548f65803c01e11ff"
+    },
+    {
+      "path": "autotests/plugindiscoverytest.cpp",
+      "sha256": "e61da7b0d6203488e9e69e009e2303624c8fcf27b3bf01648f29c2a9a1b15f9d"
+    },
+    {
+      "path": "autotests/pointerconfinementtest.cpp",
+      "sha256": "3b6f9e1fe8f32bfdf5a0b720c6880a5229eb40d9d43d3fcbde39dea8614a0425"
+    },
+    {
+      "path": "autotests/predictivedictionarytest.cpp",
+      "sha256": "ecaaeca3a72e07114ecb3f0a7a3b93a599b3e262f08542300f51f00089f33e8d"
+    },
+    {
+      "path": "autotests/private-system-bus.sh",
+      "sha256": "c2293294da83832783aa01abec2714662cdc641eee4ca63068b9dc5289822356"
+    },
+    {
+      "path": "autotests/processidentitytest.cpp",
+      "sha256": "d3b560565ae513ca0e0f0b4fd2902a49bce3fddd8d4e4ad072c70ddcebbbcbd9"
+    },
+    {
+      "path": "autotests/protocols/wlr-layer-shell-unstable-v1.xml",
+      "sha256": "a6fbdac025cfce7a4d7420ed8cd667786a53c5a3a01af6f974a6eb49392cf799"
+    },
+    {
+      "path": "autotests/qmlsmoketest.cpp",
+      "sha256": "8daaad067af136b94e329c9ceec8b6bc4ac22be014446293d5499814314085b9"
+    },
+    {
+      "path": "autotests/refreshguardtest.cpp",
+      "sha256": "f5bc96823633711a78660c5245c159b4e6b24c12037f4a3d1f87cb8d63fecccb"
+    },
+    {
+      "path": "autotests/restartpreferencetest.cpp",
+      "sha256": "ee0bd1912151ddf17f5941107ae3c9aba4711aed1f9bac56ead9bd97e268ac00"
+    },
+    {
+      "path": "autotests/sessionlockstatetest.cpp",
+      "sha256": "111d773066dd2d32644aedcd74ed1c46b4f9e6a06ac0393eaf1b31259832c5e0"
+    },
+    {
+      "path": "autotests/sttenginestest.cpp",
+      "sha256": "40477a61c7ad5e735577e686f7f07066ffd045be0258128dbffedc2932023def"
+    },
+    {
+      "path": "autotests/swipeenginetest.cpp",
+      "sha256": "86b85cb8f9a9aa9159d2f596f63f9e71ad34c2d5716ecc84f603aa46a31e7ee1"
+    },
+    {
+      "path": "autotests/toolbarsettings.qml",
+      "sha256": "6b8befd9247444ade6145e9b1bb3cc28b9f9fa94321e2e9f078709679276b817"
+    },
+    {
+      "path": "autotests/touchdeliverytest.cpp",
+      "sha256": "b6b75340b69ce81007cb94619ee2563db4097e01de1a3a5d5796dc772697d260"
+    },
+    {
+      "path": "autotests/usbkeyboardpolicytest.cpp",
+      "sha256": "b76d3fbdd020ac5986834b2f1e21918e13919465634069d69da32c5543606804"
+    },
+    {
+      "path": "autotests/wordatcursortest.cpp",
+      "sha256": "1656896ef8915645ee87972dc55a65f184575ad0292f3cbd0d26b841920c1d3c"
+    },
+    {
+      "path": "autotests/wordpredictortest.cpp",
+      "sha256": "ea41f86eae7dbea8399497d6180a93d6f7e0a69b6a164bdb50c2992664533a64"
+    },
+    {
+      "path": "data/70-plasma-keyboard-touchscreen.rules",
+      "sha256": "cb3a239ef62636bc2f9929d5b3bf6bab0a43628943e4dbe926808e345af14b47"
+    },
+    {
+      "path": "data/emoji/UNICODE-LICENSE.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "path": "data/emoji/emoji-test.txt",
+      "sha256": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+    },
+    {
+      "path": "data/emoji/tr.xml",
+      "sha256": "903d227cefd905301157fe2f3fac20db905b173ce254586d727d5efee4570909"
+    },
+    {
+      "path": "kcm/CMakeLists.txt",
+      "sha256": "6848b3b418c617085baee5c608d1c3c277458616d699e5fb80cd809c52575c07"
+    },
+    {
+      "path": "kcm/Messages.sh",
+      "sha256": "3a6f80e7f474c1a7ffd7f55d470aa5231a327aaed31401526d28e2208a8faf81"
+    },
+    {
+      "path": "kcm/kcm_plasmakeyboard.json",
+      "sha256": "5e5de27e41628a15c2cbde6da3ea30179470b5f307ffc30c6aa480fb17ae6982"
+    },
+    {
+      "path": "kcm/kcm_uke_plasma_keyboard_custom.json",
+      "sha256": "f86300e006b8ea5f5267d7b4cb799f4c52f93a7323bbfde4ba378e4df45e20dd"
+    },
+    {
+      "path": "kcm/plasmakeyboardkcm.cpp",
+      "sha256": "df2517420780bfc3a9ad137238159e1092c43399240c811a1724af12c3a7ec14"
+    },
+    {
+      "path": "kcm/plasmakeyboardkcm.h",
+      "sha256": "cb3a465d09b7f20cc98efff7b77cd0b0a5fe848de0be33d7fa2161744a67c1f1"
+    },
+    {
+      "path": "kcm/sttmodeldownloader.cpp",
+      "sha256": "3192d3df6450ae0e35ddd61fbe5169795cc4f478c13220f2c35ae16245a898be"
+    },
+    {
+      "path": "kcm/sttmodeldownloader.h",
+      "sha256": "d29013cb2838b31a0da3347c3a6c604bb7988098ce69155e526f4f6d17db40e6"
+    },
+    {
+      "path": "kcm/ui/FontChooserDialog.qml",
+      "sha256": "033751d14e33b4fd9dc76cb51fbfd6c52e923fbf4fe473f1b6f2c2621de14ab4"
+    },
+    {
+      "path": "kcm/ui/LocaleChooserDialog.qml",
+      "sha256": "606de3a25e093734eda9442236dce12ea505f75fddb73e605f5e8063c5258466"
+    },
+    {
+      "path": "kcm/ui/LocaleSelectorListView.qml",
+      "sha256": "3861586f9e7520997ded3df818fc529446d224f1a31d3e454076ca7e71f7d959"
+    },
+    {
+      "path": "kcm/ui/LocaleSelectorSidebar.qml",
+      "sha256": "c3b0679eb5dd5a8825c431601de0688728d3d3ddb5aec073ab119aacc7627015"
+    },
+    {
+      "path": "kcm/ui/SettingsFormPage.qml",
+      "sha256": "21ad948615a1a084ac0834433ff08710cb9ea43a6934c4021d23e6305f123743"
+    },
+    {
+      "path": "kcm/ui/SettingsRow.qml",
+      "sha256": "4fe56d603e534789f3e72818828e84837ffe9d4bfb0eb449ec3770f5e9b91849"
+    },
+    {
+      "path": "kcm/ui/SttSettingsPage.qml",
+      "sha256": "d426b7ca7386509df62dc50748933497cc9afef8e7874f8e06cace71f92711c1"
+    },
+    {
+      "path": "kcm/ui/localeutils.js",
+      "sha256": "53e98cbb5a141ce323dbf4d9f3ccbb86c1b04c9f045fb62ae7a2cca061d89792"
+    },
+    {
+      "path": "kcm/ui/main.qml",
+      "sha256": "6d17f7b97152f4add6cadbcbabc8228a1d4c7df7ad9929f509a11dadf2c29d39"
+    },
+    {
+      "path": "kcm/ui/main_handset.qml",
+      "sha256": "1ecaae08524404c3305f4cf41c8ee19af100afc2525f3a24489de946d9f8141c"
+    },
+    {
+      "path": "kcm/ui/main_mediacenter.qml",
+      "sha256": "d596cc5196656f00be3ee1b9937859d2a21422de0fa3286a31d031506fa23cda"
+    },
+    {
+      "path": "kwin/CMakeLists.txt",
+      "sha256": "396c33a7761e4ef3e724279b040b13c392d6ea219a535bcfb286e2b46eac8ae2"
+    },
+    {
+      "path": "kwin/backend.cpp",
+      "sha256": "a76f6768d25188ccd6ff94c126208dc4ac9176a2291559f2dd0f6b6ef3af705c"
+    },
+    {
+      "path": "kwin/inputclientidentity.h",
+      "sha256": "e245f5d238e38b50a3447f76be2dcad648a3e4f0b803fa97fc5860b075d4fb40"
+    },
+    {
+      "path": "kwin/metadata.json",
+      "sha256": "c1bd3d92e3656ea3935993ea5e93b9ea2faaa54e188a60ec3fcac841872ee122"
+    },
+    {
+      "path": "kwin/nativerefreshbackend.cpp",
+      "sha256": "e0797c5bd1caacd7fb8d45ae846e86ad57ebfd37b8c8890c5cb8fbce7b41b521"
+    },
+    {
+      "path": "kwin/nativerefreshbackend.h",
+      "sha256": "3211f7e758f45e32f90cec4cc3306a9160222ac30b257f0a9547b689496068c3"
+    },
+    {
+      "path": "kwin/nativerefreshrequest.h",
+      "sha256": "dfe2dc0eafc2ef55f5c2fe743ecd203bbdf7397348cbfbfe2076ff5bc311537b"
+    },
+    {
+      "path": "kwin/pointerconfinement.h",
+      "sha256": "07fff83b5cd686d8427797aad873773662da64ee235505ff0936b6700eb4f5c9"
+    },
+    {
+      "path": "kwin/refreshguard.cpp",
+      "sha256": "aa5650bc426ecd7aae5fd27376930c1d5e88cdae6fa59b8e3d33bc30ce1664b3"
+    },
+    {
+      "path": "kwin/refreshguard.h",
+      "sha256": "01488a239f3b7c9a2ce012a2550676e8d5ad88da7784f965719c14a912396cad"
+    },
+    {
+      "path": "kwin/usbkeyboardpolicy.h",
+      "sha256": "aca9a9e49ef24b423058e191b1fde67d596e9e5d2e0d3fe303598eef57c46005"
+    },
+    {
+      "path": "kwin/versionguard.h",
+      "sha256": "9bec5624560d23e256dcc71085e8497cd2c7835226f98f4a1bdea9830f15b8a8"
+    },
+    {
+      "path": "plasmoid/org.uke.plasma.keyboard.toggle/contents/ui/main.qml",
+      "sha256": "ac0b73ecc5548fea63b337861828650dd9376b5a8fac45a3f0d4c426a8736036"
+    },
+    {
+      "path": "plasmoid/org.uke.plasma.keyboard.toggle/metadata.json",
+      "sha256": "f3cd349ee6c29786778afe04c6d95220a8983e8456c30b79c5bbda4f66bd6a90"
+    },
+    {
+      "path": "po/ar/kcm_plasmakeyboard.po",
+      "sha256": "ab4be2f8e4a8023f887cbb24c67bafb683a55d6cfd779917eef7cb1515f984ed"
+    },
+    {
+      "path": "po/ar/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "a44507b478a01e449b81cbe82792c3a0412f99caeef561d54c731fc0b1641291"
+    },
+    {
+      "path": "po/ar/plasma-keyboard.po",
+      "sha256": "6bcadd697ccdd13fc5fc043784d8a61fe662738e1938427232b5e12e39a17e05"
+    },
+    {
+      "path": "po/bg/kcm_plasmakeyboard.po",
+      "sha256": "2d246acf2a34b3624fc34071f0cbe0164c788552c2ee74c9379fb96a9274b90b"
+    },
+    {
+      "path": "po/bg/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "2d246acf2a34b3624fc34071f0cbe0164c788552c2ee74c9379fb96a9274b90b"
+    },
+    {
+      "path": "po/bg/plasma-keyboard.po",
+      "sha256": "d311473d69ae8898e10146a6733f646cd951ddc1a83c364b0f7e1c7901f2d25f"
+    },
+    {
+      "path": "po/ca/kcm_plasmakeyboard.po",
+      "sha256": "e96afb4e46242f99c856c9168d1c6078cf51ea1a8668ee4e5ac28f2d4527c1cd"
+    },
+    {
+      "path": "po/ca/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "e96afb4e46242f99c856c9168d1c6078cf51ea1a8668ee4e5ac28f2d4527c1cd"
+    },
+    {
+      "path": "po/ca/plasma-keyboard.po",
+      "sha256": "67c8670e39f56093fbe3cf50f79f5d64855be3799a65f63df80127865f558a14"
+    },
+    {
+      "path": "po/ca@valencia/kcm_plasmakeyboard.po",
+      "sha256": "cfb172602482da24849637b91ac7d5754157294c68f9a9ff3041a35a654f0c2a"
+    },
+    {
+      "path": "po/ca@valencia/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "cfb172602482da24849637b91ac7d5754157294c68f9a9ff3041a35a654f0c2a"
+    },
+    {
+      "path": "po/ca@valencia/plasma-keyboard.po",
+      "sha256": "cc2a9612357bf30e69e7180a1a95180931e356265e1340d0a9ff872ccfe7198a"
+    },
+    {
+      "path": "po/cs/kcm_plasmakeyboard.po",
+      "sha256": "de799031146f40e4d36bef84ea5ef392e098fbf129079a78c6a5a9ffd000cc88"
+    },
+    {
+      "path": "po/cs/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "1463714acb774041298dc5b35c5d741a4d9defc0f7423024341d91f38c04fafa"
+    },
+    {
+      "path": "po/cs/plasma-keyboard.po",
+      "sha256": "340eb20ba427ffa4b4b57f16cc73d75a8b8932871b7c42b92ac69a395284b26d"
+    },
+    {
+      "path": "po/de/kcm_plasmakeyboard.po",
+      "sha256": "3483ed68d1e04c4878110945b77d59ab0f7d6a1bd2280a6b30854252db8c82af"
+    },
+    {
+      "path": "po/de/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "8117d602e343328078295c3eb48c39c52d4a67ebcbe3cb0836b066318285d506"
+    },
+    {
+      "path": "po/de/plasma-keyboard.po",
+      "sha256": "f848380660aa5d07273d42af7e3ebe9a4de3c8f3b6564db28d4bc0a708028aeb"
+    },
+    {
+      "path": "po/es/kcm_plasmakeyboard.po",
+      "sha256": "e1ec2ead68a3db9d3462af2a6620e583f0fa32a7eb16aa90472cadd6a67a0a38"
+    },
+    {
+      "path": "po/es/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "e1ec2ead68a3db9d3462af2a6620e583f0fa32a7eb16aa90472cadd6a67a0a38"
+    },
+    {
+      "path": "po/es/plasma-keyboard.po",
+      "sha256": "e8ab22c78a723c95e25a874f178811fa5cd59d69b366c9cc309a68696cc7047b"
+    },
+    {
+      "path": "po/eu/kcm_plasmakeyboard.po",
+      "sha256": "53b3e2be9272863ae8d3c31a4d09f491d0c5a2cf57a4427bb2baa9fb37d7fc93"
+    },
+    {
+      "path": "po/eu/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "5b4fb9cf9405c692bf0464a244809c8a19fa0a5483aa012a3bb70fb1ec4c0dcd"
+    },
+    {
+      "path": "po/eu/plasma-keyboard.po",
+      "sha256": "117c6e838d3bb2dc458f3e314b973ba51f349a485d4f4ee1dcd453e823744906"
+    },
+    {
+      "path": "po/fi/kcm_plasmakeyboard.po",
+      "sha256": "c72b2d267c87a7f9dee732c61e51d6145ccc974ee6281a66f02d0b2b222f4a85"
+    },
+    {
+      "path": "po/fi/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "1eaf2927d344bceac36b0996c5c8c192f66d13068e4848c0e2310cc3e96667f9"
+    },
+    {
+      "path": "po/fi/plasma-keyboard.po",
+      "sha256": "9dddc986027353bcf4c86e7443aedb95314dcd0d5ba6f94afeeb960251491e93"
+    },
+    {
+      "path": "po/fr/kcm_plasmakeyboard.po",
+      "sha256": "f08ec375759f67c690c84c4ce1c2f006532a5cb199f737e0cf202b5cd4cc16f5"
+    },
+    {
+      "path": "po/fr/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "1594f36d33a9cb4ca71ac2c944d0651542ae11dd3fcce317a97c34ac85d226ce"
+    },
+    {
+      "path": "po/fr/plasma-keyboard.po",
+      "sha256": "39d0c0e9b4950eeaf30d9b7bcc86063adf02a963f6a46162e05117663861eeac"
+    },
+    {
+      "path": "po/ga/kcm_plasmakeyboard.po",
+      "sha256": "3a5a6c653de8d7450a745e1c7e1791198cc17813a46b64972f52a3795d3bce7d"
+    },
+    {
+      "path": "po/ga/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "3a5a6c653de8d7450a745e1c7e1791198cc17813a46b64972f52a3795d3bce7d"
+    },
+    {
+      "path": "po/ga/plasma-keyboard.po",
+      "sha256": "0275cabcf892bb760f8b8af422db738822d51d57ff47664c1b3feae11508fefe"
+    },
+    {
+      "path": "po/he/kcm_plasmakeyboard.po",
+      "sha256": "74a621ca21ca5f00316396d65d6355a1fbdcdd8ac0b812ab079bd9f1c7ea6b83"
+    },
+    {
+      "path": "po/he/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "74a621ca21ca5f00316396d65d6355a1fbdcdd8ac0b812ab079bd9f1c7ea6b83"
+    },
+    {
+      "path": "po/he/plasma-keyboard.po",
+      "sha256": "0526abb9e74be36de9955401c33f50329ab5a9df261c40025e516efc5b93e5c3"
+    },
+    {
+      "path": "po/hu/kcm_plasmakeyboard.po",
+      "sha256": "f838204def684c5267df69d7b8312cc435b94203fe006059bff9c92cfdf6fb5b"
+    },
+    {
+      "path": "po/hu/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "f838204def684c5267df69d7b8312cc435b94203fe006059bff9c92cfdf6fb5b"
+    },
+    {
+      "path": "po/hu/plasma-keyboard.po",
+      "sha256": "fd4828281756d33d4a012111cf1f0eae8bc1b3003ab4c2cc2dff1e903c6a446e"
+    },
+    {
+      "path": "po/ia/kcm_plasmakeyboard.po",
+      "sha256": "b4bb80b25ffec04008e928a1710a9b9f619e7e35b373abeacfe6cdfd86ae05c1"
+    },
+    {
+      "path": "po/ia/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "b4bb80b25ffec04008e928a1710a9b9f619e7e35b373abeacfe6cdfd86ae05c1"
+    },
+    {
+      "path": "po/ia/plasma-keyboard.po",
+      "sha256": "3f4fed05bf8cce85bb73ace512b01825cfc21d4533c83e88bd261daa1499cb48"
+    },
+    {
+      "path": "po/is/kcm_plasmakeyboard.po",
+      "sha256": "cace773b45887e416c6a2ec3e7bea7bafe1aa829ef17a05c7bb7f4f63a95aed1"
+    },
+    {
+      "path": "po/is/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "cace773b45887e416c6a2ec3e7bea7bafe1aa829ef17a05c7bb7f4f63a95aed1"
+    },
+    {
+      "path": "po/is/plasma-keyboard.po",
+      "sha256": "ff3dff2441f73225f9c3ea8040e50cac16d9c05e606ecd05a23eb350a7ed8457"
+    },
+    {
+      "path": "po/it/kcm_plasmakeyboard.po",
+      "sha256": "9a45477552c633fcbb34990de9e1de3448f90e15db775fb5443cc46597a5c61f"
+    },
+    {
+      "path": "po/it/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "14ea5ef3e5af2dd49e284a6c650fc76d16bee87f19c55273264d03d230332d40"
+    },
+    {
+      "path": "po/it/plasma-keyboard.po",
+      "sha256": "73100d3eef877ac9b6c72d4ab764c539cb64e2f78e10950c31d11c6333e68983"
+    },
+    {
+      "path": "po/ja/kcm_plasmakeyboard.po",
+      "sha256": "f7cba28b5815dd9c4040c20bcaf29890051cfd38b6bd9915b29ebe7051cbd434"
+    },
+    {
+      "path": "po/ja/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "f7cba28b5815dd9c4040c20bcaf29890051cfd38b6bd9915b29ebe7051cbd434"
+    },
+    {
+      "path": "po/ka/kcm_plasmakeyboard.po",
+      "sha256": "039b461ae4dab3a2132ce0c5198c4da02c95b4fba787924b77b0aece7c941cb3"
+    },
+    {
+      "path": "po/ka/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "039b461ae4dab3a2132ce0c5198c4da02c95b4fba787924b77b0aece7c941cb3"
+    },
+    {
+      "path": "po/ka/plasma-keyboard.po",
+      "sha256": "657ebbe3f276856fca90b56f3afe393e044e43612f769b5cebeacdcbc8776113"
+    },
+    {
+      "path": "po/ko/kcm_plasmakeyboard.po",
+      "sha256": "8b31b2f8af0c567a4581163021bbd517f6851db66ecab2d5cb58393fbbbc1468"
+    },
+    {
+      "path": "po/ko/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "2407f879be1929db945e1d7ca087a068eec0735a7f341868b3e3f50ef1456d21"
+    },
+    {
+      "path": "po/ko/plasma-keyboard.po",
+      "sha256": "f838fb45f95669cb662fbdd8d6535fd3db6d50720e68c0944b74936a7b62286d"
+    },
+    {
+      "path": "po/lt/kcm_plasmakeyboard.po",
+      "sha256": "2119df7fc31dbd1b5b0a189039fae675b84a45ec34a0a2f600ee9879a91cda3d"
+    },
+    {
+      "path": "po/lt/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "2119df7fc31dbd1b5b0a189039fae675b84a45ec34a0a2f600ee9879a91cda3d"
+    },
+    {
+      "path": "po/lt/plasma-keyboard.po",
+      "sha256": "4184e77dddcabcc60a5bb4196bf4dfa8daf0baefee1bb594e5dd5cdbc30de743"
+    },
+    {
+      "path": "po/lv/kcm_plasmakeyboard.po",
+      "sha256": "6764bd1706daed9e6acd5b52f14dd67ca723353d5040ed9bfd5c09dfa0572fb6"
+    },
+    {
+      "path": "po/lv/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "6764bd1706daed9e6acd5b52f14dd67ca723353d5040ed9bfd5c09dfa0572fb6"
+    },
+    {
+      "path": "po/lv/plasma-keyboard.po",
+      "sha256": "28193ed32ad3e71f83423e284ffe80218a417baf3206f6c5aabf03bd55e3c4b2"
+    },
+    {
+      "path": "po/nb/kcm_plasmakeyboard.po",
+      "sha256": "8d83d2cb8660dd933f41df4c50622cdd8c40fa885cdbc3a14f82c2a520c6fea4"
+    },
+    {
+      "path": "po/nb/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "8d83d2cb8660dd933f41df4c50622cdd8c40fa885cdbc3a14f82c2a520c6fea4"
+    },
+    {
+      "path": "po/nb/plasma-keyboard.po",
+      "sha256": "d50c29cd3ad14dcfb1b9108b54dc20147fdfc2c83ab3c6714ff0a30b3ff5e4e7"
+    },
+    {
+      "path": "po/nl/kcm_plasmakeyboard.po",
+      "sha256": "72a430711a893bbf674897de5123a3d8505cf645a848cf86e4dbc31708a150c5"
+    },
+    {
+      "path": "po/nl/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "72a430711a893bbf674897de5123a3d8505cf645a848cf86e4dbc31708a150c5"
+    },
+    {
+      "path": "po/nl/plasma-keyboard.po",
+      "sha256": "6a017c93c1abe01f5202613b5300faefb5fb5d83a871410a925124f37c092dd8"
+    },
+    {
+      "path": "po/nn/kcm_plasmakeyboard.po",
+      "sha256": "a1b33903965197101c4fbe629dc05a929a5252fbe32f59355133b864545bbc7d"
+    },
+    {
+      "path": "po/nn/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "d789c254ebbf02323faf03757a9a1c133776f0e4208d8584cf92c9d49c967df1"
+    },
+    {
+      "path": "po/nn/plasma-keyboard.po",
+      "sha256": "1f9531c74be64501c09ded6e16ac0d70d0120651993a9b94b71da3ca1bbbbad4"
+    },
+    {
+      "path": "po/pl/kcm_plasmakeyboard.po",
+      "sha256": "7eafc91f1851dff786658b1a3fb9a0a7b9359dd22609c8559028abb2c8d3f86a"
+    },
+    {
+      "path": "po/pl/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "b8a8225cc8dbf6b0c58a664066903a37a7efd36c7bdbfcae0e294a7cbdd25f52"
+    },
+    {
+      "path": "po/pl/plasma-keyboard.po",
+      "sha256": "0bc226ad46cf9eae57aa72ead4f1424b56e46d5989706a49a11a067f4b9f584a"
+    },
+    {
+      "path": "po/pt_BR/kcm_plasmakeyboard.po",
+      "sha256": "ce583016384144441108eba560b7894779f604274ef210c7963c72ef60b94a46"
+    },
+    {
+      "path": "po/pt_BR/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "ce583016384144441108eba560b7894779f604274ef210c7963c72ef60b94a46"
+    },
+    {
+      "path": "po/pt_BR/plasma-keyboard.po",
+      "sha256": "c63cd382bd4b068510266df1e382299bd7a4c895a70bc11bf534814cfc9e689d"
+    },
+    {
+      "path": "po/ro/kcm_plasmakeyboard.po",
+      "sha256": "7899e970c81416074faf056c4428593c8ba6c5ad2d225bc1418a4604af12383a"
+    },
+    {
+      "path": "po/ro/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "7899e970c81416074faf056c4428593c8ba6c5ad2d225bc1418a4604af12383a"
+    },
+    {
+      "path": "po/ro/plasma-keyboard.po",
+      "sha256": "87eb5ad852c1ba74f15ddb58b9b386625879104a94b2848bfb58d333a1b43c18"
+    },
+    {
+      "path": "po/ru/kcm_plasmakeyboard.po",
+      "sha256": "924d6859f06908ae0265b3af6a7dd0a881ed52966b7d57e95329413c9dde06c6"
+    },
+    {
+      "path": "po/ru/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "6d016013e6b4bb196784a9de25a6b64e7e8af17ca77aee2c138faa89fe6598aa"
+    },
+    {
+      "path": "po/ru/plasma-keyboard.po",
+      "sha256": "7e08b48b3a73b2eb72ab76c99745cd61407800b7155e8c1e4d53e8a8e40463f5"
+    },
+    {
+      "path": "po/ru/uke-plasma-keyboard-custom.po",
+      "sha256": "15e55bac64754595969b87ed964dd5b99903cad736490b0dac939cd88aafdcf7"
+    },
+    {
+      "path": "po/sk/kcm_plasmakeyboard.po",
+      "sha256": "e5e68888f144a24f2028648e9f7e3e23759cdafa92fec9bde6086be8354f4173"
+    },
+    {
+      "path": "po/sk/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "e5e68888f144a24f2028648e9f7e3e23759cdafa92fec9bde6086be8354f4173"
+    },
+    {
+      "path": "po/sk/plasma-keyboard.po",
+      "sha256": "6ce9bc57b390d33c7b077b95de72376f721b8f88e277868118e95897ba445c00"
+    },
+    {
+      "path": "po/sl/kcm_plasmakeyboard.po",
+      "sha256": "df9cffee493d341646868f0b343db5fb7af3bbeddaf88f1955069b846a9f84ee"
+    },
+    {
+      "path": "po/sl/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "df9cffee493d341646868f0b343db5fb7af3bbeddaf88f1955069b846a9f84ee"
+    },
+    {
+      "path": "po/sl/plasma-keyboard.po",
+      "sha256": "598715b4fd47750634553bb084a0e9fb06e42dd35ec9dbc4c897e2a84d8d4d7f"
+    },
+    {
+      "path": "po/sr/kcm_plasmakeyboard.po",
+      "sha256": "3434bc64d7a4ddc9e1541bb85e58600529d9b5d646a39210a96069201bd2bf0d"
+    },
+    {
+      "path": "po/sr/plasma-keyboard.po",
+      "sha256": "ec2c736ebeb40cb7cc91d86af3aea5ab8d9eba96d192a29f6e6433c4b4c4dce7"
+    },
+    {
+      "path": "po/sr@ijekavian/kcm_plasmakeyboard.po",
+      "sha256": "0e1c4f66cbe18493f18ab1151d4c113f6ed2795918b88e4839fef2d4a3a01ddb"
+    },
+    {
+      "path": "po/sr@ijekavian/plasma-keyboard.po",
+      "sha256": "2c2c9cf8cbe8d8017ca844311ccf1c77e689c512682fb894d26fe7904908064e"
+    },
+    {
+      "path": "po/sr@ijekavianlatin/kcm_plasmakeyboard.po",
+      "sha256": "24ea9c6f329ff1cacdc6a06089177b9c7b4358f39c4038acd17fd203f8737cfb"
+    },
+    {
+      "path": "po/sr@ijekavianlatin/plasma-keyboard.po",
+      "sha256": "8e03036db3737328126da838fc02d846a5d6fb9b8439b7ecde0de99ff2a397df"
+    },
+    {
+      "path": "po/sr@latin/kcm_plasmakeyboard.po",
+      "sha256": "b142635e3a172c3afd7c86879c99d92b97729333cf5ada7f38901b2ca3671a8b"
+    },
+    {
+      "path": "po/sr@latin/plasma-keyboard.po",
+      "sha256": "46c1326e7f96abd7d9bf236b6f35dbdf7d247e7abb576f67a26f8d585ff01198"
+    },
+    {
+      "path": "po/sv/kcm_plasmakeyboard.po",
+      "sha256": "7af70cf810b5437314f5149a7f638fc9bca3f614a2a19bc960c8b08c33d68b8d"
+    },
+    {
+      "path": "po/sv/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "7af70cf810b5437314f5149a7f638fc9bca3f614a2a19bc960c8b08c33d68b8d"
+    },
+    {
+      "path": "po/sv/plasma-keyboard.po",
+      "sha256": "5642f32de1ab314ed7d6da9c44e5e6c417e2d91a0cdd860130f781d33f992400"
+    },
+    {
+      "path": "po/ta/kcm_plasmakeyboard.po",
+      "sha256": "99ee37f38f07e17cdf2930eaf004f02c6fc87a5228b55abfd882021727b2b4fa"
+    },
+    {
+      "path": "po/ta/plasma-keyboard.po",
+      "sha256": "a6d52c2687e1b56e0182cead99b1c629b4e38769b02de5535df8e8e7c4f7a72e"
+    },
+    {
+      "path": "po/tr/kcm_plasmakeyboard.po",
+      "sha256": "968bb457153f047ec04786658919d4e94d1e4eb053ac4b025b8a666c74ac4d91"
+    },
+    {
+      "path": "po/tr/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "968bb457153f047ec04786658919d4e94d1e4eb053ac4b025b8a666c74ac4d91"
+    },
+    {
+      "path": "po/tr/plasma-keyboard.po",
+      "sha256": "7a87a2df3006aeb93f7ad83a5faa61def06a854b8bfaefeb08b6ac83ffdb4795"
+    },
+    {
+      "path": "po/tr/uke-plasma-keyboard-custom.po",
+      "sha256": "a5ed9f0fd36461807043baaca6cc13aad89d415d5be4face75a3ac4a8614aae9"
+    },
+    {
+      "path": "po/ug/kcm_plasmakeyboard.po",
+      "sha256": "806e4a73d3ef4d5c10f9f3cf233b0df5d087a23c96229d85df6fa10f632f8c99"
+    },
+    {
+      "path": "po/ug/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "806e4a73d3ef4d5c10f9f3cf233b0df5d087a23c96229d85df6fa10f632f8c99"
+    },
+    {
+      "path": "po/ug/plasma-keyboard.po",
+      "sha256": "bdbfa7aba360350e5933900b9f33717ea26d0744291697b788b4100b7be25d3c"
+    },
+    {
+      "path": "po/uk/kcm_plasmakeyboard.po",
+      "sha256": "02ee712403a55976576fe5cdaa9e8718735ec693a307af8da0bde62525e78fd9"
+    },
+    {
+      "path": "po/uk/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "02ee712403a55976576fe5cdaa9e8718735ec693a307af8da0bde62525e78fd9"
+    },
+    {
+      "path": "po/uk/plasma-keyboard.po",
+      "sha256": "aaf96e4da613ef2afdfe8966eb5c0dcc5cc907819d9c82a53c282c959d6cb8fd"
+    },
+    {
+      "path": "po/zh_CN/kcm_plasmakeyboard.po",
+      "sha256": "6e8790413e96ee11084c8a635a347e4d6af8654030048129dc256ff6b3cae899"
+    },
+    {
+      "path": "po/zh_CN/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "6e8790413e96ee11084c8a635a347e4d6af8654030048129dc256ff6b3cae899"
+    },
+    {
+      "path": "po/zh_CN/plasma-keyboard.po",
+      "sha256": "94f978b2b6fe9f51da7c9a8643742c5993b9b1c83aabe1eda0d9159b250ca4e9"
+    },
+    {
+      "path": "po/zh_TW/kcm_plasmakeyboard.po",
+      "sha256": "fa10923b66037ad273e0c4ebdae7387b7cd12d816f612c7aa4a5a9ef94aa8d3f"
+    },
+    {
+      "path": "po/zh_TW/kcm_uke_plasma_keyboard_custom.po",
+      "sha256": "fa10923b66037ad273e0c4ebdae7387b7cd12d816f612c7aa4a5a9ef94aa8d3f"
+    },
+    {
+      "path": "po/zh_TW/plasma-keyboard.po",
+      "sha256": "ae0e77141edc9d01cf7a025fe68ff21aa48e3c66862e531fb01a70d68a5d89a2"
+    },
+    {
+      "path": "src/CMakeLists.txt",
+      "sha256": "e93d3ce2b9328fe5f6e229d2fedc0e09eafab1904967437d643b798558eae80f"
+    },
+    {
+      "path": "src/Messages.sh",
+      "sha256": "a8cff95da44871c901c68ddf2083bed1b447b609b7d425abce76d99f4480d50c"
+    },
+    {
+      "path": "src/clipboard/clipboardhistory.cpp",
+      "sha256": "d8b1199ed7aa2308559cae628b6b5c1615b3eabdb8107b1b0eda20e729169a8f"
+    },
+    {
+      "path": "src/clipboard/clipboardhistory.h",
+      "sha256": "8afd12b41408194a7ca2e8e9ee51d64c0cd4ae27389414031521d289f5c05c38"
+    },
+    {
+      "path": "src/config-plasma-keyboard.h.cmake",
+      "sha256": "0664ffa10a0858bbad28817cf7374a9d070b45e13e2f14eeb2d4472dcc97e79a"
+    },
+    {
+      "path": "src/dbus/org.sigxcpu.Feedback.Haptic.xml",
+      "sha256": "42f289f5e1ccdd8d03c74425299ed69e4ce3529319a68b99c5b797f5b367dc97"
+    },
+    {
+      "path": "src/dbus/org.sigxcpu.Feedback.xml",
+      "sha256": "fe0f334edd6a4cefa7b8c3138cbc5b4955cf1e31a6ce6d1e86636fed32388d2e"
+    },
+    {
+      "path": "src/editingtext.h",
+      "sha256": "6d8cb46cd7c791f2c91c0f0e8d1b501e2c522450ce982ce374779a4dcb4e7cb5"
+    },
+    {
+      "path": "src/fileidentity.h",
+      "sha256": "72a7830961f94409ef92794492e229abf1af8eeb52535bc758c49d53d4c20576"
+    },
+    {
+      "path": "src/focusededitabletracker.cpp",
+      "sha256": "2af12ef58da63ea2119fa4436757b38bb6d5cc937fb23f2be7d265276f402910"
+    },
+    {
+      "path": "src/focusededitabletracker.h",
+      "sha256": "98dddffd7e4709c6bbeeb6fb68fbc550849f98967cfea23d1e6de5e652508105"
+    },
+    {
+      "path": "src/gamepadhandler.cpp",
+      "sha256": "a7038f45f03ebc137b8ede2928f8072b95a2eea976a65751cb9b69936f4ad44c"
+    },
+    {
+      "path": "src/gamepadhandler.h",
+      "sha256": "e41d795aeaf39bb47ceda9d17196c70b6223287ab2d1205e122aaec6160f263a"
+    },
+    {
+      "path": "src/icons.qrc",
+      "sha256": "f55328192ab2221eed84755259ce630429130154f3a2e09e7e4627365cbc4bf8"
+    },
+    {
+      "path": "src/icons/breeze/audio-input-microphone-symbolic.svg",
+      "sha256": "8fbc4ea62cc3d86e19c2ba9c0f715ca28a77dcc8c01f031d7150a63ea425358b"
+    },
+    {
+      "path": "src/icons/breeze/edit-select-text-symbolic.svg",
+      "sha256": "04a35a40bbcdc99c17d959a718a42ba83bd7e7007c624727bf6b740e308c216d"
+    },
+    {
+      "path": "src/icons/breeze/input-keyboard-virtual-hide-symbolic.svg",
+      "sha256": "90a3f80b119549fe0252767be8a90792f08484a22191ce93aa7cea2bf8d940b3"
+    },
+    {
+      "path": "src/icons/breeze/keyboard-caps-disabled-symbolic.svg",
+      "sha256": "78f669c6a6052ddb9c85599ccce12af49097eeb7cb3e61d094541767a084aff0"
+    },
+    {
+      "path": "src/icons/breeze/keyboard-caps-enabled-symbolic.svg",
+      "sha256": "a1f3518c55864a46d25b2f8e41fd68d5087b69c9c55ea08822cdb69e5344d22d"
+    },
+    {
+      "path": "src/icons/breeze/keyboard-caps-locked-symbolic.svg",
+      "sha256": "cdb9cde829879c785e3aeca1e29684ea1fc4784ea6ebd2f89909df364621ae77"
+    },
+    {
+      "path": "src/icons/papirus/draw-freehand-symbolic.svg",
+      "sha256": "9f3fc11f0057b8406b15eab7e0c777704e94286206f1c37d47878960a4f4f47d"
+    },
+    {
+      "path": "src/icons/papirus/edit-clear-all-symbolic.svg",
+      "sha256": "4fbff91925ab47143b7449e3bd9bdbc0f6dec3635e224fb1cc31f40c8d69ad65"
+    },
+    {
+      "path": "src/icons/papirus/edit-clear-symbolic.svg",
+      "sha256": "206f5c8fedfe23bb71ce14685bd8f9de250ca242aa2a01a1d099c7a27faf0251"
+    },
+    {
+      "path": "src/icons/papirus/edit-paste-symbolic.svg",
+      "sha256": "7de29e044153503d103adb8f72986050fc12050f3a15266f2f1b4e34b04e1e3b"
+    },
+    {
+      "path": "src/icons/papirus/globe-symbolic.svg",
+      "sha256": "6d825859c78e772344ae5b4a4a480afe69e223932f7fde96ab183a8c4745bd7f"
+    },
+    {
+      "path": "src/icons/papirus/go-previous-symbolic.svg",
+      "sha256": "0fdbbfe4a0acebcd639a4267401d6bad5a8167179473ea1c61912f47a02d5045"
+    },
+    {
+      "path": "src/icons/papirus/keyboard-enter-symbolic.svg",
+      "sha256": "8dc2cf13d4c3b3f2cf9ca26c0c8ce768b0e0f8220059b33dc0b95d39df468036"
+    },
+    {
+      "path": "src/icons/papirus/object-move-symbolic.svg",
+      "sha256": "4ed5a9f27d18c964605c97f806644a5a029d74c668f9e3df63c8f863c8969313"
+    },
+    {
+      "path": "src/icons/papirus/object-select-symbolic.svg",
+      "sha256": "c40548e1825634eb7f1f245c9708b6fb12af74b84f6306550265d39bae843a1a"
+    },
+    {
+      "path": "src/icons/papirus/preferences-system-symbolic.svg",
+      "sha256": "f694f32808f921222b32dfa375918db156f60f52e55bb1456f7bd38dedf19de9"
+    },
+    {
+      "path": "src/icons/papirus/search-symbolic.svg",
+      "sha256": "63c2f2d7c9e3b41f74736c2710b188ac87817169d6882f18b752b59cf3c8ff5b"
+    },
+    {
+      "path": "src/icons/papirus/selection-end-symbolic.svg",
+      "sha256": "d82b8257df01b88fa005bd9a195b213eda6a56de879b91b96911c4681c65c016"
+    },
+    {
+      "path": "src/icons/papirus/tools-check-spelling-symbolic.svg",
+      "sha256": "aa826fddbbf13a0c308a21abad9dd54aa36c7b901f1360b5064adc3c68947c76"
+    },
+    {
+      "path": "src/inputactivation.h",
+      "sha256": "4fc617515570cfcf361d0eeab8ec652d2d683b8044d76d4fef4632db0855ded0"
+    },
+    {
+      "path": "src/inputcontentpolicy.h",
+      "sha256": "6f503ef61cf3c2ca9c9523055d788b87d22d8b16419c6a943413016287ad4fc4"
+    },
+    {
+      "path": "src/inputlisteneritem.cpp",
+      "sha256": "72c0f0c487f6da25ee34ab3f1f48967c6c7109620d1f5114a972f7fb235e6b3e"
+    },
+    {
+      "path": "src/inputlisteneritem.h",
+      "sha256": "69acc79fb8ac7565b9cbb3a7aebda744db03ebb768f740d4d31a043943a9d0c4"
+    },
+    {
+      "path": "src/inputmethod.cpp",
+      "sha256": "71dd9490e2e29897dbfae0e8d78789778150627ddec214073d0fa695fefd7946"
+    },
+    {
+      "path": "src/inputmethod_p.h",
+      "sha256": "8625f3b6e10a48ead2df626a817b6cba09f8a823ca45183960991a411cc3b759"
+    },
+    {
+      "path": "src/inputpanelintegration.cpp",
+      "sha256": "c2dea3e4015cf4065714e65aa1d8a1d6a3f4c874f728f62d9081fce8fe357073"
+    },
+    {
+      "path": "src/inputpanelintegration.h",
+      "sha256": "80d11997922cc8680c1c6c45db08f23aa8ecc2b158669dac72a2641b8a244bc6"
+    },
+    {
+      "path": "src/inputpanelrole.h",
+      "sha256": "8a07a2855c2ce774430f6908f3fdc966907f71587799894d4c0cac20b4e41987"
+    },
+    {
+      "path": "src/inputpanelwindow.cpp",
+      "sha256": "b8db22a91437ea01d9e0712bdbe39a7615f737c786d69d428e59a08bfccf2de6"
+    },
+    {
+      "path": "src/inputpanelwindow.h",
+      "sha256": "bab0de490648ee1f2552673d7bdb1851b0402552dc9b6841dce685abba9375a7"
+    },
+    {
+      "path": "src/inputplugin.cpp",
+      "sha256": "2d281a50399aaa2447cb6891e3e5dd500525582c6324716e489c731897ff4098"
+    },
+    {
+      "path": "src/inputplugin.h",
+      "sha256": "cc82ee3dcdd7832f70bda27a983d36aaf7767f62f0229660655c0542e859420d"
+    },
+    {
+      "path": "src/keyboardroleprivacy.h",
+      "sha256": "69ae3f7865028f58c6356dfa6c560e9be0dfe5c78ebb27d0cabf58c0860b94cd"
+    },
+    {
+      "path": "src/keyboardvisibilitystate.h",
+      "sha256": "df6bde48cc76cef1507f1991e4354942f74c2ec5bece8caf760a35ec125e1430"
+    },
+    {
+      "path": "src/kwinkeyboardrestore.js",
+      "sha256": "32d7b748fe14443745e169aed124cefd0b1de8aa5194754f8c2d2829a042f746"
+    },
+    {
+      "path": "src/laptop/controladaptor.cpp",
+      "sha256": "81f28b2973b2c18dbd657a38b903087554de3af79f3983be9b8c99ea791eed08"
+    },
+    {
+      "path": "src/laptop/controladaptor.h",
+      "sha256": "3d8a0e0ba43c87e7f88dad28ec0aa3077607b4fd610855a5b39d10729c35dab5"
+    },
+    {
+      "path": "src/laptop/laptopcontroller.cpp",
+      "sha256": "5b72f891176485d97c13c6806c5613fac8c14ff46866911a3bcc8c6aa4e71f18"
+    },
+    {
+      "path": "src/laptop/laptopcontroller.h",
+      "sha256": "8e39a5438c9f959ab4ec4e22d54a8715faa0a438c3604f58df6d8ba5e6b49bdb"
+    },
+    {
+      "path": "src/laptop/layoutregistry.cpp",
+      "sha256": "a812737a3f4a2a613d96938d51a0ac156b6166029086bee5117aa0a65e6b7a08"
+    },
+    {
+      "path": "src/laptop/layoutregistry.h",
+      "sha256": "dcdebedc93d48b799c2a9812312e0c7cba9cd3695ac0c7a40272ab1331202cad"
+    },
+    {
+      "path": "src/laptop/physicalgeometry.h",
+      "sha256": "cc8c389646ccd0c0fb05ae5abf36e5ae87ec37a5330a8e68a4458ed210c08c50"
+    },
+    {
+      "path": "src/laptop/pixelshift.h",
+      "sha256": "04fbb26289b01e2ca831837f1e78cdb8a9c90ba99ca96e7a1aa5b624550b0efb"
+    },
+    {
+      "path": "src/laptop/processidentity.h",
+      "sha256": "6fe415ba734125e7f31f4a6fd7cc6f648a43cb9135413d7eb3d62bef73c63148"
+    },
+    {
+      "path": "src/laptop/protocol.h",
+      "sha256": "f5b1a2378b33791b263147f8cd8536e88d84d1dd8b3b24e2477ba9ca79f9c9e2"
+    },
+    {
+      "path": "src/laptop/touchpadmotion.h",
+      "sha256": "dde7635874c909ae68da56a341e4e4bc8e75da06eb71a5e80a2b83f942d1e20b"
+    },
+    {
+      "path": "src/layoutpathhelper.h",
+      "sha256": "2d99bbe4f67cf1d45a30a24c182ef001add21b5c16e3ce172f668bfa812dce6c"
+    },
+    {
+      "path": "src/layouts/am_ET/AmharicInputMethod.qml",
+      "sha256": "09dce5769718fdf2af5781c27e347df9d75d186dca2686f44d3c75b249af9521"
+    },
+    {
+      "path": "src/layouts/am_ET/dialpad.qml",
+      "sha256": "00ce65721b51e3016e53e58876cb28c9cd16ec222a75d0d3cd5a36066d36cc1c"
+    },
+    {
+      "path": "src/layouts/am_ET/digits.qml",
+      "sha256": "943d1f8d4027f09d1ee8a1759eaa74df7f28fb91064ba824b1a01bcc88c2dd78"
+    },
+    {
+      "path": "src/layouts/am_ET/handwriting.qml",
+      "sha256": "5c77ff93ffcf914f45248dec0bd69672cb0ea71b2734f9ee9e296eee0f3b0a9c"
+    },
+    {
+      "path": "src/layouts/am_ET/main.qml",
+      "sha256": "1952ba3b7fe7d735ca3ab8cf1b4bcc2183e05f114f38579f00f0aff1a0b7eb39"
+    },
+    {
+      "path": "src/layouts/am_ET/numbers.qml",
+      "sha256": "677808ad77966f77cc3521aab05779772c32c3aaf148ec3d636ceed5b3154fe8"
+    },
+    {
+      "path": "src/layouts/am_ET/symbols.qml",
+      "sha256": "df1a5b4d21d15838bee36211c0029e75010046911d54ffdca59512384a72153f"
+    },
+    {
+      "path": "src/layouts/ar_AR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ar_AR/digits.qml",
+      "sha256": "fdf2e22859bd70bc7c0f1ffcf52c71d307610f4462d82793546610be44559df5"
+    },
+    {
+      "path": "src/layouts/ar_AR/handwriting.qml",
+      "sha256": "c8d756309d38cffcbe648e8b8282c4356f86fb9256a898265f1f35e763d09235"
+    },
+    {
+      "path": "src/layouts/ar_AR/main.qml",
+      "sha256": "bf847315c261cc80d7556fb62451a3f57630fb8e4b9e6a5a90b18f0044311af7"
+    },
+    {
+      "path": "src/layouts/ar_AR/numbers.qml",
+      "sha256": "4cceeffc1ec1106ed2dab0d64ea26415a268043667c128331b467989c92e8835"
+    },
+    {
+      "path": "src/layouts/ar_AR/symbols.qml",
+      "sha256": "34cc465a8e8299cb5eb5647b1463576e1480e89188c0d8015414fb7cc7663d8c"
+    },
+    {
+      "path": "src/layouts/bg_BG/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/bg_BG/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/bg_BG/handwriting.qml",
+      "sha256": "d2a788642a6bf39345fddb3df73862f7482b16689dcb134eb2c251abe3ca5b1d"
+    },
+    {
+      "path": "src/layouts/bg_BG/main.qml",
+      "sha256": "60678697ee1a6a010952bd8652ed4a31dd0d0e7575ea3934f9b58785fc39ae7b"
+    },
+    {
+      "path": "src/layouts/bg_BG/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/bg_BG/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/cs_CZ/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/cs_CZ/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/cs_CZ/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/cs_CZ/main.qml",
+      "sha256": "50469c0da49696c5a9724c3974bb40778f228ea786c09a3244b84d50acfd0a60"
+    },
+    {
+      "path": "src/layouts/cs_CZ/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/cs_CZ/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/da_DK/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/da_DK/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/da_DK/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/da_DK/main.qml",
+      "sha256": "7f181b546c01f0f8ff2a618d896978a004a983d1ea41013ed0626f3d3c945311"
+    },
+    {
+      "path": "src/layouts/da_DK/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/da_DK/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/de_DE/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/de_DE/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/de_DE/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/de_DE/main.qml",
+      "sha256": "dd21e31be9cd6c3316c83db345b6e206d52ce009426dec02ac8dcf0431a4b253"
+    },
+    {
+      "path": "src/layouts/de_DE/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/de_DE/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/el_GR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/el_GR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/el_GR/handwriting.qml",
+      "sha256": "6c515175e8b4b6e3db76e8a1863ac656a241ba91b16ea7a7812b2829fe95f741"
+    },
+    {
+      "path": "src/layouts/el_GR/main.qml",
+      "sha256": "5f8998305d2ebadf246fc3648b9a4e5ebe761e658ae25edda923d4c1fb8f1a19"
+    },
+    {
+      "path": "src/layouts/el_GR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/el_GR/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_GB/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/en_US/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/main.qml",
+      "sha256": "fc15357e6dfcbc45fe0d83705413ce4ec55445b3d4c0ccaa3d5332b310201c7a"
+    },
+    {
+      "path": "src/layouts/eo/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/eo/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_ES/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_ES/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_ES/handwriting.qml",
+      "sha256": "188e942fa82cef2b7d860c8d3fda3d25bbdea26d4d3e54b2015e65d0ab796084"
+    },
+    {
+      "path": "src/layouts/es_ES/main.qml",
+      "sha256": "5e53289fb683d5603965bfacc6f281235785ab97c7853c3d6fd85259dd704713"
+    },
+    {
+      "path": "src/layouts/es_ES/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_ES/symbols.qml",
+      "sha256": "618ef96d4925fd038d83c76a6572119ce00bd9e5edd7d246a1bf22c610c8b8db"
+    },
+    {
+      "path": "src/layouts/es_MX/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_MX/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_MX/handwriting.qml",
+      "sha256": "188e942fa82cef2b7d860c8d3fda3d25bbdea26d4d3e54b2015e65d0ab796084"
+    },
+    {
+      "path": "src/layouts/es_MX/main.qml",
+      "sha256": "5e53289fb683d5603965bfacc6f281235785ab97c7853c3d6fd85259dd704713"
+    },
+    {
+      "path": "src/layouts/es_MX/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/es_MX/symbols.qml",
+      "sha256": "8a2a275bf276651947c2247d3faec4cb282b6c483197968bf15a3ab74c599b7b"
+    },
+    {
+      "path": "src/layouts/et_EE/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/et_EE/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/et_EE/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/et_EE/main.qml",
+      "sha256": "e2cfa1411d30e278d34fcd352b64e0adfff4e27130f0ebf27e84881cfac4a315"
+    },
+    {
+      "path": "src/layouts/et_EE/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/et_EE/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fa_FA/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fa_FA/digits.qml",
+      "sha256": "3e169eef24f1f28f6146b2a5e2f3cc079ce7512a2d43f51ea43d22e3fcab08ba"
+    },
+    {
+      "path": "src/layouts/fa_FA/handwriting.qml",
+      "sha256": "c9697218c9906eb7d136775facd5d7448adc547beae05914eee0e105fdb93ab5"
+    },
+    {
+      "path": "src/layouts/fa_FA/main.qml",
+      "sha256": "b1aa45ab9ff817b1c8cf239b1456aab53652d08b46db3d1c1a148a5d5434cc4e"
+    },
+    {
+      "path": "src/layouts/fa_FA/numbers.qml",
+      "sha256": "1b77e2d966d50a668ab9da2d1af0e4017d8f4725b6e89a99e2df48ac67c40066"
+    },
+    {
+      "path": "src/layouts/fa_FA/symbols.qml",
+      "sha256": "5968b265db3128f091201e90bbc668bff2d7d85c5de37deb14a983a6c33e3fc4"
+    },
+    {
+      "path": "src/layouts/fallback/dialpad.qml",
+      "sha256": "91ee471bc944be4eadb4f95de65728ce1cc769ed6eb75839d468a0d2b0c1aafc"
+    },
+    {
+      "path": "src/layouts/fallback/digits.qml",
+      "sha256": "8d18d6f58c81f863a539ac7e31d83ba5cc9fb7fbe36e92c043c109826e589185"
+    },
+    {
+      "path": "src/layouts/fallback/handwriting.qml",
+      "sha256": "024a0e1f1b8ac7f94e568ef914b2fd735979229d87929d8c2bea266ff242a961"
+    },
+    {
+      "path": "src/layouts/fallback/main.qml",
+      "sha256": "26534d8a17debd92aca224c05dfc3a41bfb3218c373d0223135c7d3c4f2f52ff"
+    },
+    {
+      "path": "src/layouts/fallback/numbers.qml",
+      "sha256": "3836ef868c9f62cbf6e4b94ce759c1e486f95a35f0173d78fe703d23475f8bf4"
+    },
+    {
+      "path": "src/layouts/fallback/symbols.qml",
+      "sha256": "23f968c1b4373e5f50e5e26a0f798a05e47dd657c574c0f37079c5ba5aa1afb3"
+    },
+    {
+      "path": "src/layouts/fi_FI/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fi_FI/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fi_FI/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fi_FI/main.qml",
+      "sha256": "0ceb37a6a9cc3bd81cd84a011938f5e462525bcbd88cd9f191b3dabf41c8ff73"
+    },
+    {
+      "path": "src/layouts/fi_FI/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fi_FI/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_CA/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_CA/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_CA/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_CA/main.qml",
+      "sha256": "0233718b190cb30719d8a133a1c04e42bb18e9041a87cfcc54fc3420ae695851"
+    },
+    {
+      "path": "src/layouts/fr_CA/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_CA/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_FR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_FR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_FR/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_FR/main.qml",
+      "sha256": "f1a0475b671914d9a362d77d9bf9f71b805f6d2c385a56b71f76fb0ee111c575"
+    },
+    {
+      "path": "src/layouts/fr_FR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/fr_FR/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/he_IL/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/he_IL/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/he_IL/handwriting.qml",
+      "sha256": "c521863a8ab1d8378d292364e046d625aa895ba21ecc3c0ca7ad7ae750f245ec"
+    },
+    {
+      "path": "src/layouts/he_IL/main.qml",
+      "sha256": "f488e65c905b04621bce7d3c504098f03692a652dc02e859746a11d64c9c4454"
+    },
+    {
+      "path": "src/layouts/he_IL/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/he_IL/symbols.qml",
+      "sha256": "ccd572cdb0e22824362113efb6107c6cebc5feb24a4b6ecf84294fee6f9c8a4d"
+    },
+    {
+      "path": "src/layouts/hi_IN/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hi_IN/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hi_IN/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hi_IN/main.qml",
+      "sha256": "f9341e4cebf4bbd0753c6d415a73e2c0cf3c04848f3464067e2bab2e43a5be84"
+    },
+    {
+      "path": "src/layouts/hi_IN/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hi_IN/symbols.qml",
+      "sha256": "7ad112c6835c69a1cf0304958c13a1e2e1c6f712b39c8d402963d6f626b71bd6"
+    },
+    {
+      "path": "src/layouts/hr_HR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hr_HR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hr_HR/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hr_HR/main.qml",
+      "sha256": "62f305f4cd3453dd2b31cf3b53999e266a85fff1ab9e9712dde11b1e96279002"
+    },
+    {
+      "path": "src/layouts/hr_HR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hr_HR/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hu_HU/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hu_HU/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hu_HU/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hu_HU/main.qml",
+      "sha256": "359638d0b4c29b353feb4310236f89253f1755ad13536de27e3411b20ef94a24"
+    },
+    {
+      "path": "src/layouts/hu_HU/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/hu_HU/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/id_ID/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/it_IT/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/it_IT/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/it_IT/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/it_IT/main.qml",
+      "sha256": "44999e54dbcf3863d433531f0bcfdb63d9701fcebdde38c88e23d44d8b0194d4"
+    },
+    {
+      "path": "src/layouts/it_IT/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/it_IT/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ja_JP/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ja_JP/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ja_JP/handwriting.qml",
+      "sha256": "c7ac15c90e421da7039b537dceb155c57059394755671a44003120646e2e540c"
+    },
+    {
+      "path": "src/layouts/ja_JP/main.qml",
+      "sha256": "8f21b071bc517d97a8db225abd054074e3e53ed1916326a277152c9582fbe0ce"
+    },
+    {
+      "path": "src/layouts/ja_JP/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ja_JP/symbols.qml",
+      "sha256": "635b07380698c842206c29bb65f69e8145d83dbbb87566c51938d62da4920204"
+    },
+    {
+      "path": "src/layouts/ko_KR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ko_KR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ko_KR/handwriting.qml",
+      "sha256": "7e5358750c7527f07763add982490fa855209be4ede3ce4489cdf5091d075bc1"
+    },
+    {
+      "path": "src/layouts/ko_KR/main.qml",
+      "sha256": "a1a267250e1671f264c36fb7baccdefbf845aac6f632e412c1b01d101dd8e7bd"
+    },
+    {
+      "path": "src/layouts/ko_KR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ko_KR/symbols.qml",
+      "sha256": "d07ccf54ecfbdad5f645e414a98cdd3a8fa55773f0041dbce1a755b80cadbdfe"
+    },
+    {
+      "path": "src/layouts/lv_LV/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/lv_LV/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/lv_LV/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/lv_LV/main.qml",
+      "sha256": "66377ff1b81fc810fdfbf40390be866ed8f9de83b2de2012dc1a5c19d165f2d7"
+    },
+    {
+      "path": "src/layouts/lv_LV/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/lv_LV/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ms_MY/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nb_NO/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nb_NO/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nb_NO/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nb_NO/main.qml",
+      "sha256": "e734ad81d152000648766a5e8daa325c386148d4571b12eb00e36979cf130aea"
+    },
+    {
+      "path": "src/layouts/nb_NO/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nb_NO/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/main.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/nl_NL/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pl_PL/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pl_PL/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pl_PL/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pl_PL/main.qml",
+      "sha256": "24cb7a5edd050f1df3e466923560aadfc36afdeb393d0370559820f2ab1570c3"
+    },
+    {
+      "path": "src/layouts/pl_PL/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pl_PL/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_BR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_BR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_BR/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_BR/main.qml",
+      "sha256": "92b792f18b36be646e850f2a014b67e4fb16ab714d8c893f7856e99c986df202"
+    },
+    {
+      "path": "src/layouts/pt_BR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_BR/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_PT/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_PT/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_PT/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_PT/main.qml",
+      "sha256": "92b792f18b36be646e850f2a014b67e4fb16ab714d8c893f7856e99c986df202"
+    },
+    {
+      "path": "src/layouts/pt_PT/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/pt_PT/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ro_RO/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ro_RO/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ro_RO/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ro_RO/main.qml",
+      "sha256": "715cfe6ea87e33e43a2975a08f1078e9dab3f53239ce0166884696854749c19c"
+    },
+    {
+      "path": "src/layouts/ro_RO/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ro_RO/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ru_RU/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ru_RU/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ru_RU/handwriting.qml",
+      "sha256": "d2a788642a6bf39345fddb3df73862f7482b16689dcb134eb2c251abe3ca5b1d"
+    },
+    {
+      "path": "src/layouts/ru_RU/main.qml",
+      "sha256": "c4f4d388c360838d2254f391eeac6f3fe939101a439e4de00f0383d09a31c86c"
+    },
+    {
+      "path": "src/layouts/ru_RU/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/ru_RU/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sk_SK/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sk_SK/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sk_SK/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sk_SK/main.qml",
+      "sha256": "30b425ca25cce11ba771c630a915f1815feffbbca0e25985ff0922b83d76c121"
+    },
+    {
+      "path": "src/layouts/sk_SK/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sk_SK/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sl_SI/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sl_SI/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sl_SI/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sl_SI/main.qml",
+      "sha256": "0b663be891319aea54f21499ee5391a835bca6b02112dafe6112b17245093616"
+    },
+    {
+      "path": "src/layouts/sl_SI/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sl_SI/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sq_AL/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sq_AL/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sq_AL/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sq_AL/main.qml",
+      "sha256": "f634413bf79b57f2733ea2ba26d36bfe77d8ab4370ac356e68afbd54c384f291"
+    },
+    {
+      "path": "src/layouts/sq_AL/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sq_AL/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sr_SP/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sr_SP/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sr_SP/handwriting.qml",
+      "sha256": "d2a788642a6bf39345fddb3df73862f7482b16689dcb134eb2c251abe3ca5b1d"
+    },
+    {
+      "path": "src/layouts/sr_SP/main.qml",
+      "sha256": "5c5ffc9afcb99830adf709c71d3a1f1e21558b863c7736bcced035747eeb8283"
+    },
+    {
+      "path": "src/layouts/sr_SP/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sr_SP/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sv_SE/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sv_SE/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sv_SE/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sv_SE/main.qml",
+      "sha256": "0ceb37a6a9cc3bd81cd84a011938f5e462525bcbd88cd9f191b3dabf41c8ff73"
+    },
+    {
+      "path": "src/layouts/sv_SE/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/sv_SE/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/th_TH/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/th_TH/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/th_TH/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/th_TH/handwriting.qml",
+      "sha256": "167b4cfa7d33f3407f89e48ad1f6d0c19e39d9224cbd8a0f15525655da48be03"
+    },
+    {
+      "path": "src/layouts/th_TH/main.qml",
+      "sha256": "05836e7c0bd8931613e5967d138be8e5aee81f7b10017f64aeaac9de23be629d"
+    },
+    {
+      "path": "src/layouts/th_TH/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/th_TH/symbols.qml",
+      "sha256": "5357dae5256225d56163f5beee804fd50c197c742b71f7f574ec264fca3dd3a6"
+    },
+    {
+      "path": "src/layouts/tr_TR/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/tr_TR/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/tr_TR/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/tr_TR/main.qml",
+      "sha256": "130e98ac949309f2e19a1066725f4b4a319f235465613aa89400e245891e8317"
+    },
+    {
+      "path": "src/layouts/tr_TR/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/tr_TR/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/uk_UA/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/uk_UA/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/uk_UA/handwriting.qml",
+      "sha256": "d2a788642a6bf39345fddb3df73862f7482b16689dcb134eb2c251abe3ca5b1d"
+    },
+    {
+      "path": "src/layouts/uk_UA/main.qml",
+      "sha256": "2b80e8c74113d74ac384824eadf63bc946e8769dbbfb113afe9c5f3cffdaef04"
+    },
+    {
+      "path": "src/layouts/uk_UA/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/uk_UA/symbols.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/vi_VN/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/vi_VN/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/vi_VN/handwriting.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/vi_VN/main.qml",
+      "sha256": "f5bde6c7bf08d8f18b7ac3f5dd733e021ee4cb7cb2acf529fa28c077acc90300"
+    },
+    {
+      "path": "src/layouts/vi_VN/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/vi_VN/symbols.qml",
+      "sha256": "3335dd588fac0fb7c810435a5d1bdc3c561efd740c651ba8e692e0023567f118"
+    },
+    {
+      "path": "src/layouts/zh_CN/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_CN/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_CN/handwriting.qml",
+      "sha256": "b4b7cc5a40b0c575d57ff609ce30e1765b12c8bf41a2b51376387c82feb75d61"
+    },
+    {
+      "path": "src/layouts/zh_CN/main.qml",
+      "sha256": "44c2bd07e24daf97d2c2eb2cb3a3f835b32c9f8726da4213a74be31df8cffeca"
+    },
+    {
+      "path": "src/layouts/zh_CN/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_CN/symbols.qml",
+      "sha256": "456c1eb5239de61720be4bb1521132bc58423b87359d7fdd4ac99da42c47e66e"
+    },
+    {
+      "path": "src/layouts/zh_TW/dialpad.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_TW/digits.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_TW/handwriting.qml",
+      "sha256": "b4b7cc5a40b0c575d57ff609ce30e1765b12c8bf41a2b51376387c82feb75d61"
+    },
+    {
+      "path": "src/layouts/zh_TW/main.qml",
+      "sha256": "d476c34991d11b1c776c0cf9e38db76c11ef3b466c0fd5a63a4e7d71181785d3"
+    },
+    {
+      "path": "src/layouts/zh_TW/numbers.fallback",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/layouts/zh_TW/symbols.qml",
+      "sha256": "3e78f55fa27b417bc47caea9aee5c883b3d899394947e9d88e349a64e09640b3"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "1f0744bdb71107e9e4e757817039a3fb8b10d77c32148de7d63e2c2523d0f392"
+    },
+    {
+      "path": "src/org.kde.plasma.keyboard.desktop",
+      "sha256": "9bea0270cca4ace81d01ed570d9f3ee97bae684a53cafbf8ad1fb8ceb6821630"
+    },
+    {
+      "path": "src/org.kde.plasma.keyboard.metainfo.xml",
+      "sha256": "84057dab8f120a0b6bd1b015e7298eabfd1483b38c68c0025617b0efd54e627a"
+    },
+    {
+      "path": "src/org.uke.plasma.keyboard.desktop",
+      "sha256": "7b63168cff187880cb0d389c1926baa802502d3b165ab95c48d8629f7a08b270"
+    },
+    {
+      "path": "src/org.uke.plasma.keyboard.metainfo.xml",
+      "sha256": "505a9beb981b2990e787de148144fb53b6b7ff06634afd74044b0a0dfae99789"
+    },
+    {
+      "path": "src/overlay/candidatemodel.cpp",
+      "sha256": "309a08970355b6721d1c633bd983df5a4b9236cc6dc4231063570a66e2498e28"
+    },
+    {
+      "path": "src/overlay/candidatemodel.h",
+      "sha256": "5b8fb1f2b6f57fd067e29deecead59b54b7e312837000c417c5c58b4dfe045bc"
+    },
+    {
+      "path": "src/overlay/diacritics.qrc",
+      "sha256": "b7bbeab6c1d791f7fa314ac59ba6c827f2b75c0006eeca779156567f30be9120"
+    },
+    {
+      "path": "src/overlay/diacritics/base.json",
+      "sha256": "707bee658516d28e68ccbc450dc5a28ddd5e613b85f38b86edf6dcf349de105e"
+    },
+    {
+      "path": "src/overlay/diacritics/cs_CZ.json",
+      "sha256": "aa64d5985eccde38fd4144c98e9575e6a0c41df024d9707d96553eddb1ba015b"
+    },
+    {
+      "path": "src/overlay/diacritics/da_DK.json",
+      "sha256": "d9ad1f7ad394d852d7f9a5f27752a343cf90c769a99f8a3bcdf104396a5b762f"
+    },
+    {
+      "path": "src/overlay/diacritics/de_DE.json",
+      "sha256": "8f7eea55ab4a52cacdc3bc6cd90eaf0c4ed4eb6fe07d524e285715cdca1ce334"
+    },
+    {
+      "path": "src/overlay/diacritics/en_GB.json",
+      "sha256": "d0d93f52792ba71ca2e7438b1fa032780794f5da6c14b6cc827755a672385301"
+    },
+    {
+      "path": "src/overlay/diacritics/es_ES.json",
+      "sha256": "a58d463f4fe325e91b469e18f63fc3dfe01a639caaf22a1efc54125d46f5b66e"
+    },
+    {
+      "path": "src/overlay/diacritics/fi_FI.json",
+      "sha256": "831d9e33a9cb95c721fd63ce50bf2237373210f2fc7b6c50865cce7b4c35ea95"
+    },
+    {
+      "path": "src/overlay/diacritics/fr_FR.json",
+      "sha256": "37bb18d1a1ee2f2474109670d618430cc3b39fa7e7bd5f27f4633023d4dd7ad4"
+    },
+    {
+      "path": "src/overlay/diacritics/hr_HR.json",
+      "sha256": "7e43835d2d90e494e4550afd620b545ec0cc3c53a9f5fdcfd5f94b6ac8ea9b7a"
+    },
+    {
+      "path": "src/overlay/diacritics/hu_HU.json",
+      "sha256": "4e8aea1b7c4842009920a2d3b28ff4935646792bded1c566d62b79dc520876c9"
+    },
+    {
+      "path": "src/overlay/diacritics/is_IS.json",
+      "sha256": "3b142ad3b868a54fd0c435d18f580f954475334a78e359f15871e5b3d8be92b6"
+    },
+    {
+      "path": "src/overlay/diacritics/it_IT.json",
+      "sha256": "6b773691cafb499cb1a421eb2077f009729bf5542bdad37a3d296d113c82d37a"
+    },
+    {
+      "path": "src/overlay/diacritics/nb_NO.json",
+      "sha256": "44a996d6dc9bc9c1e94207b7e296d7e2d26bed35870f1a446481f5135aa8cdd6"
+    },
+    {
+      "path": "src/overlay/diacritics/nl_NL.json",
+      "sha256": "3cfa1992c978db347018eaeb1ef26f739a7ef0066e0f10b742747c5a881e5c0e"
+    },
+    {
+      "path": "src/overlay/diacritics/pl_PL.json",
+      "sha256": "af1542681b8b7e1ab52b65b3f6c1a892141a0253667491c8d401c0d93f28faee"
+    },
+    {
+      "path": "src/overlay/diacritics/pt_BR.json",
+      "sha256": "c4a422da6878e22978e367b091efab966f92f6a8b92a4193095df439b481492a"
+    },
+    {
+      "path": "src/overlay/diacritics/pt_PT.json",
+      "sha256": "a7c0040901562adbb361ad69aa657811067175a3dd13f2fc60c3803e1151ffe8"
+    },
+    {
+      "path": "src/overlay/diacritics/ro_RO.json",
+      "sha256": "aaaad435a35008b91174213215dbc016383d9e8fc414828256f32825c234ef0e"
+    },
+    {
+      "path": "src/overlay/diacritics/sk_SK.json",
+      "sha256": "2515016e89ad7374f35766bce7d64fa18689c826664c7eaf853e9f413b6f3b79"
+    },
+    {
+      "path": "src/overlay/diacritics/sl_SI.json",
+      "sha256": "a27ba75e9855189e269cf4e464c267f91d41b5429084c811b1f18c4905ae54d5"
+    },
+    {
+      "path": "src/overlay/diacritics/sv_SE.json",
+      "sha256": "63ede68060e50b4d2671e849487daab4cabbe6c4396d9b6ede184a7ff42eb710"
+    },
+    {
+      "path": "src/overlay/diacritics/tr_TR.json",
+      "sha256": "0a26abc9b5805aa92ba91d9582f55b68bd4e2c8fd9673c67b912647f5123fa39"
+    },
+    {
+      "path": "src/overlay/diacriticsdataloader.cpp",
+      "sha256": "394ee02ca677b9b82be2a2ecee48dd0d14c4d2ddb4f2b5b1ec38c5950649a6f0"
+    },
+    {
+      "path": "src/overlay/diacriticsdataloader.h",
+      "sha256": "0c723ce605470cf55d69c60432050f4c9c2e0ee776238b8e0d061a8ff4e74432"
+    },
+    {
+      "path": "src/overlay/longpresstrigger.cpp",
+      "sha256": "5b8956948df4877721c6116298857d55eb5bc2fbf33922d4e11401cc46874b3e"
+    },
+    {
+      "path": "src/overlay/longpresstrigger.h",
+      "sha256": "dd09a2a4d14e0cd524935ac1f340088cccd0d8909011e2418f7c986ee6100eea"
+    },
+    {
+      "path": "src/overlay/overlaycontroller.cpp",
+      "sha256": "63badcccbb8dafb7fbf1268eb0fe87f41543a080fc824c77e97fa21835b0042b"
+    },
+    {
+      "path": "src/overlay/overlaycontroller.h",
+      "sha256": "62ee8e47cf28494fe8338a55d17f82c83ff63c0dd4ff4259b88cb17b59d7ee59"
+    },
+    {
+      "path": "src/overlay/overlaytrigger.cpp",
+      "sha256": "e0244a9d66d5e0a7855917ecd8008de23d0d7882186dd5fd060a8b71cb779af1"
+    },
+    {
+      "path": "src/overlay/overlaytrigger.h",
+      "sha256": "1d26af1916e9ad1506657134e0425c1ee905240b1b309acd471e590f8988ed96"
+    },
+    {
+      "path": "src/overlay/prefixquerytrigger.cpp",
+      "sha256": "4bbcaa4025c863306745edc145b6ca24b2f225c733cd9f8e2977be5d3f7b8bb8"
+    },
+    {
+      "path": "src/overlay/prefixquerytrigger.h",
+      "sha256": "f58ad9afd1bea523fa086cde1087945db2e866fa119ff32973eecc9679f6793f"
+    },
+    {
+      "path": "src/overlay/textexpansiontrigger.cpp",
+      "sha256": "45304c23088b6783f2718baa74933199b1928b082f8cc5279c356d3b270cbf6e"
+    },
+    {
+      "path": "src/overlay/textexpansiontrigger.h",
+      "sha256": "7a88b29372fd45ac78fd173a4293a405c72a3287e5a13ecab1f0a3daedca99cf"
+    },
+    {
+      "path": "src/panelstubgeometry.h",
+      "sha256": "6cfc46abf3e9ca48fcd68d865dacc7d3daad3babf47bb3410bf52adb11b7ba87"
+    },
+    {
+      "path": "src/plasmakeyboardsettings.kcfg",
+      "sha256": "21d9bf1aab28d95ba4ff9882870b16bbeafd30b0faa6fc4a8964732ec59d15e0"
+    },
+    {
+      "path": "src/plasmakeyboardsettings.kcfgc",
+      "sha256": "bc839c1b37dae7a019b2b971b2bf39405d4d37e3a9c4626e89c096b5fc7c22d8"
+    },
+    {
+      "path": "src/prediction.qrc",
+      "sha256": "02af15842c4bc67a705f9c192c6d83da8379a5902397e8a9ffbb9c380da16d04"
+    },
+    {
+      "path": "src/prediction/asyncpredictor.cpp",
+      "sha256": "c46e02a87aa38b23ed9ad7ad6acff4f0c4ea8da02447b4b910cc22553db7fc71"
+    },
+    {
+      "path": "src/prediction/asyncpredictor.h",
+      "sha256": "1ffd4d0340b55f0a336deff9489a16c8d472fac3534e1625341339eedc0ac800"
+    },
+    {
+      "path": "src/prediction/hunspelldictionary.cpp",
+      "sha256": "df16003e3742242b5ce28f6345bc35f2490aae2721114ac123c7a44eb14f9507"
+    },
+    {
+      "path": "src/prediction/hunspelldictionary.h",
+      "sha256": "17e200b7040532e422e31fba922e3b63532dddca57d733313485575aa9c3104a"
+    },
+    {
+      "path": "src/prediction/predictivedictionary.cpp",
+      "sha256": "e38af4c5397ebb422a665a6596e475d27849f3f537cbe85638e874e9c3e3bde7"
+    },
+    {
+      "path": "src/prediction/predictivedictionary.h",
+      "sha256": "34fb95d4edaa8aeca688fbc297d4095a251e53d69feaf2462924bbf3401de9c0"
+    },
+    {
+      "path": "src/prediction/wordatcursor.cpp",
+      "sha256": "928a3a563888b58d96d06470330f195ba6adf316f50fae6e335a18a710fd4795"
+    },
+    {
+      "path": "src/prediction/wordatcursor.h",
+      "sha256": "74bf13b2d5bd7b291905d39cd366e48a90dc355de9129c66f230620ea4bf48cd"
+    },
+    {
+      "path": "src/prediction/wordlookup.cpp",
+      "sha256": "9734e16872a825cc350b97b18044c3d74547cf7b19aefc84e79ebb6307adec82"
+    },
+    {
+      "path": "src/prediction/wordlookup.h",
+      "sha256": "fdd4c62c6f3c59997546179169b72093a434ed995603a41b7087362ee4b0cb5e"
+    },
+    {
+      "path": "src/prediction/wordpredictor.cpp",
+      "sha256": "9eb083597af2be9258c2a04c75e72aebc28e946d0c7dc4d1ff8e51364796e9a6"
+    },
+    {
+      "path": "src/prediction/wordpredictor.h",
+      "sha256": "4eb77d544415c18732fb95b734927ce8bc7aeb7f1b9b92638ee6b514cf3803e6"
+    },
+    {
+      "path": "src/qml/AlternatesList.qml",
+      "sha256": "015a44e53cf2b2175ae16298eadaabc7e517c1269c6ad26911fed74843286d94"
+    },
+    {
+      "path": "src/qml/DiacriticsOverlay.qml",
+      "sha256": "749ea02089cb594e343d49d2b31440451a252085289dc7741fbeb0050fcdcab9"
+    },
+    {
+      "path": "src/qml/GamepadBadge.qml",
+      "sha256": "fba4513f9dc2b4d5f22ce227e4d7a21c13d00875410773a0ae6d79a454d95910"
+    },
+    {
+      "path": "src/qml/KeyboardTools.qml",
+      "sha256": "85c312f4c61cb5bd5cc1a824b58ce865131c0d9b82b6716bd03b030252e7ee8d"
+    },
+    {
+      "path": "src/qml/LanguagePopup.qml",
+      "sha256": "aa329286979043de0af6cdc0bafc006143558cdc29cbabe910aa13cf53ca932d"
+    },
+    {
+      "path": "src/qml/LanguagePopupDelegate.qml",
+      "sha256": "8bdd4e9cf4ba34e2939fc4a5952049112e59938fa049ea518a910cd32f205f00"
+    },
+    {
+      "path": "src/qml/LaptopDeck.qml",
+      "sha256": "e58fbe5a0d919bae33e0ff5851e8193bfdce6d63cf8ce2646c0427faaf05b107"
+    },
+    {
+      "path": "src/qml/LaptopSettings.qml",
+      "sha256": "0c65a061e126b6ec16d9c574856738c160eed89ab805579aabf70912b5b609c5"
+    },
+    {
+      "path": "src/qml/LocaleResolver.js",
+      "sha256": "96a9b5524a174ab73961486d7fc4baa2cd60ac670ff189fa9e9050eb8feeb748"
+    },
+    {
+      "path": "src/qml/OverlayWindow.qml",
+      "sha256": "2c97b80809f5fcd69466e8bb70509a82d68bd0559dc461ef65f87e0e9a758001"
+    },
+    {
+      "path": "src/qml/PcKeyboard.qml",
+      "sha256": "921f25bc90da513e662298e4ad99486819024857b315bd48ecd96d8690c6707a"
+    },
+    {
+      "path": "src/qml/Touchpad.qml",
+      "sha256": "ab857fb9f510ce95eed5413e0bd8e050cfd5237730e30df573622c889650e39b"
+    },
+    {
+      "path": "src/qml/VoicePanel.qml",
+      "sha256": "75e82cf2525318c59d54a984d7799034aae1d9b06772f1e50bffd98ddfd75a96"
+    },
+    {
+      "path": "src/qml/main.qml",
+      "sha256": "5819ecf6ef0fdfa2f1494da8fe229f632c9462291c05b28d7d4ed2f9174bbe82"
+    },
+    {
+      "path": "src/qmlplugin/BreezeConstants.qml",
+      "sha256": "d9402fb81ad74704a56a57e5d2ac39f57b2836259154fa3568f428ac5976665d"
+    },
+    {
+      "path": "src/qmlplugin/BreezeKeyPanel.qml",
+      "sha256": "040fb20739d3dd1d0c4ce48d22839de3e9ec2e8b095e543828a8f7f0b1ddef0c"
+    },
+    {
+      "path": "src/qmlplugin/BreezePopup.qml",
+      "sha256": "1db1ad62e7c2bacc4ccd36f05d9bff0d9d33dffb0c34376d01b9e376fbb97919"
+    },
+    {
+      "path": "src/qmlplugin/CMakeLists.txt",
+      "sha256": "36581d3c8e304acea9a6f2a4cd9f4b1013ab0529a800dac9cb8e94bd3e56b39a"
+    },
+    {
+      "path": "src/qmlplugin/FloatingKey.qml",
+      "sha256": "4733f35e4f7d688e2f09ad2cd6cfa07e4bc4f426d3d322355f6d934f1413745f"
+    },
+    {
+      "path": "src/qmlplugin/HideKey.qml",
+      "sha256": "f5f3db91bf531bd338971b3d4c71864d089e1ab3390b7d0c4ba3ffb8fb38cd1f"
+    },
+    {
+      "path": "src/qmlplugin/LanguageKey.qml",
+      "sha256": "f9eaceef7621d89de9f40bf08fd39fc409443bd1201ec84790b6bc3780f8d465"
+    },
+    {
+      "path": "src/qmlplugin/MicrophoneKey.qml",
+      "sha256": "68cbbd8a44230885be8dd8fd55231ce82c55fa5db007d114fe0df131c61a7f86"
+    },
+    {
+      "path": "src/qmlplugin/ModifierKey.qml",
+      "sha256": "e9bd804de15293eb8e0c4301f3bc55b0d31c3ce8a1a184c2f3bd10775d06f22e"
+    },
+    {
+      "path": "src/qmlplugin/Theme.qml",
+      "sha256": "55f778ef0ea142cc243b136f6ef751ef2bc0abe874d25af2229764da1af0193d"
+    },
+    {
+      "path": "src/qmlplugin/ThemeCatppuccinMochaPalette.qml",
+      "sha256": "cba1903216db56978a8c75817ec242283c979be948c55b64818b7f1e387fce6e"
+    },
+    {
+      "path": "src/qmlplugin/ThemeDarkPalette.qml",
+      "sha256": "04e3bb34d7b93c46249d13a20a31774c0141e98320f6501a3cc29f4323531dd0"
+    },
+    {
+      "path": "src/qmlplugin/ThemeGoogleDarkPalette.qml",
+      "sha256": "4a8072cdd9ab6124ff59b28f6ca0ba055ea73937f589b809ce3c6ae01a1863bb"
+    },
+    {
+      "path": "src/qmlplugin/ThemeGoogleLightPalette.qml",
+      "sha256": "5ebbc2066c4f13ea54a0ec6b1526a4556fc17497f6e832aa76ebe1dd7f4ea47d"
+    },
+    {
+      "path": "src/qmlplugin/ThemeIosDarkPalette.qml",
+      "sha256": "51ba794e20aabeb40acd806f72505a568472f9688811684064b9c14236ec5a73"
+    },
+    {
+      "path": "src/qmlplugin/ThemeIosLightPalette.qml",
+      "sha256": "bdcbc0861d8e284bf9c0608e34cca4156c5aea1dd1e7ce010aba2ed9929477f9"
+    },
+    {
+      "path": "src/qmlplugin/ThemeLightPalette.qml",
+      "sha256": "a29f278f55c4bb7c4d35339275f8699dce7e1bb4820e1cc66b54dc62de8e0792"
+    },
+    {
+      "path": "src/qmlplugin/ThemeMaterialDarkPalette.qml",
+      "sha256": "39fd2f8a6f4fd1ccff045c1179e5519be2f48eba9b4eaa13196644fe333a33d0"
+    },
+    {
+      "path": "src/qmlplugin/ThemeMaterialLightPalette.qml",
+      "sha256": "8fe37a6c375347e785840d0724b1a29d12c80db66ccafdc3c81a6b64da8355f0"
+    },
+    {
+      "path": "src/qmlplugin/ThemePalette.qml",
+      "sha256": "191853cdf1a0bd1f0bfc06f2c6289f97f85d4c1eca12f76c9e7fb9bb97d8552c"
+    },
+    {
+      "path": "src/qmlplugin/ThemeSystemPalette.qml",
+      "sha256": "f03cc9b82d321de283786e4430fc7f5824510dcba706bd47e3e3651400f22bfc"
+    },
+    {
+      "path": "src/qwaylandinputpanelshellintegration.cpp",
+      "sha256": "44f7c622825bbb75b0f431bf812200a987f8ef3386e5576d2e52fed14cd0cd73"
+    },
+    {
+      "path": "src/qwaylandinputpanelshellintegration_p.h",
+      "sha256": "76547b02a72094cb127ef35f06ae16d5d53d68b8abe008e327675e7a871aef5a"
+    },
+    {
+      "path": "src/qwaylandinputpanelsurface.cpp",
+      "sha256": "81d33b28fa90e989c374ed4ba01ae2098f956d449867168af8dac8037dcab305"
+    },
+    {
+      "path": "src/qwaylandinputpanelsurface_p.h",
+      "sha256": "1149dba747125f78b305e4bd594663a2b97f25ae4b1475ffbab82022fc72c4fc"
+    },
+    {
+      "path": "src/restartwatcher.cpp",
+      "sha256": "4ae54b5ab2a45f833f05e81be838afae864e1785c012f8b039920412f1597a10"
+    },
+    {
+      "path": "src/restartwatcher.h",
+      "sha256": "94af667822f7c5bb3e71c75c9df18ca64218efcf11dbbd3d38d39b42032bc8d9"
+    },
+    {
+      "path": "src/sessionlockstate.cpp",
+      "sha256": "e15ebfb2d7ff62a77816dcea3db48f72a73cc770de9d37b3d059e67897aea302"
+    },
+    {
+      "path": "src/sessionlockstate.h",
+      "sha256": "b8a6e2aa88ac98615369829e9725121bf8d4ed36de6ab5aee6edd062c38548c0"
+    },
+    {
+      "path": "src/settingsreloader.cpp",
+      "sha256": "2129eb6235953330faf5599046718673b32bf410cf81d67ba10a9af35a751ed0"
+    },
+    {
+      "path": "src/settingsreloader.h",
+      "sha256": "e16e3a35c2ea650831bae5882a1efc0f4ca01b43f8739050680eb3d040577a7d"
+    },
+    {
+      "path": "src/soundresources.qrc",
+      "sha256": "78e978d202dc768d2533344e1652fe4ed24c0f33d2a65c16d64c761dceb18366"
+    },
+    {
+      "path": "src/sounds/keyboard_tick2_quiet.wav",
+      "sha256": "d7721a5b9adb7663419ca1de83664a456a5fe5d497998c4a80ac4de761ac5578"
+    },
+    {
+      "path": "src/sounds/keyboard_tick2_quiet.wav.license",
+      "sha256": "09f1fd30e95a3ae22fec1eef51b5acdf57ad953369219da0d2ce55621effba0e"
+    },
+    {
+      "path": "src/stt/gigaamengine.cpp",
+      "sha256": "69e47302afb749a435c5d82f77c2cbff6a376785c552b1186622b105a927312a"
+    },
+    {
+      "path": "src/stt/gigaamengine.h",
+      "sha256": "d7451e6f01c0c7a1bdcacc7cade9f5f04616f3418acda2e06fc05257197b22c4"
+    },
+    {
+      "path": "src/stt/parakeetengine.cpp",
+      "sha256": "8b4aa5a34f03c28ecdad521160994e93f6f41d8fc9d93d77ad5b1b23279722f8"
+    },
+    {
+      "path": "src/stt/parakeetengine.h",
+      "sha256": "0b26d25ea7c8824a2012793426c46c1c1b8a2a3976b0270003d40897e2dfeb42"
+    },
+    {
+      "path": "src/stt/stt.qrc",
+      "sha256": "46ee610231c89529bb094689bb61e5b834e1b3ef489de56d587fd2476cd0c45f"
+    },
+    {
+      "path": "src/stt/sttaudiorecorder.cpp",
+      "sha256": "025a91434cc92b84f97a4767c6626ce8774c52737f1146595139987d7d8a684b"
+    },
+    {
+      "path": "src/stt/sttaudiorecorder.h",
+      "sha256": "e5d2f05ec8c5a4778ecc59f7cd13ea433c745474b8b8e348963131375dacc3d4"
+    },
+    {
+      "path": "src/stt/sttengine.cpp",
+      "sha256": "13ae4ffc99e6c6b662822e036418a9e65913353169e7af9a04ababb33d1213a9"
+    },
+    {
+      "path": "src/stt/sttengine.h",
+      "sha256": "369ca76a47ba1df8ee10b2c5a6455f06bb39eb96f38e9e418fdc6dcdc481b2e6"
+    },
+    {
+      "path": "src/stt/sttmanager.cpp",
+      "sha256": "c62d448e82f68f283208e30b760ac6bc5f9e33f6305b7487d05f4e425a227667"
+    },
+    {
+      "path": "src/stt/sttmanager.h",
+      "sha256": "0564a90db52db4a74b665d82c25f8547a9f75c2876c7fa4e7d09012368080aee"
+    },
+    {
+      "path": "src/stt/sttmodelcatalog.cpp",
+      "sha256": "f04b5b8c06e570493ff46fc1cf3c256b9921d5bf5cb86397809b9ab89c124b56"
+    },
+    {
+      "path": "src/stt/sttmodelcatalog.h",
+      "sha256": "6f4e7e8c24e41865ea6b67b34276e83ca9911268e3f78b1ec3b4c07b1466858e"
+    },
+    {
+      "path": "src/stt/sttmodelcatalog.json",
+      "sha256": "dcd88a8a0e792f62b58b1e43491806b543bbd99aafd885b1fcdae6ece01ac9d2"
+    },
+    {
+      "path": "src/stt/voskengine.cpp",
+      "sha256": "54c95fb70fed109ee38d95df945334044d2e16cd219e58d665dd0e13914131c1"
+    },
+    {
+      "path": "src/stt/voskengine.h",
+      "sha256": "e42712fcb7dcc25e971f5525d087004ff39d827121ca774d6622a2e7460bf9d8"
+    },
+    {
+      "path": "src/stt/whisperengine.cpp",
+      "sha256": "fe018fa3d35955d546b5625ed0a7b6591e5e1198afa0698561b80d0e22ba638f"
+    },
+    {
+      "path": "src/stt/whisperengine.h",
+      "sha256": "4d28755703103ac871dd4424c8c92f301f83897db7a2d7561e9eb7e1495d9242"
+    },
+    {
+      "path": "src/styles/CMakeLists.txt",
+      "sha256": "1771876995361e512e1abc9277b03b49e9dfc1a57b18c0a7466a579235df2133"
+    },
+    {
+      "path": "src/styles/breeze/style.qml",
+      "sha256": "8b99aca4fcd5e4bfd75b418ceff3170f6e24c3707dfa53beaa7b5c9c5e1555cd"
+    },
+    {
+      "path": "src/swipecontroller.cpp",
+      "sha256": "1fdb141a82efc70d0648d89e996297ec6297f355d4cd98e55f5ec5fe6c720bb7"
+    },
+    {
+      "path": "src/swipecontroller.h",
+      "sha256": "10dd04bd2d78f091be4bba95cdf533e3c6d943c746ad4248e9089d12e3f6a39e"
+    },
+    {
+      "path": "src/swipekb/.clang-format",
+      "sha256": "8057f8cd816e5c3574dd78a9f6a151f7efda068679ed8a33c551909751714947"
+    },
+    {
+      "path": "src/swipekb/CMakeLists.txt",
+      "sha256": "1383e73e28df99190dec1127b154eec0dbba034e281a12570e6e33a41bcc7a51"
+    },
+    {
+      "path": "src/swipekb/README.md",
+      "sha256": "fd56f023c3a22ce806c0d3ad920a13a08f70132252395f705c28119ea6bbc0f0"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/language_engine.hpp",
+      "sha256": "05d136df4dbb50dd264d33ad58e4bba875466681635f51909a17d1939a524fbf"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/learning.hpp",
+      "sha256": "49dadc01cef80c02ed15fd99dd18b6f3c008cf773086b8e51540575391f88cf5"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/ngram.hpp",
+      "sha256": "b03eecb63ea0260122d1e3ea6dd5f5e45901f5c69145cef0355e58348b74c608"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/ngram_predictor.hpp",
+      "sha256": "3f62e51f51fdf30f04f181ce974eef8f9ca460e01556147b4d81044d6483c665"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/nwp_model.hpp",
+      "sha256": "6aac049d861b864e7a053dde0592172479d4b6654a5800e5a56fa36488fcfcbe"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/nwp_predictor.hpp",
+      "sha256": "3f07a8cff0c096500d1cba977c9601343e026f4f8527301b8c9304916ac7f343"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/prediction.hpp",
+      "sha256": "938d42e193ac412143793658a170345dc96dc6236e01cc7f793159aa77692e14"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/spellings.hpp",
+      "sha256": "f4be9f00441bad28df56fbd23f598919b124f839a0603a0aa7de076e1ec56ca1"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_beam.hpp",
+      "sha256": "081d2bdc01697b87afdfe44a45317cb7cf36d9bc2b5b83925e8d4052f31952d6"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_engine.hpp",
+      "sha256": "f4182df63c75a77a11b349a256ab3e892611c82b6e3305d47397bec5690582dc"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_geo.hpp",
+      "sha256": "3f4c02d9e76ead5e8fafc5971a03da46d6600836afab9e94d918e1806505e595"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_layout.hpp",
+      "sha256": "907135f2e40f55b3f2ba45be18ffcd9a34a54174a6c8c471383ebcb507add97b"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_lm.hpp",
+      "sha256": "e20757351084370520886f2f4a953619a6262f7528893c58d5f9f7826af0a16c"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/swipe_net.hpp",
+      "sha256": "53d9bd6a11c68715600a31588a0b046e785f42010e8f4725132bf8bff7ed6161"
+    },
+    {
+      "path": "src/swipekb/include/swipekb/text.hpp",
+      "sha256": "d9577af773301120299fd60649036af39eb88f7d2c6c072374acf4e07fba3880"
+    },
+    {
+      "path": "src/swipekb/model/FUTO-SWIPE-DATA-LICENSE.txt",
+      "sha256": "60968505ce2909b45997d104b678eb42474d47174924338cd0fa652abe0fff60"
+    },
+    {
+      "path": "src/swipekb/model/NOTICE.md",
+      "sha256": "f3ddc64603d50cdb6fc60705394c3a8e267a28588490cc536ebdb2862379a14c"
+    },
+    {
+      "path": "src/swipekb/src/context.cpp",
+      "sha256": "993797768a8712965921caf63bbc288dff18d66c04305984322a119f88d1b704"
+    },
+    {
+      "path": "src/swipekb/src/language_engine.cpp",
+      "sha256": "97a8fbb7b395d9e3769762914235db655a75797094d39c21b748acaaabbbfbf1"
+    },
+    {
+      "path": "src/swipekb/src/learning.cpp",
+      "sha256": "fd6d12da3ec87becd079caf8355bc6659213c09a7afa2a4e117834be18331ed5"
+    },
+    {
+      "path": "src/swipekb/src/ngram.cpp",
+      "sha256": "a5c9f080d3948ff82a0e65ebd8a75960318341e2d7259d0a22e30a4d2c84df45"
+    },
+    {
+      "path": "src/swipekb/src/ngram_predictor.cpp",
+      "sha256": "abfdd524adcfcfed89d9c0bc7911de081ee895859e3dbd6a9e80a6c7eb821075"
+    },
+    {
+      "path": "src/swipekb/src/normalize.cpp",
+      "sha256": "ebc1f37291ad25374cd0aecef91690708057ff420d8bbadc2632b7a683b5632a"
+    },
+    {
+      "path": "src/swipekb/src/nwp_model.cpp",
+      "sha256": "8c5549793d8a6427384da4d443bb971831efd224f3c6550f6abb0b52d2288fd9"
+    },
+    {
+      "path": "src/swipekb/src/nwp_predictor.cpp",
+      "sha256": "882cc08e41f49e2441eae3fcd43d2772ff1c654f8b305640d4f5950cca6f13b9"
+    },
+    {
+      "path": "src/swipekb/src/prediction.cpp",
+      "sha256": "baef6a8d19d73513ea44870461be8bfc57acfa2d26c655c7ba6b7e6a8f58d397"
+    },
+    {
+      "path": "src/swipekb/src/spelling.cpp",
+      "sha256": "69f7a7575bf166a7090c8cba07292532532a5e68e52702cc9981c22e03c8af97"
+    },
+    {
+      "path": "src/swipekb/src/swipe_beam.cpp",
+      "sha256": "38bcf031a501e3c5f20b0bc0eeacb82ef141693153bccb6bbe8c8097e7c48776"
+    },
+    {
+      "path": "src/swipekb/src/swipe_engine.cpp",
+      "sha256": "9554f8569ca7193afc5e316571415629612ec3116fccf0274e2aaf60243bb2cd"
+    },
+    {
+      "path": "src/swipekb/src/swipe_geo.cpp",
+      "sha256": "a9a07668b8a3413e6e71914e6a1b452a45c1b708dd28a22731b10b890dcb4bdc"
+    },
+    {
+      "path": "src/swipekb/src/swipe_layout.cpp",
+      "sha256": "f5134f9a22809c83dd7a33ff82164578eca8458024ba20d1cf055fd55654a42c"
+    },
+    {
+      "path": "src/swipekb/src/swipe_lm.cpp",
+      "sha256": "147325b816a61848be804209287fbafb4e9752a278c06fda9f4ea9415dca3632"
+    },
+    {
+      "path": "src/swipekb/src/swipe_net.cpp",
+      "sha256": "ee83775a9505211a08b8120a36472274e2665bd17ae0926e7ce2ea4bfa1c7392"
+    },
+    {
+      "path": "src/systemlayoutsync.cpp",
+      "sha256": "bbf0f6ce024bc291183464d8b7390f8732ddf2fb5432406319e92fe202d7f61c"
+    },
+    {
+      "path": "src/systemlayoutsync.h",
+      "sha256": "57fa332bf7520a5ffc063fcd646820dc9523e0db46472bd36712fedbb70b5490"
+    },
+    {
+      "path": "src/theme/thememanager.cpp",
+      "sha256": "f5f255d66311eeb8777960417e34d1343526dca839ce3f0a92bd2eb8a2152c04"
+    },
+    {
+      "path": "src/theme/thememanager.h",
+      "sha256": "0587d6e1cb27f42adca966b3e03f5d14ad576935ad52ce45dd528511abd934e0"
+    },
+    {
+      "path": "src/touchdeliverypolicy.h",
+      "sha256": "86445e09e9c8b40eeb020a9ed2d3aaad4fa49389748fd814e4562ecffb8eda9e"
+    },
+    {
+      "path": "src/touchholdwatcher.cpp",
+      "sha256": "657775829b82bf4795870897e769c1f9991156180b8f74faf52b642fea6e4cc0"
+    },
+    {
+      "path": "src/touchholdwatcher.h",
+      "sha256": "fe133320cd9080609de86adee5561c43c93e8ea5e078a47bd1b580de59c87165"
+    },
+    {
+      "path": "src/uinputkeyboard.cpp",
+      "sha256": "2d297bdc169320efb1c0049542ab5cc4e3a3b72affc1b6d9f20d996e65c2a853"
+    },
+    {
+      "path": "src/uinputkeyboard.h",
+      "sha256": "34dc1d356dbb6a9bc9e2e7ab534c58d674aaef89e575663e01c32031ac5384eb"
+    },
+    {
+      "path": "src/vibration.cpp",
+      "sha256": "1fc3a8b39b3cad9696f0e3b809284b37f16f4c376e7646f330f521a5e1b76ea0"
+    },
+    {
+      "path": "src/vibration.h",
+      "sha256": "afd50abd8d31ca655cc26f66b0f0ad89f314bf82339df4363bd49ab7475b6e9a"
+    },
+    {
+      "path": "src/vibrationevent.h",
+      "sha256": "65d4f382e62e824215c73ec58fb0074ec458f076cf84837fc8b75bda6db9c218"
+    },
+    {
+      "path": "src/wayland/kde-lockscreen-overlay-v1.xml",
+      "sha256": "3d98b1f80203645bcfd22453216eaa2f60b249d7ecb15459ef299b0bf07fb6bb"
+    },
+    {
+      "path": "src/windowrestore.qrc",
+      "sha256": "5a7f43c8352eff5500749a61f4fd58fa2c37995a0aad3687615fe3f4f4c7a3e2"
+    },
+    {
+      "path": "tests/source.sh",
+      "sha256": "8b4f314402092ccd8929240bb50f40385971a988f40d9e13eec60ee5940607fc"
+    },
+    {
+      "path": "tools/deploy-site.sh",
+      "sha256": "bdb3494f789eebfdd5ab1e014eac8a7e9ac9e683612d1486386d52fdc1406c21"
+    },
+    {
+      "path": "tools/dictionary-tool.cpp",
+      "sha256": "99db8bb9b3ce7718f2de9b522fbbedc66d898a07b942d3a001f15653f402aa8b"
+    },
+    {
+      "path": "tools/lockscreen/LocalTouchFocus.qml",
+      "sha256": "3a5c107961a9665f24ecb0b8699fce809dc1da8a1163953a8f4fbd53532049bd"
+    },
+    {
+      "path": "tools/measure-idle.sh",
+      "sha256": "970cfbf8c153b2105493a095b03eb0bb08a757511938d1e4680c0e7ec00ddb88"
+    },
+    {
+      "path": "tools/patch-series.mjs",
+      "sha256": "3f176a055c5dbe54d3516ca028b9c494af570630753f40dc90474550786cb599"
+    },
+    {
+      "path": "tools/screenshots.sh",
+      "sha256": "372ec23eadcee38e5171c5d38a18cf65e7b9a8258c158f4d0ed813e678ec845e"
+    },
+    {
+      "path": "tools/uke-plasma-keyboard-lock-switcher",
+      "sha256": "bdfe07e25a2605f7faf4b1af2612ecaf2cce9b96cbec5e69e2f708f15d1a53fa"
+    },
+    {
+      "path": "tools/uke-plasma-keyboard-lock-switcher.service.in",
+      "sha256": "900f119b8c818cf12c80a1df5ff6c7ad813ff3be9bc2bd9e525406d3dd4544db"
+    }
+  ]
+}
