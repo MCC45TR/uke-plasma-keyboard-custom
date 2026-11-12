@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 40%{?dist}
+Release: 41%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -106,6 +106,10 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-41
+- Normalize pinch rotation across the positive/negative angle boundary
+- Exercise two-contact boundary crossing through the actual touchpad component
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-40
 - Show toolbar settings in the selected order with named move actions
 

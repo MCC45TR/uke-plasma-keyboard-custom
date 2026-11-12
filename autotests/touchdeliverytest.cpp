@@ -22,6 +22,7 @@ class RecordingLaptop final : public QObject {
     Q_PROPERTY(bool modifierActive READ typing CONSTANT)
 public:
     QList<QPointF> motions;
+    QList<QPair<int,double>> pinches;
     double pixelsPerMm()const{return 3.0;}
     bool typing()const{return false;}
     QVariantMap options()const{return {{QStringLiteral("palmGuard"),false},{QStringLiteral("leftButton"),false},{QStringLiteral("middleButton"),false},{QStringLiteral("rightButton"),false}};}
@@ -30,7 +31,7 @@ public:
     Q_INVOKABLE void button(uint,bool){}
     Q_INVOKABLE void scroll(double,double){}
     Q_INVOKABLE void swipe(int,int,double,double){}
-    Q_INVOKABLE void pinch(int,double,double,double,double){}
+    Q_INVOKABLE void pinch(int phase,double,double angle,double,double){pinches.append({phase,angle});}
 };
 class TouchDeliveryTest final : public QObject {
     Q_OBJECT
@@ -78,6 +79,29 @@ private Q_SLOTS:
         }
         QVERIFY(std::abs(total.x()-2.0)<0.00001);QCOMPARE(total.y(),0.0);
         deliver(QEventPoint::State::Released,QPointF(46,40));
+        const auto pair=[&](QEventPoint::State firstState,QPointF first,QEventPoint::State secondState,QPointF second){
+            QList<QWindowSystemInterface::TouchPoint> points;
+            for(int id=0;id<2;++id){
+                QWindowSystemInterface::TouchPoint point;point.id=id;
+                point.state=id==0?firstState:secondState;
+                point.area=QRectF(QPointF(window.mapToGlobal(QPoint()))+(id==0?first:second)-QPointF(1,1),QSizeF(2,2));
+                point.pressure=point.state==QEventPoint::State::Released?0:1;points.append(point);
+            }
+            QWindowSystemInterface::handleTouchEvent(&window,timestamp++,device,points);
+            QWindowSystemInterface::sendWindowSystemEvents(QEventLoop::AllEvents);
+        };
+        deliver(QEventPoint::State::Pressed,QPointF(300,150));
+        pair(QEventPoint::State::Stationary,QPointF(300,150),QEventPoint::State::Pressed,QPointF(200,152));
+        pair(QEventPoint::State::Stationary,QPointF(300,150),QEventPoint::State::Updated,QPointF(200,148));
+        // The two-degree crossing of atan2's boundary must not start a pinch.
+        QVERIFY(laptop.pinches.isEmpty());
+        pair(QEventPoint::State::Stationary,QPointF(300,150),QEventPoint::State::Updated,QPointF(201,168));
+        QVERIFY(!laptop.pinches.isEmpty());
+        pair(QEventPoint::State::Stationary,QPointF(300,150),QEventPoint::State::Updated,QPointF(200,148));
+        bool updated=false;
+        for(const auto &event:laptop.pinches)if(event.first==1){updated=true;QVERIFY(std::abs(event.second)<30);}
+        QVERIFY(updated);
+        pair(QEventPoint::State::Released,QPointF(300,150),QEventPoint::State::Released,QPointF(200,148));
     }
 };
 int main(int argc,char **argv) {

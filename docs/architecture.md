@@ -269,3 +269,10 @@ actions use standard Qt Quick Controls with localized names and tooltips, follow
 After the model changes, a queued focus restoration finds the moved tool; a
 disabled boundary action returns focus to its checkbox. The native full-settings
 scenario checks the visible order and focus through the actual component.
+
+Pinch rotation uses the shortest signed angular difference at atan2's wrap
+boundary, both for recognition and incremental updates. Scale remains absolute
+relative to the starting distance. This follows the distinction in original
+[libinput gesture events](https://wayland.freedesktop.org/libinput/doc/latest/api/group__event__gesture.html):
+angle is an update delta, scale is relative to the gesture origin. Native tests
+drive actual two-contact movement through the same QML component.

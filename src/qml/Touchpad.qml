@@ -43,6 +43,7 @@ ColumnLayout {
             property var origin: ({x:0,y:0,distance:0,angle:0})
             property real started: 0
             property real lastTap: 0
+            function angleDelta(current,previous) {return (current-previous+540)%360-180;}
             function snapshot() {
                 const points=[a,b,c,d,e].filter(p=>p.pressed);
                 if(points.length===0)return {n:0,x:0,y:0,distance:0,angle:0};
@@ -81,8 +82,8 @@ ColumnLayout {
                 if(p.n===1)Keyboard.Laptop.padMotion(dx/root.perMm,dy/root.perMm);
                 else if(p.n===2) {
                     const ratio=origin.distance>0?p.distance/origin.distance:1;
-                    if(gesture===""&&(Math.abs(ratio-1)>0.06||Math.abs(p.angle-origin.angle)>7)){gesture="pinch";moved=true;Keyboard.Laptop.pinch(0,1,0,0,0);}
-                    if(gesture==="pinch")Keyboard.Laptop.pinch(1,ratio,p.angle-previous.angle,dx,dy);
+                    if(gesture===""&&(Math.abs(ratio-1)>0.06||Math.abs(angleDelta(p.angle,origin.angle))>7)){gesture="pinch";moved=true;Keyboard.Laptop.pinch(0,1,0,0,0);}
+                    if(gesture==="pinch")Keyboard.Laptop.pinch(1,ratio,angleDelta(p.angle,previous.angle),dx,dy);
                     else if(moved){gesture="scroll";Keyboard.Laptop.scroll(dx,dy);}
                 } else if(p.n<=4 && moved) {
                     if(gesture!=="swipe"){gesture="swipe";Keyboard.Laptop.swipe(p.n,0,0,0);}

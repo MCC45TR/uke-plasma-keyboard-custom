@@ -913,3 +913,19 @@ move actions have localized tool-specific accessible names/tooltips, and keyboar
 focus is restored after moving a row. A new full-settings QML smoke case exercises
 the actual action, rendered order and focus. Native/package qualification is
 pending; this does not establish end-to-end screen-reader acceptance.
+
+## COPR11317984 /40 — toolbar order and focus pass
+
+Source53818e3 and published spec6fd18a88 match;40/40 tests and RPM assembly
+pass on all three Fedora aarch64 targets. The additional full-settings scenario
+activates the actual named move action, verifies the rendered order against the
+preference and checks restored keyboard focus.40 is not installed by this work;
+the next cumulative41 also includes the independently found rotation correction.
+
+Candidate41 normalizes pinch angle differences across atan2's positive/negative
+180-degree boundary. A small crossing must not begin a pinch, and an already
+active gesture must send a small incremental angle rather than nearly a full
+turn. The actual Touchpad component receives two contacts through Qt's native
+window-system path to test both cases. The scale remains relative to the gesture
+origin, following the original libinput gesture contract. Native41 and physical
+multitouch acceptance remain pending.
