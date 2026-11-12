@@ -91,6 +91,7 @@ private:
  * force-activates the input method and would otherwise be suppressed.
  */
 void setInputPanelForceShowOnNextActivation();
+void requestInputPanelAutomaticShow();
 
 class InputListenerItem : public QQuickItem
 {
@@ -138,6 +139,7 @@ class InputListenerItem : public QQuickItem
 
 public:
     InputListenerItem();
+    void requestAutomaticShow(bool force = false, bool completedHold = false);
 
     void setEngine(QVirtualKeyboardInputEngine *engine);
 
@@ -299,6 +301,7 @@ private:
     //! until the next input activation. A focused text field keeps sending
     //! updates, and those must not bring the panel back on their own.
     bool m_hiddenByUser = false;
+    quint64 m_activationGeneration = 0;
 
     //! Delays hiding the keyboard after the input context goes away, so a
     //! momentary loss of focus does not hide it.

@@ -858,7 +858,7 @@ public Q_SLOTS:
         // it ends up right above the keyboard instead of below it. Show Desktop
         // is the exception: KWin hides the keyboard with the other windows, so
         // the panel has to come back even while the window is still mapped.
-        const bool keyboardOnScreen = !m_showingDesktop && (keyboardVisible || (m_bridge && m_bridge->keyboardWindowVisible()));
+        const bool keyboardOnScreen = !m_showingDesktop && m_bridge && m_bridge->keyboardWindowVisible();
 
         // The visible keyboard window follows what the compositor reports: KWin
         // still decides when the keyboard is on screen (input mode and focus),
@@ -874,7 +874,11 @@ public Q_SLOTS:
         // desktop focus-loss preference. The mapped stub survives this hide.
         if (visibilityChange) {
             m_applyingCompositorVisibility = true;
-            QGuiApplication::inputMethod()->setVisible(*visibilityChange);
+            if (*visibilityChange && lock->isKnown() && !lock->isLocked()) {
+                requestInputPanelAutomaticShow();
+            } else {
+                QGuiApplication::inputMethod()->setVisible(*visibilityChange);
+            }
             m_applyingCompositorVisibility = false;
         }
 
@@ -929,10 +933,10 @@ private Q_SLOTS:
     }
 
 private:
-    // NonMouseInput (1) unless the user wants the keyboard also on mouse focus.
+    // Automatic opening is touch-only. Explicit shortcuts still force a show.
     static int configuredMode()
     {
-        return PlasmaKeyboardSettings::self()->showOnMouseFocus() ? 2 : 1;
+        return 1;
     }
 
     void applyConfiguredMode()

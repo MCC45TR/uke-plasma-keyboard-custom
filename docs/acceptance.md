@@ -929,3 +929,22 @@ turn. The actual Touchpad component receives two contacts through Qt's native
 window-system path to test both cases. The scale remains relative to the gesture
 origin, following the original libinput gesture contract. Native41 and physical
 multitouch acceptance remain pending.
+
+## Candidate42 — automatic normal opening requires touch
+
+The user reports mouse clicks opening the keyboard and requires touch-only
+automatic activation. The existing false mouse-focus default was insufficient:
+the input-context and surrounding-text paths could show the independent
+layer-shell window themselves.42 asks the authenticated native backend for the
+actual last touch handler before mapping it, using an asynchronous reply pinned
+to the compositor parent. Obsolete replies are invalidated on context loss,
+hide and lock boundaries. Missing integration refuses automatic opening.
+The old mouse preference remains stored but cannot enable mouse activation.
+
+The actual-application mock-compositor scenario now refuses non-touch context
+and text updates, accepts a current touch activation, and refuses a delayed
+reply after context loss. Existing static/dynamic, explicit shortcut and
+compositor-owned lock policies are retained. Source/packaging guards pass;
+native42, signed RPM, DNF and physical mouse/touch acceptance are pending.
+The host currently selects the original Plasma Keyboard; that preference is
+preserved. This fork cannot change the original provider's application logic.

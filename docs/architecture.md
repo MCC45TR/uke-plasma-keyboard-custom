@@ -49,6 +49,32 @@ extended physical acceptance remain open.
 
 ## Touch delivery and surface polish
 
+Candidate42 makes automatic normal-mode opening touch-only. An input-method
+context can be activated by mouse focus or application state, so context and
+surrounding-text notifications alone must not map the layer-shell keyboard.
+The selected provider asynchronously asks its actual compositor parent whether
+the last native input handler is the touchscreen. The existing authenticated
+backend rejects unrelated callers, and the client pins the bus owner's PID to
+its direct parent. Missing integration, errors and non-touch input refuse the
+automatic request. Context loss, hide and lock boundaries invalidate pending
+replies. The normal Plasma panel follows the actual visible keyboard surface.
+
+Explicit keyboard shortcuts retain their manual show action. Persistent static
+mode, manual dynamic mode and compositor-owned lock-screen visibility retain
+their separate policies. The old mouse-focus preference is kept on disk for
+configuration compatibility but no longer enables mouse-triggered opening;
+the corresponding switches are removed. A private mock-compositor test exercises
+the actual application with touch allowed/refused, surrounding-text updates and
+a delayed reply after context loss. These are software tests, not physical
+touch or lock-screen acceptance.
+
+Reviewed original KWin6.8.2
+[`inputmethod.cpp`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/inputmethod.cpp)
+and [`input.h`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/input.h).
+Its NonMouseInput mode also permits stylus input; the keyboard's automatic
+opening gate specifically checks the touch handler. No KWin source is copied
+or modified, and there is no new polling or input permission.
+
 Release39 addresses stuttering motion and missed small movements. Original
 Qt Quick6.12 coalesces touch updates until a rendered frame. Its process-local
 `QML_NO_TOUCH_COMPRESSION` opt-out is selected before creating the application;

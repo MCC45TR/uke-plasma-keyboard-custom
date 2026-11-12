@@ -17,6 +17,7 @@
 #include <main.h>
 #include <plugin.h>
 #include <pointer_input.h>
+#include <touch_input.h>
 #include <wayland_server.h>
 #include <wayland/seat.h>
 #include <wayland/surface.h>
@@ -173,6 +174,9 @@ public:
     }
 
 public Q_SLOTS:
+    bool TouchActivationAllowed() {
+        return authorized() && input()->lastInputHandler() == input()->touch();
+    }
     QVariantMap Capabilities() {
         QStringList internal, external;
         for (auto *o : workspace()->outputs()) {

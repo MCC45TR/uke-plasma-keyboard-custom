@@ -15,6 +15,7 @@
 #include "touchholdwatcher.h"
 
 #include "inputcontentpolicy.h"
+#include "inputactivation.h"
 #include "overlay/longpresstrigger.h"
 #include "overlay/overlaycontroller.h"
 #include "overlay/prefixquerytrigger.h"
@@ -43,6 +44,7 @@ namespace
 // Timestamp (ms since epoch) until which the next input activation must show
 // the keyboard immediately, bypassing the long-press mode.
 std::atomic<qint64> s_forceShowUntil{0};
+QPointer<InputListenerItem> s_inputListener;
 
 // The keyboard window is a layer-shell surface, which the compositor never
 // activates on its own, so Qt has to be told that the window holding the input
@@ -74,9 +76,38 @@ void setInputPanelForceShowOnNextActivation()
 
     // KWin does not re-activate an already active input context, so the
     // pending show must be applied right away in that case.
-    if (s_im->hasContext()) {
-        QGuiApplication::inputMethod()->show();
+    if (s_inputListener && s_im->hasContext()) {
+        s_forceShowUntil.store(0);
+        s_inputListener->requestAutomaticShow(true);
     }
+}
+
+void requestInputPanelAutomaticShow()
+{
+    if (s_inputListener) s_inputListener->requestAutomaticShow();
+}
+
+void InputListenerItem::requestAutomaticShow(bool force, bool completedHold)
+{
+    if (!m_input.hasContext() || !m_sessionLockState.allowsPredictions()) return;
+    if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
+        (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
+    if (!force && !completedHold && PlasmaKeyboardSettings::self()->showOnLongTap()) return;
+    const auto generation = ++m_activationGeneration;
+    if (force) {
+        m_hiddenByUser = false;
+        showInputPanel(window());
+        return;
+    }
+    m_hiddenByUser = true;
+    UkeKeyboard::requestTouchActivation(this, [this, generation](bool allowed) {
+        if (!allowed || generation != m_activationGeneration || !m_input.hasContext() ||
+            !m_sessionLockState.allowsPredictions()) return;
+        if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
+            (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
+        m_hiddenByUser = false;
+        showInputPanel(window());
+    });
 }
 
 KeyboardModifiers::KeyboardModifiers(QObject *parent)
@@ -196,6 +227,7 @@ InputListenerItem::InputListenerItem()
     , m_clipboardHistory(new ClipboardHistory(&m_sessionLockState, this))
     , m_uinput(std::make_unique<UinputKeyboard>(this))
 {
+    s_inputListener = this;
     // Grab and listen to physical keyboard input
     m_input.setGrabbing(true);
 
@@ -236,6 +268,7 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_sessionLockState, &SessionLockState::unlocked, this, [this] {
+        ++m_activationGeneration;
         // The panel belongs to the lock-screen field, not the desktop field
         // which may acquire focus immediately after authentication.
         m_hideDelay->stop();
@@ -251,6 +284,7 @@ InputListenerItem::InputListenerItem()
         // A lock notification is not an input-panel request. In particular,
         // the current context may still belong to an ordinary desktop field.
         if (!m_sessionLockState.isKnown() || m_sessionLockState.isPreparingLock()) {
+            ++m_activationGeneration;
             m_hideDelay->stop();
             m_touchHold.disarm();
             m_longPressNeedsHitTest = false;
@@ -261,6 +295,7 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_input, &InputPlugin::contextChanged, this, [this] {
+        ++m_activationGeneration;
         const bool hasContext = m_input.hasContext();
         if(auto *laptop=LaptopController::instance())laptop->textFocusChanged(hasContext);
 
@@ -344,7 +379,7 @@ InputListenerItem::InputListenerItem()
             qCDebug(PlasmaKeyboard) << "contextChanged hasContext=" << hasContext << "showOnLongTap=" << longTapSetting << "forceShow=" << forceShow
                                     << "lockScreenActive=" << lockScreenActive << "armed=" << armed;
             if (!watchingTouch || completedLongTouch) {
-                showInputPanel(window());
+                requestAutomaticShow(forceShow, completedLongTouch);
             }
         } else if (PlasmaKeyboardSettings::self()->hideOnInputFocusLoss()) {
             m_hideDelay->start();
@@ -369,8 +404,7 @@ InputListenerItem::InputListenerItem()
             // Never do it while the keyboard was hidden on purpose: the field
             // keeps sending updates and the panel would pop up again at once.
             if (m_sessionLockState.allowsPredictions() && !m_hiddenByUser && !m_touchHold.isArmed() && !window()->isVisible()) {
-                activateKeyboardWindow(window());
-                QGuiApplication::inputMethod()->setVisible(true);
+                requestAutomaticShow();
             }
 
             // Update vkbd input method only if the virtual keyboard panel is shown
@@ -392,6 +426,7 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_input, &InputPlugin::deactivate, this, [this] {
+        ++m_activationGeneration;
         m_touchHold.disarm();
         // The input context is gone: the next activation may show the keyboard
         // again, even if the user had hidden it.
@@ -431,6 +466,7 @@ InputListenerItem::InputListenerItem()
     connect(QGuiApplication::inputMethod(), &QInputMethod::visibleChanged, this, [this] {
         const bool visible = QGuiApplication::inputMethod()->isVisible();
         if (!visible) {
+            ++m_activationGeneration;
             // The keyboard was hidden (by the user, or because the input
             // context went away). Remember it, so that a text field which keeps
             // sending updates cannot bring the panel back on its own.

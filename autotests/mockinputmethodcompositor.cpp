@@ -6,6 +6,8 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDBusConnection>
+#include <QDBusContext>
+#include <QDBusMessage>
 #include <QPointer>
 #include <QFile>
 #include <QJsonDocument>
@@ -498,6 +500,23 @@ public Q_SLOTS:
     bool GetActive()const{return false;}
 };
 
+class TestTouchActivation final : public QObject, protected QDBusContext
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
+public:
+    bool allowed = true;
+    bool defer = false;
+    int queries = 0;
+    QDBusMessage pending;
+public Q_SLOTS:
+    bool TouchActivationAllowed() {
+        ++queries;
+        if (defer) { setDelayedReply(true); pending = message(); }
+        return allowed;
+    }
+};
+
 class InputMethodV1 : public QWaylandCompositorExtensionTemplate<InputMethodV1>, public QtWaylandServer::zwp_input_method_v1
 {
     Q_OBJECT
@@ -612,6 +631,8 @@ private Q_SLOTS:
         auto bus=QDBusConnection::sessionBus();
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));
         QVERIFY(bus.registerObject(QStringLiteral("/ScreenSaver"),&m_screenSaver,QDBusConnection::ExportAllSlots));
+        QVERIFY(bus.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
+        QVERIFY(bus.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"), &m_touchActivation, QDBusConnection::ExportAllSlots));
         // Keep test configuration/data separate without changing HOME.
         if (!m_home.isValid()) {
             qFatal("Couldn't create temporary configuration folder for the test");
@@ -819,9 +840,47 @@ private Q_SLOTS:
         return destinationSize.isEmpty() ? surface->bufferSize() : destinationSize;
     }
 
-    /**
-     *  Test that tapping a key on the on-screen keyboard commits the expected character.
-     */
+    // Exercise the actual layer-shell application, not a visibility-policy copy.
+    void testAutomaticOpeningRequiresTouchAndRejectsStaleReplies()
+    {
+        const auto visible = [this] { return m_inputPanel->surface() && m_inputPanel->surface()->hasContent(); };
+        QTRY_VERIFY(visible());
+        m_inputMethod->sendDeactivate();
+        QTRY_VERIFY(!visible());
+        m_touchActivation.allowed = false;
+        const int before = m_touchActivation.queries;
+        m_inputMethod->sendActivate();
+        QTRY_VERIFY(m_touchActivation.queries > before);
+        QTest::qWait(350);
+        QVERIFY(!visible()); // Mouse/keyboard/programmatic activation.
+        auto *context = m_inputMethod->context();
+        for (auto *resource : context->resourceMap()) {
+            context->send_surrounding_text(resource->handle, QStringLiteral("synthetic"), 0, 0);
+            context->send_commit_state(resource->handle, 2);
+        }
+        wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(150);
+        QVERIFY(!visible());
+
+        m_inputMethod->sendDeactivate();
+        m_touchActivation.allowed = true;
+        m_touchActivation.defer = true;
+        const int delayed = m_touchActivation.queries;
+        m_inputMethod->sendActivate();
+        QTRY_VERIFY(m_touchActivation.queries > delayed);
+        m_inputMethod->sendDeactivate();
+        wl_display_flush_clients(m_compositor->display());
+        QTest::qWait(100);
+        QVERIFY(QDBusConnection::sessionBus().send(m_touchActivation.pending.createReply(QVariantList{true})));
+        m_touchActivation.defer = false;
+        QTest::qWait(150);
+        QVERIFY(!visible()); // An obsolete touch reply cannot reopen a lost context.
+
+        m_inputMethod->sendActivate();
+        QTRY_VERIFY(visible()); // A current touch request opens normally.
+    }
+
+    /** Test that tapping an on-screen key commits the expected character. */
     void testOnScreenKeyboardCommitsCharacter()
     {
         if (!m_inputPanel->surface()) {
@@ -1249,6 +1308,7 @@ private:
     std::unique_ptr<InputPanelV1> m_inputPanel;
     std::unique_ptr<TestLayerShell> m_layerShell;
     TestScreenSaver m_screenSaver;
+    TestTouchActivation m_touchActivation;
     std::unique_ptr<QProcess> m_child;
 };
 

@@ -160,6 +160,7 @@ target_sources(uke-plasma-keyboard-custom PRIVATE
     uinputkeyboard.h
     inputplugin.h
     inputcontentpolicy.h
+    inputactivation.h
     panelstubgeometry.h
     keyboardroleprivacy.h
     theme/thememanager.cpp

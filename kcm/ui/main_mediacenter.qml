@@ -93,7 +93,7 @@ KCM.SimpleKCM {
             id: showOnLongTapButton
             text: i18n("Open on long press")
             KeyNavigation.up: vibrationOnKeypressButton
-            KeyNavigation.down: showOnMouseFocusButton
+            KeyNavigation.down: hidePanelWhenKeyboardVisibleButton
 
             checked: kcm.showOnLongTap
             onCheckedChanged: {
@@ -103,22 +103,9 @@ KCM.SimpleKCM {
         }
 
         Bigscreen.SwitchDelegate {
-            id: showOnMouseFocusButton
-            text: i18n("Open when focused with a mouse")
-            KeyNavigation.up: showOnLongTapButton
-            KeyNavigation.down: hidePanelWhenKeyboardVisibleButton
-
-            checked: kcm.showOnMouseFocus
-            onCheckedChanged: {
-                kcm.showOnMouseFocus = checked;
-                checked = Qt.binding(() => kcm.showOnMouseFocus);
-            }
-        }
-
-        Bigscreen.SwitchDelegate {
             id: hidePanelWhenKeyboardVisibleButton
             text: i18n("Hide the panel while the keyboard is open")
-            KeyNavigation.up: showOnMouseFocusButton
+            KeyNavigation.up: showOnLongTapButton
             KeyNavigation.down: showFunctionKeyRowButton
 
             checked: kcm.hidePanelWhenKeyboardVisible

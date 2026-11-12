@@ -17,3 +17,6 @@
   cycle. This supersedes the earlier manual-entry default.
 - Update the external Desktop tracker and docs/acceptance.md after material
   results. Do not log entered text, clipboard contents or private identities.
+- Latest user steering, 12 November: automatic normal-mode opening must require
+  touch input. Mouse focus and text/context updates must not open the keyboard.
+  Keep persistent static mode and explicit manual show actions separate.

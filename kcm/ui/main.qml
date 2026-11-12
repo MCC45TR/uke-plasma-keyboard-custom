@@ -97,20 +97,6 @@ KCM.AbstractKCM {
             }
 
             SettingsRow {
-                label: i18n("Open on focus:")
-                description: i18n("When a text field is focused with a mouse")
-
-                QQC2.Switch {
-                    id: showOnMouseFocusSwitch
-                    checked: kcm.showOnMouseFocus
-                    onCheckedChanged: {
-                        kcm.showOnMouseFocus = checked;
-                        checked = Qt.binding(() => kcm.showOnMouseFocus);
-                    }
-                }
-            }
-
-            SettingsRow {
                 label: i18n("Hide the panel while the keyboard is open")
                 description: i18n("The keyboard reaches the bottom of the screen")
 

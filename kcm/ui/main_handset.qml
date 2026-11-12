@@ -89,20 +89,6 @@ KCM.SimpleKCM {
             FormCard.FormDelegateSeparator {}
 
             FormCard.FormSwitchDelegate {
-                id: showOnMouseFocus
-                text: i18n("Open when focused with a mouse")
-                description: i18n("Otherwise it only opens on touch input or via the shortcut")
-
-                checked: kcm.showOnMouseFocus
-                onCheckedChanged: {
-                    kcm.showOnMouseFocus = checked;
-                    checked = Qt.binding(() => kcm.showOnMouseFocus)
-                }
-            }
-
-            FormCard.FormDelegateSeparator {}
-
-            FormCard.FormSwitchDelegate {
                 id: hidePanelWhenKeyboardVisible
                 text: i18n("Hide the panel while the keyboard is open")
                 description: i18n("The keyboard reaches the bottom of the screen")
