@@ -115,6 +115,7 @@ private Q_SLOTS:
 private:
     friend class LaptopControllerTest;
     void loadBackend();
+    void replaceBackend(QStringList remaining);
     void connectBackend();
     void queryLid();
     void updateTopology();
@@ -131,7 +132,7 @@ private:
     QDBusConnection m_bus;
     KScreen::ConfigPtr m_config;
     QPointer<QScreen> m_screen;
-    QString m_reason,m_tabletName;
+    QString m_reason,m_tabletName,m_backendOwner;
     QVariantMap m_options;
     QVariantList m_layouts;
     QStringList m_layoutCodes,m_variants;
@@ -140,6 +141,7 @@ private:
     bool m_dynamic=false,m_textFocused=false,m_starting=false;
     uint m_transition=0;
     uint m_lidGeneration=0;
+    uint m_backendGeneration=0;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;

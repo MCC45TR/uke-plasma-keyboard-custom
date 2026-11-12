@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "laptopcontroller.h"
+#include "protocol.h"
 #include <QtTest>
 #include <QDBusContext>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusVirtualObject>
 #include <QTemporaryDir>
+#include <QScopeGuard>
 
 class DeferredPower final : public QDBusVirtualObject {
 public:
@@ -25,12 +27,14 @@ class DeferredBackend final : public QObject, protected QDBusContext {
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
 public:
     QDBusMessage request;
-    int staticBegins=0,dynamicBegins=0,staticEnds=0,dynamicEnds=0,profiles=0;
+    int staticBegins=0,dynamicBegins=0,staticEnds=0,dynamicEnds=0,profiles=0,attaches=0;
+    QString lastReceiver;
     QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
     void reply() { server.send(request.createReply(QVariantList{true})); }
 public Q_SLOTS:
+    bool Attach() {++attaches;return true;}
     bool BeginStatic(const QString &) {request=message();setDelayedReply(true);++staticBegins;return false;}
-    bool BeginDynamic(const QString &) {request=message();setDelayedReply(true);++dynamicBegins;return false;}
+    bool BeginDynamic(const QString &) {lastReceiver=connection().baseService();request=message();setDelayedReply(true);++dynamicBegins;return false;}
     void EndStatic() {++staticEnds;}
     void EndDynamic() {++dynamicEnds;}
     bool Profile(const QString &) {++profiles;return true;}
@@ -39,8 +43,10 @@ public Q_SLOTS:
 class PluginManager final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.Plugins")
+    Q_PROPERTY(QStringList LoadedPlugins READ loadedPlugins)
 public:
     QStringList operations;
+    QStringList loadedPlugins()const{return {QStringLiteral("unrelated-plugin"),QStringLiteral("uke_keyboard_backend"),QStringLiteral("uke_keyboard_backend_previous")};}
 public Q_SLOTS:
     void UnloadPlugin(const QString &id) {operations.append(QStringLiteral("unload:")+id);}
     bool LoadPlugin(const QString &id) {operations.append(QStringLiteral("load:")+id);return true;}
@@ -51,7 +57,8 @@ class LaptopControllerTest final : public QObject {
     DeferredPower m_power;
     DeferredBackend m_backend;
     PluginManager m_plugins;
-    static void eligible(LaptopController &controller,bool dynamic) {
+    void eligible(LaptopController &controller,bool dynamic) {
+        controller.m_backendOwner=m_backend.server.baseService();
         controller.m_ready=true;controller.m_available=true;controller.m_locked=false;
         controller.m_lidClosed=false;controller.m_tabletName=QStringLiteral("synthetic-panel");
         controller.m_options[QStringLiteral("presentation")]=dynamic?QStringLiteral("dynamic"):QStringLiteral("static");
@@ -69,7 +76,7 @@ private Q_SLOTS:
         QVERIFY(m_backend.server.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
         QVERIFY(m_backend.server.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"),&m_backend,QDBusConnection::ExportAllSlots));
         QVERIFY(m_backend.server.registerService(QStringLiteral("org.kde.KWin")));
-        QVERIFY(m_backend.server.registerObject(QStringLiteral("/Plugins"),&m_plugins,QDBusConnection::ExportAllSlots));
+        QVERIFY(m_backend.server.registerObject(QStringLiteral("/Plugins"),&m_plugins,QDBusConnection::ExportAllSlots|QDBusConnection::ExportAllProperties));
     }
     void lateOpenReplyCannotUndoCoverClose() {
         LaptopController controller;
@@ -123,10 +130,31 @@ private Q_SLOTS:
         m_plugins.operations.clear();
         LaptopController controller;
         controller.loadBackend();
-        QTRY_COMPARE(m_plugins.operations.size(),2);
-        const QStringList expected{QStringLiteral("unload:uke_keyboard_backend"),QStringLiteral("load:uke_keyboard_backend")};
+        QTRY_COMPARE(m_plugins.operations.size(),3);
+        const QStringList expected{QStringLiteral("unload:uke_keyboard_backend"),QStringLiteral("unload:uke_keyboard_backend_previous"),QStringLiteral("load:")+QLatin1String(UkeKeyboard::pluginId)};
         QCOMPARE(m_plugins.operations,expected);
         QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
+    }
+    void refusesABackendOutsideItsCompositorParent() {
+        LaptopController controller;
+        const int before=m_backend.attaches;
+        controller.connectBackend();
+        QVERIFY(!controller.m_ready);
+        QVERIFY(controller.m_backendOwner.isEmpty());
+        QCOMPARE(m_backend.attaches,before);
+    }
+    void nativeCallsStayOnTheAuthenticatedUniqueConnection() {
+        LaptopController controller;eligible(controller,true);
+        auto imposter=QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-imposter"));
+        QVERIFY(imposter.isConnected());
+        QVERIFY(m_backend.server.unregisterService(QLatin1String(UkeKeyboard::service)));
+        const auto restore=qScopeGuard([&]{imposter.unregisterService(QLatin1String(UkeKeyboard::service));m_backend.server.registerService(QLatin1String(UkeKeyboard::service));});
+        QVERIFY(imposter.registerService(QLatin1String(UkeKeyboard::service)));
+        QVERIFY(imposter.registerObject(QLatin1String(UkeKeyboard::path),&m_backend,QDBusConnection::ExportAllSlots));
+        const int before=m_backend.dynamicBegins;
+        controller.enter();QTRY_COMPARE(m_backend.dynamicBegins,before+1);
+        QCOMPARE(m_backend.lastReceiver,m_backend.server.baseService());
+        m_backend.reply();QTRY_VERIFY(controller.dynamicActive());controller.leave();
     }
 };
 QTEST_MAIN(LaptopControllerTest)

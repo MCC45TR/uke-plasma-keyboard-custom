@@ -472,11 +472,23 @@ Removing the plugin object does not unmap that code with Qt's default loader.
 The next recipe therefore gives the module a package-specific filename and
 loads it after removing only an existing owned integration. A native private-bus
 test checks that unload completes before load and targets only this plugin ID.
-The stable explicit metadata ID is retained so it does not vary with filenames.
-No KWin/session restart or copied binary is used to work around the problem.
+The first versioned-module candidate assumed an explicit metadata ID remained
+authoritative; inspection of the original KCoreAddons6.31 implementation rejects
+that assumption. The candidate is not installed on the device. The next source
+uses filename-derived IDs, removes the deprecated JSON Id and tests actual
+staged discovery through KPluginMetaData. It also unloads all owned older IDs
+before loading the matching build, leaving unrelated plugins alone. No
+KWin/session restart is used to work around the problem.
 
 The real session's selected input method was independently observed changing
 to Uke at04:05UTC. No setter was executed by these installation checks, and the
 new selection is preserved. Earlier byte-for-byte preference checks apply to
 the installation/reinstallation checkpoint; the later changed kwinrc hash is
 recorded separately rather than overwritten or called unchanged.
+
+The client binds native requests to the verified compositor parent's unique
+bus connection and invalidates pending replies on ownership changes. Native
+private-bus checks reject an unrelated backend and move its public alias to a
+different connection to verify that requests do not follow that alias. These
+new discovery/ownership checks still require the full COPR gate and installed
+runtime qualification; source checks alone do not establish acceptance.

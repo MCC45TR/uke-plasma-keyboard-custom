@@ -121,10 +121,19 @@ checks EnabledByDefault only during startup and permits an
 explicit LoadPlugin request independently. This keeps the extra virtual device
 and input filter absent when the user continues using the stock keyboard.
 
-Native module filenames include the RPM build identity while their plugin ID
-stays stable. Qt's default [PreventUnloadHint](https://doc.qt.io/qt-6/qpluginloader.html#loadHints-prop)
+Native module filenames and their internal plugin IDs include the RPM build
+identity. The D-Bus interface and user-visible integration name stay stable.
+Qt's default [PreventUnloadHint](https://doc.qt.io/qt-6/qpluginloader.html#loadHints-prop)
 retains library code in the compositor after an object is removed. On keyboard
-startup, an existing owned backend is unloaded before the installed build is
-loaded. Its new filename avoids reusing a previous package's mapped code.
+startup, only loaded modules in the Uke integration's namespace are unloaded
+before the installed build is loaded. Its new filename avoids reusing a previous
+package's mapped code. KCoreAddons derives shared-module IDs from filenames;
+the deprecated explicit JSON Id is removed. Staged discovery is checked through
+the original KPluginMetaData API rather than a mock filename assumption.
 The exact running KWin version is still checked before constructing the backend.
 No compositor restart, desktop-policy setter or root session service is added.
+
+The client also verifies that the backend's bus connection belongs to its
+compositor parent and sends native requests only to that unique connection.
+Changing the public service name cannot redirect already authenticated input.
+Late attachment/lock replies are discarded after an ownership generation change.

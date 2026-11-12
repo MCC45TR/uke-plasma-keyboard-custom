@@ -9,9 +9,11 @@ if(NOT UKE_PLUGIN_BUILD_ID MATCHES "^[A-Za-z0-9_.-]+$")
     message(FATAL_ERROR "The KWin module build identity contains unsupported characters")
 endif()
 string(REGEX REPLACE "[^A-Za-z0-9_]" "_" UKE_PLUGIN_BUILD_SUFFIX "${UKE_PLUGIN_BUILD_ID}")
+set(UKE_KWIN_PLUGIN_ID "uke_keyboard_backend_${UKE_PLUGIN_BUILD_SUFFIX}" CACHE INTERNAL "Native plugin identifier" FORCE)
 # Qt retains loaded plugin libraries. A new package must have a new filename
 # so KWin can load its code without replacing the compositor or user session.
-set_target_properties(uke_keyboard_backend PROPERTIES OUTPUT_NAME "uke_keyboard_backend_${UKE_PLUGIN_BUILD_SUFFIX}")
+set_target_properties(uke_keyboard_backend PROPERTIES OUTPUT_NAME "${UKE_KWIN_PLUGIN_ID}")
+target_compile_definitions(uke-plasma-keyboard-custom PRIVATE UKE_KWIN_PLUGIN_ID="${UKE_KWIN_PLUGIN_ID}")
 target_sources(uke_keyboard_backend PRIVATE backend.cpp refreshguard.cpp)
 target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_BUILD_VERSION="${KWin_VERSION}" UKE_PLUGIN_BUILD_ID="${UKE_PLUGIN_BUILD_ID}")
 target_include_directories(uke_keyboard_backend PRIVATE ../src/laptop)

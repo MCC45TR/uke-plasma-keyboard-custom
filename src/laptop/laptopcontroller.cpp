@@ -17,6 +17,7 @@
 #include <QCoreApplication>
 #include <QDBusArgument>
 #include <QDBusConnectionInterface>
+#include <QDBusError>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -33,6 +34,7 @@
 #include <QTimer>
 #include <QXmlStreamReader>
 #include <linux/input-event-codes.h>
+#include <unistd.h>
 #include <xkbcommon/xkbcommon-names.h>
 #include <algorithm>
 #include <tuple>
@@ -88,7 +90,7 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("ProfileError"),this,SLOT(profileError(QString)));
  m_bus.connect(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),QStringLiteral("Locks"),this,SLOT(syncLocks(bool,bool,bool)));
  auto *watcher=new QDBusServiceWatcher(QLatin1String(UkeKeyboard::service),m_bus,QDBusServiceWatcher::WatchForOwnerChange,this);
- connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){m_ready=false;if(owner.isEmpty()){leave();m_reason=i18nd("uke-plasma-keyboard-custom", "The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
+ connect(watcher,&QDBusServiceWatcher::serviceOwnerChanged,this,[this](const auto&,const auto&,const QString &owner){++m_backendGeneration;m_ready=false;m_backendOwner.clear();if(owner.isEmpty()){leave();m_reason=i18nd("uke-plasma-keyboard-custom", "The KWin integration is unavailable or needs rebuilding for this KWin version.");Q_EMIT stateChanged();}else connectBackend();});
  loadBackend();
  requestTopology();
  connect(KScreen::ConfigMonitor::instance(),&KScreen::ConfigMonitor::configurationChanged,this,&LaptopController::updateTopology);
@@ -113,23 +115,54 @@ void LaptopController::queryLid(){
  });
 }
 void LaptopController::loadBackend(){
- const auto load=[this] {
-  auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("LoadPlugin"));request<<QStringLiteral("uke_keyboard_backend");
-  auto *loader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
-  connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
- };
- if(m_bus.interface()&&m_bus.interface()->isServiceRegistered(QLatin1String(UkeKeyboard::service)).value()) {
-  auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("UnloadPlugin"));request<<QStringLiteral("uke_keyboard_backend");
+ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.freedesktop.DBus.Properties"),QStringLiteral("Get"));request<<QStringLiteral("org.kde.KWin.Plugins")<<QStringLiteral("LoadedPlugins");
+ auto *reader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
+ connect(reader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){
+  QDBusPendingReply<QDBusVariant> reply=*w;w->deleteLater();QStringList owned;
+  if(!reply.isError())for(const auto&id:qdbus_cast<QStringList>(reply.value().variant()))
+   if(id==QLatin1String("uke_keyboard_backend")||id.startsWith(QLatin1String("uke_keyboard_backend_")))owned.append(id);
+  replaceBackend(owned);
+ });
+}
+void LaptopController::replaceBackend(QStringList remaining){
+ if(!remaining.isEmpty()) {
+  auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("UnloadPlugin"));request<<remaining.takeFirst();
   auto *unloader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
-  connect(unloader,&QDBusPendingCallWatcher::finished,this,[load](auto*w){w->deleteLater();load();});
- }else load();
+  connect(unloader,&QDBusPendingCallWatcher::finished,this,[this,remaining](auto*w){w->deleteLater();replaceBackend(remaining);});
+  return;
+ }
+ auto request=QDBusMessage::createMethodCall(QStringLiteral("org.kde.KWin"),QStringLiteral("/Plugins"),QStringLiteral("org.kde.KWin.Plugins"),QStringLiteral("LoadPlugin"));request<<QLatin1String(UkeKeyboard::pluginId);
+ auto *loader=new QDBusPendingCallWatcher(m_bus.asyncCall(request),this);
+ connect(loader,&QDBusPendingCallWatcher::finished,this,[this](auto*w){w->deleteLater();connectBackend();});
 }
 void LaptopController::connectBackend(){
+ const auto generation=++m_backendGeneration;
+ m_ready=false;m_backendOwner.clear();
+ m_reason=i18nd("uke-plasma-keyboard-custom", "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");
+ auto *bus=m_bus.interface();
+ if(!bus){updateTopology();return;}
+ const auto owner=bus->serviceOwner(QLatin1String(UkeKeyboard::service));
+ if(!owner.isValid()||owner.value().isEmpty()){updateTopology();return;}
+ const auto pid=bus->servicePid(owner.value());
+ if(!pid.isValid()||pid.value()!=uint(getppid())){updateTopology();return;}
+ m_backendOwner=owner.value();
  auto *w=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Attach")),this);
- connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<bool> reply=*call;m_ready=!reply.isError()&&reply.value();if(!m_ready)m_reason=i18nd("uke-plasma-keyboard-custom", "Select Uke Plasma Keyboard in System Settings. Its matching KWin integration must be installed.");else{auto*locks=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Locks")),this);connect(locks,&QDBusPendingCallWatcher::finished,this,[this](auto*w){QDBusPendingReply<QVariantMap>r=*w;if(!r.isError()){const auto p=r.value();syncLocks(p.value("caps").toBool(),p.value("num").toBool(),p.value("scroll").toBool());}w->deleteLater();});}updateTopology();call->deleteLater();});
+ connect(w,&QDBusPendingCallWatcher::finished,this,[this,generation](auto*call){
+  QDBusPendingReply<bool> reply=*call;call->deleteLater();if(generation!=m_backendGeneration)return;
+  m_ready=!reply.isError()&&reply.value();
+  if(m_ready){
+   auto*locks=new QDBusPendingCallWatcher(backendCall(QStringLiteral("Locks")),this);
+   connect(locks,&QDBusPendingCallWatcher::finished,this,[this,generation](auto*w){
+    QDBusPendingReply<QVariantMap>r=*w;w->deleteLater();if(generation!=m_backendGeneration||r.isError())return;
+    const auto p=r.value();syncLocks(p.value("caps").toBool(),p.value("num").toBool(),p.value("scroll").toBool());
+   });
+  }
+  updateTopology();
+ });
 }
 QDBusPendingCall LaptopController::backendCall(const QString &method,const QVariantList &args)const {
- auto m=QDBusMessage::createMethodCall(QLatin1String(UkeKeyboard::service),QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);m.setArguments(args);m.setAutoStartService(false);return m_bus.asyncCall(m);
+ if(m_backendOwner.isEmpty())return QDBusPendingCall::fromError(QDBusError(QDBusError::Disconnected,QStringLiteral("No trusted KWin integration is attached.")));
+ auto m=QDBusMessage::createMethodCall(m_backendOwner,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);m.setArguments(args);m.setAutoStartService(false);return m_bus.asyncCall(m);
 }
 void LaptopController::requestTopology(){
  auto *op=new KScreen::GetConfigOperation(KScreen::GetConfigOperation::NoEDID,this);

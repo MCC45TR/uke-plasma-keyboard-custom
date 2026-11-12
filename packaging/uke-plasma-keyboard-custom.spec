@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 24%{?dist}
+Release: 25%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -73,6 +73,7 @@ appstreamcli validate --no-net %{buildroot}%{_datadir}/metainfo/org.uke.plasma.k
 export QML_IMPORT_PATH=%{buildroot}%{_libdir}/qt6/qml XDG_DATA_DIRS=%{buildroot}%{_datadir}:/usr/local/share:/usr/share
 export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 PLASMA_KEYBOARD_TEST_MODE=1
 export UKE_REQUIRE_TRANSCRIBE=1 PLASMA_KEYBOARD_TRANSCRIBE_LIBRARY=%{buildroot}%{_libdir}/%{name}/libtranscribe.so
+export UKE_KEYBOARD_PLUGIN_ROOT=%{buildroot}%{_libdir}/qt6/plugins
 # The protocol fixture uses software rendering and a private Wayland socket.
 dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no-tests=error
 ! find %{buildroot} -type f -name '*.py' | read
@@ -105,6 +106,11 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-25
+- Resolve versioned native modules using KDE's filename-derived identifiers.
+- Bind native calls to the authenticated compositor's unique bus connection.
+- Check staged module discovery through the original KDE metadata API.
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-24
 - Give each native module build its own filename for live package updates.
 - Reload only the owned integration before attaching a restarted keyboard.

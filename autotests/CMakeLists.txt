@@ -91,6 +91,10 @@ ecm_add_test(kwinversiontest.cpp TEST_NAME kwinversiontest LINK_LIBRARIES Qt::Co
 target_include_directories(kwinversiontest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../kwin)
 ecm_add_test(processidentitytest.cpp TEST_NAME processidentitytest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(processidentitytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+ecm_add_test(plugindiscoverytest.cpp TEST_NAME plugindiscoverytest LINK_LIBRARIES Qt::Core Qt::Test KF6::CoreAddons)
+target_include_directories(plugindiscoverytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
+target_compile_definitions(plugindiscoverytest PRIVATE UKE_KWIN_PLUGIN_ID="${UKE_KWIN_PLUGIN_ID}")
+add_dependencies(plugindiscoverytest uke_keyboard_backend)
 
 ecm_add_test(keyboardvisibilitystatetest.cpp
     TEST_NAME keyboardvisibilitystatetest
@@ -303,6 +307,7 @@ ecm_add_test(laptopcontrollertest.cpp
     LINK_LIBRARIES Qt::Core Qt::Gui Qt::DBus Qt::Test KF6::ConfigCore KF6::I18n KF6::Screen PkgConfig::XKBCommon)
 target_include_directories(laptopcontrollertest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 target_compile_options(laptopcontrollertest PRIVATE -UQT_NO_CAST_FROM_ASCII -UQT_NO_CAST_TO_ASCII)
+target_compile_definitions(laptopcontrollertest PRIVATE UKE_KWIN_PLUGIN_ID="${UKE_KWIN_PLUGIN_ID}")
 if(DBUS_RUN_SESSION)
     set_target_properties(laptopcontrollertest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
     set_tests_properties(laptopcontrollertest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;PLASMA_KEYBOARD_TEST_MODE=1;QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
