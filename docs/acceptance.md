@@ -34,7 +34,13 @@ outside this package's delivery scope.
 records the explicitly requested fork, separate COPR producer and remaining
 original-package return path. It is supplied for the shared migration policy;
 the owning policy and its current coverage report require separate confirmation.
-No runtime package, panel state or acceptance gate changes with this record.
+With a private copy of that policy and a fresh complete28-producer main COPR
+inventory plus installed RPM snapshot, the original jq audit reports complete
+source coverage and no unknown packages/producers. The installed32 keyboard
+maps to this component with no main-project producer. This prospective audit
+does not assert that the shared policy has already integrated the entry; all
+four audit acceptance flags remain false. No runtime package, panel state or
+acceptance gate changes with this record.
 
 ## COPR 11309616 — source worker failure
 
