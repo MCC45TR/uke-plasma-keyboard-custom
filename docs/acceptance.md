@@ -985,3 +985,22 @@ This is source/package preparation only. Native44, signatures/dependencies,
 DNF renewal, actual mouse/touch and the wider physical/VRR/image gates remain
 pending. Source43 was not submitted as a separate native build; its hidden-focus
 fix and the protocol-fixture correction are cumulative in44.
+
+## COPR11318138 /44 — functional input passes, mock shutdown fails
+
+All three original-source builds pass the patch/source guards and39/40 CTests.
+The actual application's14 input scenarios pass, including mouse/text refusal,
+touch acceptance, a compositor visibility edge, stale-reply cancellation,
+typing, editing gestures, navigation, overlays and balanced repeat input.
+The mock then blocks its own D-Bus/Wayland services in `waitForFinished()` while
+the child is shutting down. Resetting the still-running process emits callbacks
+through the already reset owner and crashes the test.44 is not delivered.
+
+Candidate45 keeps the mock event loop serving requests while waiting for the
+child's finished signal, disconnects callbacks before deletion and explicitly
+requires timely normal exit. Stream callbacks capture the process itself.
+Every earlier input assertion remains; there is no skipped cleanup or forced
+termination accepted as success. The official archive/patch round trip and
+source guards pass again. Native45, signed RPM/DNF and physical input remain
+pending. The trial guide now includes mouse/touch, acceleration and bounded
+pixel-shift checks; historical custom-upstream investigation is labeled.

@@ -3,6 +3,12 @@
   SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 -->
 
+> Historical investigation retained from the custom-tool upstream. Its dated
+> implementation notes describe that earlier snapshot. Current source, native
+> test coverage and device results are recorded in [acceptance.md](acceptance.md)
+> and [architecture.md](architecture.md); the current mock uses a private bus
+> and a layer-shell fixture. Historical physical claims are not Uke acceptance.
+
 # Наступний крок після RPM12: контракт видимості й output
 
 ## Перевірений стан, 2026-10-21

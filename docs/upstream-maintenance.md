@@ -4,7 +4,7 @@ The Uke application remains the separately named `uke-plasma-keyboard-custom`
 RPM. Its source starts from KDE Plasma Keyboard6.8.3, rather than using a
 complete custom-fork snapshot as Source0. The original Fedora Plasma Keyboard,
 KWin and Qt packages remain installed. This source transition was explicitly
-requested by the user; candidate44 is not yet native/package/device qualified.
+requested by the user; candidate45 is not yet native/package/device qualified.
 
 The immutable [manifest](../packaging/upstream.json) records upstream version,
 revision, release-archive digest, patch order/digests and every reviewed

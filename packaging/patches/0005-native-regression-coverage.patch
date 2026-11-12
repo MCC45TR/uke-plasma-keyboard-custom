@@ -2601,7 +2601,7 @@ index 0000000000000000000000000000000000000000..3396b6a37ca2157d176821991f697861
 +grep -q 'LaptopController::instance()->active()' src/main.cpp
 +! grep -q 'setEnabled(true)' src/laptop/laptopcontroller.cpp
 diff --git a/autotests/mockinputmethodcompositor.cpp b/autotests/mockinputmethodcompositor.cpp
-index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d53da573a7 100644
+index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d0c2964cb 100644
 --- a/autotests/mockinputmethodcompositor.cpp
 +++ b/autotests/mockinputmethodcompositor.cpp
 @@ -5,6 +5,13 @@
@@ -2852,7 +2852,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
              // Set the long press threshold to max to avoid potential flakiness in CI where timing can be unpredictable.
              grp.writeEntry(QStringLiteral("diacriticsHoldThresholdMs"), 1500);
          }
-@@ -575,6 +716,9 @@ private Q_SLOTS:
+@@ -575,21 +716,29 @@ private Q_SLOTS:
          m_inputPanel = std::make_unique<InputPanelV1>(m_compositor.get());
          m_inputPanel->initialize();
          m_inputMethod->setInputPanel(m_inputPanel.get());
@@ -2861,8 +2861,23 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
 +        m_layerShell->initialize();
  
          m_child = std::make_unique<QProcess>();
-         connect(m_child.get(), &QProcess::readyReadStandardError, this, [this] {
-@@ -589,7 +733,11 @@ private Q_SLOTS:
+-        connect(m_child.get(), &QProcess::readyReadStandardError, this, [this] {
+-            QTextStream(stderr) << m_child->readAllStandardError();
++        auto *child = m_child.get();
++        connect(child, &QProcess::readyReadStandardError, this, [child] {
++            QTextStream(stderr) << child->readAllStandardError();
+         });
+-        connect(m_child.get(), &QProcess::readyReadStandardOutput, this, [this] {
+-            QTextStream(stdout) << m_child->readAllStandardOutput();
++        connect(child, &QProcess::readyReadStandardOutput, this, [child] {
++            QTextStream(stdout) << child->readAllStandardOutput();
+         });
+-        connect(m_child.get(), &QProcess::finished, this, [this] {
+-            qWarning() << "child state:" << m_child->state() << "error:" << m_child->error() << m_child->errorString() << "exitStatus:" << m_child->exitStatus()
+-                       << "exitCode:" << m_child->exitCode();
++        connect(child, &QProcess::finished, this, [child] {
++            qWarning() << "child state:" << child->state() << "error:" << child->error() << child->errorString() << "exitStatus:" << child->exitStatus()
++                       << "exitCode:" << child->exitCode();
          });
          auto env = QProcessEnvironment::systemEnvironment();
          env.insert(u"WAYLAND_DISPLAY"_s, m_socketPath);
@@ -2874,7 +2889,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
          m_child->setProcessEnvironment(env);
  
  #if PLASMA_KEYBOARD_UNDER_GDB
-@@ -642,6 +790,7 @@ private Q_SLOTS:
+@@ -642,6 +791,7 @@ private Q_SLOTS:
       */
      void cleanup()
      {
@@ -2882,7 +2897,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
          QTest::qWait(RUNNING_IN_CI ? 200 : 20);
          wl_display_flush_clients(m_compositor->display());
          QTest::qWait(RUNNING_IN_CI ? 100 : 20);
-@@ -718,9 +867,54 @@ private Q_SLOTS:
+@@ -718,9 +868,54 @@ private Q_SLOTS:
          return destinationSize.isEmpty() ? surface->bufferSize() : destinationSize;
      }
  
@@ -2940,7 +2955,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
      void testOnScreenKeyboardCommitsCharacter()
      {
          if (!m_inputPanel->surface()) {
-@@ -733,11 +927,15 @@ private Q_SLOTS:
+@@ -733,11 +928,15 @@ private Q_SLOTS:
          QTRY_VERIFY_WITH_TIMEOUT(surface->hasContent(), 5000);
          QTRY_VERIFY_WITH_TIMEOUT(!inputPanelSurfaceSize().isEmpty(), 5000);
  
@@ -2961,7 +2976,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
  
          QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
          tapInputPanel(qKeyCenter);
-@@ -746,6 +944,51 @@ private Q_SLOTS:
+@@ -746,6 +945,51 @@ private Q_SLOTS:
          QCOMPARE(commitStringSpy.first().first().toString(), QStringLiteral("q"));
      }
  
@@ -3013,7 +3028,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
      void testKeyboardNavigationCommitsCharacter()
      {
          if (!m_inputPanel->surface()) {
-@@ -760,9 +1003,15 @@ private Q_SLOTS:
+@@ -760,9 +1004,15 @@ private Q_SLOTS:
          QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
          QSignalSpy keysymSpy(m_inputMethod->context(), &InputMethodContext::keysymReceived);
  
@@ -3032,7 +3047,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
          sendKey(KEY_ENTER, 100);
  
          QVERIFY(commitStringSpy.count() || commitStringSpy.wait());
-@@ -996,6 +1245,37 @@ private Q_SLOTS:
+@@ -996,14 +1246,57 @@ private Q_SLOTS:
          QCOMPARE(keySpy.at(last).at(1).toUInt(), static_cast<uint32_t>(WL_KEYBOARD_KEY_STATE_RELEASED));
      }
  
@@ -3070,7 +3085,28 @@ index 09177e70bb2d03fc2e882c04564237795991181b..f82eaa465e4b359c0aa0952ea9b863d5
      void cleanupTestCase()
      {
          if (m_child) {
-@@ -1060,6 +1340,10 @@ private:
++            bool stopped = true;
+             if (m_child->state() != QProcess::NotRunning) {
++                QSignalSpy finished(m_child.get(), &QProcess::finished);
+                 m_child->terminate();
+-                m_child->waitForFinished(2000);
++                // Keep the mock's D-Bus/Wayland services responsive while the
++                // actual keyboard restores its state and destroys its windows.
++                stopped = m_child->state() == QProcess::NotRunning || finished.wait(5000);
++                if (!stopped) {
++                    m_child->kill();
++                    m_child->waitForFinished(1000);
++                }
+             }
++            const bool normal = stopped && m_child->exitStatus() == QProcess::NormalExit && m_child->exitCode() == 0;
++            disconnect(m_child.get(), nullptr, this, nullptr);
+             m_child.reset();
++            QVERIFY2(stopped, "The keyboard did not finish orderly shutdown");
++            QVERIFY2(normal, "The keyboard exited abnormally");
+         }
+     }
+ 
+@@ -1060,6 +1353,10 @@ private:
      std::unique_ptr<QWaylandXdgShell> m_xdgShell;
      std::unique_ptr<InputMethodV1> m_inputMethod;
      std::unique_ptr<InputPanelV1> m_inputPanel;

@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "015ab9c2a801a8e65bd52a083cc6cd8396177ec739d734a8a446fefaa5ffd457"
+      "sha256": "2460aebfec094f2d7c4abc649b658453d0e48be16eb487a60664dbb892dc7fcb"
     }
   ],
   "production_files": [
@@ -238,7 +238,7 @@
     },
     {
       "path": "autotests/mockinputmethodcompositor.cpp",
-      "sha256": "953e89362a3d03f775f6f4e1d3d03e71206f3ee7032eec2eca2f52d913c7e75c"
+      "sha256": "d00df1f5446af91b2efe191bbe7b6922912317f56a54f8724619c20f6666a234"
     },
     {
       "path": "autotests/nativerefreshrequesttest.cpp",

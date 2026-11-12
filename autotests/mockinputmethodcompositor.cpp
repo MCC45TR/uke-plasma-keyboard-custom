@@ -721,15 +721,16 @@ private Q_SLOTS:
         m_layerShell->initialize();
 
         m_child = std::make_unique<QProcess>();
-        connect(m_child.get(), &QProcess::readyReadStandardError, this, [this] {
-            QTextStream(stderr) << m_child->readAllStandardError();
+        auto *child = m_child.get();
+        connect(child, &QProcess::readyReadStandardError, this, [child] {
+            QTextStream(stderr) << child->readAllStandardError();
         });
-        connect(m_child.get(), &QProcess::readyReadStandardOutput, this, [this] {
-            QTextStream(stdout) << m_child->readAllStandardOutput();
+        connect(child, &QProcess::readyReadStandardOutput, this, [child] {
+            QTextStream(stdout) << child->readAllStandardOutput();
         });
-        connect(m_child.get(), &QProcess::finished, this, [this] {
-            qWarning() << "child state:" << m_child->state() << "error:" << m_child->error() << m_child->errorString() << "exitStatus:" << m_child->exitStatus()
-                       << "exitCode:" << m_child->exitCode();
+        connect(child, &QProcess::finished, this, [child] {
+            qWarning() << "child state:" << child->state() << "error:" << child->error() << child->errorString() << "exitStatus:" << child->exitStatus()
+                       << "exitCode:" << child->exitCode();
         });
         auto env = QProcessEnvironment::systemEnvironment();
         env.insert(u"WAYLAND_DISPLAY"_s, m_socketPath);
@@ -1279,11 +1280,23 @@ private Q_SLOTS:
     void cleanupTestCase()
     {
         if (m_child) {
+            bool stopped = true;
             if (m_child->state() != QProcess::NotRunning) {
+                QSignalSpy finished(m_child.get(), &QProcess::finished);
                 m_child->terminate();
-                m_child->waitForFinished(2000);
+                // Keep the mock's D-Bus/Wayland services responsive while the
+                // actual keyboard restores its state and destroys its windows.
+                stopped = m_child->state() == QProcess::NotRunning || finished.wait(5000);
+                if (!stopped) {
+                    m_child->kill();
+                    m_child->waitForFinished(1000);
+                }
             }
+            const bool normal = stopped && m_child->exitStatus() == QProcess::NormalExit && m_child->exitCode() == 0;
+            disconnect(m_child.get(), nullptr, this, nullptr);
             m_child.reset();
+            QVERIFY2(stopped, "The keyboard did not finish orderly shutdown");
+            QVERIFY2(normal, "The keyboard exited abnormally");
         }
     }
 

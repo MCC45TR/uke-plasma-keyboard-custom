@@ -18,7 +18,8 @@ patches from unchanged data and integration documentation. The RPM expands the
 original archive and applies those patches; the expanded repository source is
 verified against that result before source submission. Moving the baseline
 does not by itself resolve input policy: the touch-only and hidden-focus fixes
-remain explicit reviewed patches. Native44 and physical acceptance are pending.
+remain explicit reviewed patches. Native45 and physical acceptance are pending;
+44's functional scenarios pass, but its mock shutdown prevents package acceptance.
 
 The [migration inventory entry](../packaging/native-migration-component.json)
 records this application exception, its exact remaining delta and upstream

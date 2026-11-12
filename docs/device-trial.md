@@ -7,6 +7,12 @@ tablet, copy binaries into the system or download speech models for this trial.
 1. Keep the original plasma-keyboard installed. After DNF installation, select
    Uke Plasma Keyboard Custom manually in System Settings → Virtual Keyboard.
    Confirm ordinary text input before testing laptop mode.
+   In normal mode, hide the keyboard and click a synthetic text field with a
+   mouse: it must stay hidden. Touch the field: it should open. Repeat after a
+   local hide and while the field sends updates. Check Qt, GTK, browser, terminal
+   and XWayland clients separately. The explicit Meta+Shift+K action still opens
+   or hides it. Automatic static mode has its separate persistent policy;
+   choose Normal keyboard to suppress it during this normal-mode trial.
 2. Open the cover and use Plasma's display settings to enable the touchscreen
    and an extended external monitor. Keep mirroring off. The keyboard does not
    enable or reposition displays. Laptop mode becomes available only when its
@@ -24,10 +30,16 @@ tablet, copy binaries into the system or download speech models for this trial.
    top toolbar, keyboard and lower touchpad persistently. The pointer and normal
    application windows should stay on external screens, with text focus in the
    external application. Check F/modifier/arrow/navigation/system row controls.
+   Verify that the surface covers the tablet edge to edge without the former
+   thin outer line. It must stay on the tablet when focus moves externally.
 5. Check tap, two-finger right click/scroll/pinch, double-tap drag and optional
    left/middle/right buttons. Check Ctrl/Shift plus deliberate clicks while the
    short typing guard is enabled. Three/four-finger gestures should follow the
    configured Plasma bindings once, without duplicate touchscreen gestures.
+   Compare slow, very small pointer movements with fast long strokes. Optional
+   acceleration should preserve precision while reducing the finger travel
+   needed to cross the external screen. Turning it off should give a flat
+   response; keep the existing speed setting unless deliberately adjusting it.
 6. Enable the 50 mm ruler in keyboard settings and measure it on the tablet.
    Compare 1×/2×/2.65× and portrait/landscape through user-selected Plasma display
    settings. Adjust physical panel width/height if reported dimensions are wrong.
@@ -64,6 +76,17 @@ enabled it (`systemctl --user disable --now uke-plasma-keyboard-lock-switcher.se
 Select the original Plasma keyboard, then remove the Uke
 RPM through DNF if desired. Preserve keyboard preferences and the original
 provider. Future image defaults require first-session and lock-screen acceptance.
+
+## Static pixel shifting
+
+With pixel shifting enabled and static mode eligible, leave the surface idle
+for slightly over a minute. Content may move within one physical pixel on each
+axis; the opaque full-panel background must remain fixed. Repeat at fractional
+scale. Keys, touchpad hit regions and the input-method rectangle must remain
+aligned. While holding a touch, key or button, no step should occur; a pending
+step waits until interaction ends. Exit/disable must reset the offset and stop
+the timer. Normal/dynamic mode and hidden/ineligible static mode must not shift.
+This checks the bounded motion policy, not long-term protection against burn-in.
 
 ## Dynamic surface
 

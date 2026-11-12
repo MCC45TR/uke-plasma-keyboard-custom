@@ -7,8 +7,9 @@ optional tools from [mops1k/plasma-keyboard-custom](https://github.com/mops1k/pl
 are retained with attribution and licenses. The Uke RPM stays separate from
 Fedora's original Plasma Keyboard, KWin, Plasma and Qt packages.
 
-The source-baseline transition is candidate44; its native/package/device
-qualification is pending. The last delivered release is39, described below.
+The source-baseline transition is candidate45; its native/package/device
+qualification is pending.44 passed the new functional input scenarios but
+failed fixture shutdown. The last delivered release is39, described below.
 
 The first target is the POCO Pad X1 (Uke), aarch64. The source discovers display,
 touch and language capabilities rather than hardcoding a connector name.
