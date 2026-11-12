@@ -503,3 +503,36 @@ Its exact-path assertion correctly rejects that shadow and no RPM is accepted.
 The next fixture passes the absolute staged namespace to the same metadata API;
 it keeps both the ID and exact installed-path assertions. No gate is removed or
 relaxed. Full native/package and installed-session checks remain required.
+
+## COPR11311710 /0.1.0-26 — installed native integration works
+
+Fedora 44, 45 and Rawhide aarch64 each pass all 31 CTests and produce RPMs.
+The published source worker pins commit 10dfc2539ced61ac08a3475429f18c1536b37f11;
+its published spec matches the reviewed recipe. The Rawhide binary's package
+signatures, payload digests and file ownership are verified before DNF upgrades
+only this package to 0.1.0-26. RPM verification is clean. Original KWin and the
+original plasma-keyboard remain installed.
+
+The existing compositor process loads the matching versioned module without
+restarting the desktop. The selected Uke process reports native readiness and
+the backend reports build 0.1.0-26.fc46. The open-cover requirement correctly
+keeps laptop mode unavailable while the internal panel is disabled. The
+resolved input-method choice survives the upgrade; kwinrc is rewritten by the
+self-restart mechanism, while the other tracked preferences keep their hashes
+or absence. This is semantic selection preservation, not byte-identical kwinrc.
+
+A repeated private original-KWin virtual-output fixture keeps its lock service
+enabled, with automatic locking disabled only in that private configuration.
+It reports known-unlocked state, native readiness, rejects an unrelated Attach
+request, and shows the normal keyboard after activation of a synthetic text
+field. The resource-bounded fixture exits successfully. This closes the
+earlier fixture's unknown-lock visibility limit, not physical laptop-mode
+acceptance. Static/dynamic touch interaction and adaptive refresh remain open.
+
+## 0.1.0-27 — preference-race regression pending
+
+The restart helper now leaves an unrelated provider alone and restores its
+temporary blank choice only if no intervening nonempty selection was made.
+A native test runs the real helper with private configuration for the unrelated,
+normal restore and intervening-choice cases. Source checks pass; the complete
+32-test COPR matrix and installed delivery are still required for this release.

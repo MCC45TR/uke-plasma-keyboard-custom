@@ -86,7 +86,7 @@ bool keyboardVisible()
 int restartInputMethod()
 {
     const QString inputMethod = kwinInputMethod();
-    if (inputMethod.isEmpty()) {
+    if (!QFileInfo(inputMethod).fileName().startsWith(QStringLiteral("org.uke.plasma.keyboard"))) {
         return 0;
     }
 
@@ -95,7 +95,11 @@ int restartInputMethod()
     // it makes KWin start a fresh one.
     writeKwinInputMethod(QString());
     QThread::msleep(s_kwinRestartDelayMs);
-    writeKwinInputMethod(inputMethod);
+    // The blank value is the temporary state owned by this restart. Preserve
+    // a different choice made in System Settings while the old process exits.
+    if (kwinInputMethod().isEmpty()) {
+        writeKwinInputMethod(inputMethod);
+    }
     return 0;
 }
 
