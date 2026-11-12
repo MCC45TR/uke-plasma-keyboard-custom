@@ -88,7 +88,7 @@ builds version 0.1.0-35 on all three targets, each with 38 passing CTests.
 The tablet's DNF upgrade, tablet-only placement and persistent surface pass.
 The user confirms basic pointer movement, clicks and typing, but reports
 stuttering motion, missed small movements and a thin outer frame. These are
-being corrected in36; smoothness and extended physical acceptance remain open.
+being corrected in37; smoothness and extended physical acceptance remain open.
 The35 upgrade needed a provider-only reload; automatic renewal is not qualified
 by that transaction. Adaptive-refresh qualification also remains open; see the
 [first tablet trial](docs/device-trial.md) before using laptop mode.

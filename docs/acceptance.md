@@ -42,7 +42,7 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 | Static surface and KWin routing | Implemented | Native connection identity, controller and authentication pass at35 | User confirms tablet-only placement, persistence and basic typing/pointer/click; extended routing open |
 | USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
-| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;36 adds frame-independent small-motion regression | Basic movement/click pass; stutter and missed small movements reported; extended gestures pending |
+| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;37 adds frame-independent small-motion regression | Basic movement/click pass; stutter and missed small movements reported; extended gestures pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
@@ -818,3 +818,13 @@ No 32 reinstallation or physical rollback is claimed from these results; earlier
 scopes. Static/dynamic touch/typing/focus/window/pointer behavior, physical
 refresh restoration and native adaptive 30–60 remain open. No panel, layout,
 refresh profile, kernel or boot setting was changed for acceptance.
+
+## COPR11316679 /36 — touch test localization type error
+
+Source `bbc329946535993bfc297f80cf85d25dd4049b45` and the published spec match
+(SHA256 `ebc3f8ba356f412c9ce647e2e180c7052b7db3b5f4675b64adfb9fd439183db5`).
+All three native workers stop compiling the new touch regression: localization
+setup expects a QQmlEngine pointer, rather than QQuickView. No39-test result or
+RPM is accepted, and the installed35 surface remains. Candidate37 passes the
+view's engine and preserves the actual Touchpad.qml small-motion test, private
+D-Bus ordering/no-reply test and all earlier gates.

@@ -35,7 +35,7 @@ private Q_SLOTS:
         RecordingLaptop laptop;
         qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",&laptop);
         QQuickView window;window.resize(600,300);
-        KLocalization::setupLocalizedContext(&window);
+        KLocalization::setupLocalizedContext(window.engine());
         QQmlComponent component(window.engine(),QUrl::fromLocalFile(QStringLiteral(TOUCHPAD_SOURCE)));
         QScopedPointer<QObject> object(component.create());
         auto *pad=qobject_cast<QQuickItem*>(object.data());

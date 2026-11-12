@@ -49,7 +49,7 @@ extended physical acceptance remain open.
 
 ## Touch delivery and surface polish
 
-Candidate36 addresses stuttering motion and missed small movements. Original
+Candidate37 addresses stuttering motion and missed small movements. Original
 Qt Quick6.12 coalesces touch updates until a rendered frame. Its process-local
 `QML_NO_TOUCH_COMPRESSION` opt-out is selected before creating the application;
 the installed original Quick library also contains this control. The actual
