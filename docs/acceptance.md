@@ -529,10 +529,40 @@ field. The resource-bounded fixture exits successfully. This closes the
 earlier fixture's unknown-lock visibility limit, not physical laptop-mode
 acceptance. Static/dynamic touch interaction and adaptive refresh remain open.
 
-## 0.1.0-27 — preference-race regression pending
+The actual selected hidden process is also sampled for 30.05 seconds: zero CPU
+ticks, PSS 101,871 KiB, RSS 193,200 KiB, 18 threads and two context switches.
+This is a bounded observation of that process in that session, not a hardware
+wakeup measurement or an equivalent-environment comparison with the stock app.
+The prototype screenshot is captured from installed QML with synthetic input.
+
+## COPR11311802 /0.1.0-27 — preference race fixed, reload limit found
 
 The restart helper now leaves an unrelated provider alone and restores its
 temporary blank choice only if no intervening nonempty selection was made.
 A native test runs the real helper with private configuration for the unrelated,
-normal restore and intervening-choice cases. Source checks pass; the complete
-32-test COPR matrix and installed delivery are still required for this release.
+normal restore and intervening-choice cases. All 32 tests and RPM assembly pass
+on Fedora 44, 45 and Rawhide aarch64. The actual source-worker pin and published
+spec match the reviewed commit f8e0fd943a8badbab996a5fd5d2d240a9adb7256. Both
+Rawhide package signatures and payload digests pass; no foreign file owners,
+Python files or input grants are added. Dependencies and scriptlets match 26.
+DNF upgrades only the keyboard and RPM verification passes.
+
+The device has independently entered a new boot session before that delivery;
+the current compositor predates the DNF transaction. Do not extend the earlier
+PID1132 no-restart observation across that separate boot. The running old
+executable remains deleted after this upgrade: versions 26 and 27 each have
+size 18,444,032 bytes and timestamp 1794441600, despite distinct file digests.
+The old watcher compares only size and timestamp and therefore misses this
+replacement. Calling the installed preference-safe restart helper once loads
+27 and restores native readiness in the current compositor, PID1165. The
+resolved provider selection survives. This is an explicit provider reload, not
+proof that the old automatic watcher handled the upgrade.
+
+## 0.1.0-28 — equal-size replacement detection pending
+
+The event-driven watcher additionally compares the regular file's device/inode
+identity. No idle polling is added. A native filesystem regression atomically
+replaces a file with different contents but equal size and timestamp while the
+old inode remains open, matching the observed RPM transition. It also rejects
+missing and nonregular paths. Source checks pass; all 33 CTests, RPM assembly
+and installed upgrade/reinstallation qualification remain required.

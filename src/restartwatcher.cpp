@@ -114,6 +114,7 @@ RestartWatcher::RestartWatcher(QObject *parent)
     }
 
     const QFileInfo info(m_binaryPath);
+    m_fileIdentity = UkeKeyboard::fileIdentity(m_binaryPath);
     m_modified = info.lastModified();
     m_size = info.size();
     m_sinceDetection.start();
@@ -139,17 +140,21 @@ RestartWatcher::RestartWatcher(QObject *parent)
 void RestartWatcher::checkForUpdate()
 {
     const QFileInfo info(m_binaryPath);
-    if (!info.exists()) {
+    const auto identity = UkeKeyboard::fileIdentity(m_binaryPath);
+    if (!identity) {
         // The package manager is in the middle of replacing the file.
         return;
     }
 
-    const bool changed = info.lastModified() != m_modified || info.size() != m_size;
+    // RPM timestamps are reproducible and two different executables can have
+    // equal sizes. Atomic replacement still changes the file's inode.
+    const bool changed = identity != m_fileIdentity || info.lastModified() != m_modified || info.size() != m_size;
     if (!changed && !m_restartPending) {
         return;
     }
 
     if (changed) {
+        m_fileIdentity = identity;
         m_modified = info.lastModified();
         m_size = info.size();
         m_restartPending = true;

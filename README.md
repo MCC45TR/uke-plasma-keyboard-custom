@@ -34,6 +34,12 @@ learning is disabled by default. Password/unknown-content contexts do not expose
 clipboard history, suggestions or emoji. Voice models are not downloaded or
 loaded until requested.
 
+![Laptop surface prototype](docs/screenshots/laptop-prototype.png)
+
+The prototype above is rendered from the installed QML with synthetic input.
+It shows the toolbar, PC keyboard and centered touchpad; physical touch and
+display qualification are still pending.
+
 ## Installation and recovery
 
 Install the signed `uke-plasma-keyboard-custom` RPM through its COPR repository,

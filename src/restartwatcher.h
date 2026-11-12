@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "fileidentity.h"
 #include <QDateTime>
 #include <QElapsedTimer>
 #include <QObject>
@@ -44,6 +45,7 @@ private:
     void restart();
 
     QString m_binaryPath;
+    std::optional<UkeKeyboard::FileIdentity> m_fileIdentity;
     QDateTime m_modified;
     qint64 m_size = -1;
     bool m_restartPending = false;
