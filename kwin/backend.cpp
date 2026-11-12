@@ -8,6 +8,7 @@
 #include "versionguard.h"
 #include "usbkeyboardpolicy.h"
 #include "pointerconfinement.h"
+#include "inputclientidentity.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
 #include <core/session.h>
@@ -18,6 +19,7 @@
 #include <pointer_input.h>
 #include <wayland_server.h>
 #include <wayland/seat.h>
+#include <wayland/surface.h>
 #include <window.h>
 #include <workspace.h>
 #include <KConfigGroup>
@@ -131,7 +133,7 @@ public:
         m_touches[event->id]=event->pos;relayTouch(0,event->id,event->pos);
         if((!m_active&&!m_dynamic)||locked()||!tablet()||!rectangle(tablet()->geometry()).contains(event->pos))return false;
         auto *window=input()->findToplevel(event->pos);
-        if(!window||uint(window->pid())!=m_clientPid||!window->surface())return false;
+        if(!ownWindow(window))return false;
         // Forward only the keyboard's own surface before the global touchscreen
         // gesture filter. Three/four-finger actions come from the virtual pad;
         // ordinary multi-finger typing must not also switch desktops.
@@ -177,11 +179,22 @@ public Q_SLOTS:
             if (o->isPlaceholder()) continue;
             (o->isInternal() ? internal : external).append(o->name());
         }
+        int surfaceCount=0;QRectF largest;QString largestOutput;
+        for(auto *window:workspace()->windows())if(ownWindow(window)){
+            ++surfaceCount;const auto area=rectangle(window->frameGeometry());
+            if(area.width()*area.height()>largest.width()*largest.height()){
+                largest=area;largestOutput=window->output()?window->output()->name():QString();
+            }
+        }
         return {{QStringLiteral("version"), UkeKeyboard::protocolVersion},
                 {QStringLiteral("build"), QStringLiteral(UKE_PLUGIN_BUILD_ID)},
                 {QStringLiteral("internal"), internal}, {QStringLiteral("external"), external},
                 {QStringLiteral("active"), m_active}, {QStringLiteral("tablet"), m_tabletName},
-                {QStringLiteral("usbKeyboardPresent"), hasUsbKeyboard()}};
+                {QStringLiteral("usbKeyboardPresent"), hasUsbKeyboard()},
+                {QStringLiteral("ownSurfaceCount"),surfaceCount},
+                {QStringLiteral("ownSurfaceLargestOutput"),largestOutput},
+                {QStringLiteral("ownSurfaceLargestWidth"),qRound(largest.width())},
+                {QStringLiteral("ownSurfaceLargestHeight"),qRound(largest.height())}};
     }
     bool Attach() {
         if (!calledFromDBus() || locked()) return false;
@@ -286,6 +299,11 @@ Q_SIGNALS:
     void ProfileError(const QString &reason);
 
 private:
+    bool ownWindow(Window *window) const {
+        auto *server=waylandServer();
+        return !m_client.isEmpty()&&m_clientPid&&server&&window&&window->surface()&&
+            UkeKeyboard::isInputMethodClient(window->surface()->client(),server->inputMethodConnection());
+    }
     bool hasUsbKeyboard() const {
         const auto devices = input()->devices();
         return std::any_of(devices.begin(), devices.end(), UkeKeyboard::isPhysicalUsbKeyboard);
@@ -359,7 +377,7 @@ private:
         connect(w,&Window::bufferGeometryChanged,this,[this,w] {
             // TouchPoint's position setter is private to KWin. A panel move or
             // rotation cancels this sequence instead of calling hidden ABI.
-            if((m_active||m_dynamic)&&uint(w->pid())==m_clientPid&&!m_directTouches.isEmpty())release();
+            if((m_active||m_dynamic)&&ownWindow(w)&&!m_directTouches.isEmpty())release();
         });
         connect(w, &Window::frameGeometryChanged, this, [this,w] {
             auto saved=m_saved.find(w);
@@ -370,7 +388,7 @@ private:
         moveAway(w);
     }
     void moveAway(Window *w) {
-        if (!m_active || m_moving || !tablet() || !w || w->isSpecialWindow() || uint(w->pid()) == m_clientPid) return;
+        if (!m_active || m_moving || !tablet() || !w || w->isSpecialWindow() || ownWindow(w)) return;
         const QRectF old = rectangle(w->frameGeometry());
         if (!old.intersects(rectangle(tablet()->geometry()))) return;
         const auto screens = external();

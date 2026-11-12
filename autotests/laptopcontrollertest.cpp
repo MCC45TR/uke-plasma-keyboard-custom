@@ -74,6 +74,15 @@ class LaptopControllerTest final : public QObject {
         controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void completedUsbDetectionRestoresTheTopologyReason() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_usbKeyboardKnown=false;controller.updateEligibility();
+        const auto pending=controller.reason();QVERIFY(pending.contains(QStringLiteral("USB")));
+        controller.m_config=KScreen::ConfigPtr::create();
+        controller.usbKeyboardChanged(false);
+        QVERIFY(controller.reason()!=pending);QVERIFY(!controller.reason().contains(QStringLiteral("USB")));
+        QVERIFY(!controller.available());
+    }
     void automaticStaticEntryAndManualDismissal() {
         QVERIFY(LaptopController::defaults().value(QStringLiteral("staticAutoShow")).toBool());
         LaptopController controller;eligible(controller,false);

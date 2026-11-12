@@ -172,11 +172,11 @@ void LaptopController::queryUsbKeyboard(){
   const auto properties=reply.isError()?QVariantMap():reply.value();
   const auto present=properties.value(QStringLiteral("usbKeyboardPresent"));
   m_usbKeyboardKnown=present.metaType()==QMetaType::fromType<bool>();
-  m_usbKeyboardPresent=m_usbKeyboardKnown&&present.toBool();updateEligibility();
+  m_usbKeyboardPresent=m_usbKeyboardKnown&&present.toBool();if(m_config)updateTopology();else updateEligibility();
  });
 }
 void LaptopController::usbKeyboardChanged(bool present){
- ++m_usbKeyboardGeneration;m_usbKeyboardKnown=true;m_usbKeyboardPresent=present;updateEligibility();
+ ++m_usbKeyboardGeneration;m_usbKeyboardKnown=true;m_usbKeyboardPresent=present;if(m_config)updateTopology();else updateEligibility();
 }
 QDBusPendingCall LaptopController::backendCall(const QString &method,const QVariantList &args)const {
  if(m_backendOwner.isEmpty())return QDBusPendingCall::fromError(QDBusError(QDBusError::Disconnected,QStringLiteral("No trusted KWin integration is attached.")));

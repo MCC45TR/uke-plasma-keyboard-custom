@@ -1,8 +1,8 @@
 # Acceptance status
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
-The delivered checkpoint is 0.1.0-33 / COPR11316039, with 36 passing CTests on
-Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from32. Reinstallation and
+The delivered checkpoint is 0.1.0-34 / COPR11316407, with 37 passing CTests on
+Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from33. Reinstallation and
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -13,8 +13,15 @@ earlier simulated-open trials did not qualify this pointer path. Candidate34
 defers/coalesces pointer corrections outside KWin's recursive input queue,
 uses stable output-interior targets and stops static mode if confinement fails.
 It also implements the user's clarified automatic-entry default and applies
-active laptop state when its window registers late. Native37-test qualification,
-signed delivery and actual corrected static entry are pending;33 remains installed.
+active laptop state when its window registers late. All37 tests, signatures,
+DNF delivery and automatic entry pass at34 without another compositor restart.
+The actual surface still lands on DP-1, confirmed by the user and bounded native
+window geometry, despite the backend's DSI-1 selection. The visible window's peer
+PID is the compositor PID because KWin created the inherited socketpair.
+Candidate35 uses the exact selected Wayland connection for surface ownership,
+window exclusion and touch routing. A native test creates two real original-KWin
+connections with identical peer PIDs and verifies distinct ownership. Native38
+qualification, delivery and corrected tablet-only visibility remain pending.
 
 | Area | Source | Build/package | Physical |
 |---|---|---|---|

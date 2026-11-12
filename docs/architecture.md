@@ -17,6 +17,17 @@ or physical acceptance. KWin, Qt and Plasma Keyboard remain original packages.
 
 ## Session boundaries
 
+Candidate35 identifies surfaces through `SurfaceInterface::client()` and the
+original WaylandServer's `inputMethodConnection()`. Compositor-created socketpairs
+report the compositor's PID, as documented in original6.8.2
+[`ClientConnection`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/wayland/clientconnection.h).
+Comparing that PID with the launched keyboard child misclassified its own
+window, moved it to the external monitor and missed its touch sequences. The
+native connection identity is used only after the existing root-owned selected
+executable, direct-parent and unique D-Bus caller checks. These checks are not
+relaxed. Read-only capability fields report owned-surface count and largest
+surface output/dimensions without window titles or entered content.
+
 Candidate34 enables automatic static entry when every existing condition passes.
 Each eligibility cycle has one automatic attempt. An explicit Normal keyboard
 action suppresses reopening until a new cycle; native revocation cancels pending
