@@ -4,6 +4,7 @@
 #include "protocol.h"
 #include "processidentity.h"
 #include "refreshguard.h"
+#include "nativerefreshbackend.h"
 #include "versionguard.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
@@ -81,7 +82,7 @@ class Backend final : public Plugin, protected QDBusContext, public InputEventFi
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
 public:
     Backend() : InputEventFilter(InputFilterOrder::LockScreen), m_bus(QDBusConnection::sessionBus()),
-        m_watcher(this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);})
+        m_watcher(this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);},nativeRefreshBackend())
     {
         if (!m_bus.registerService(QLatin1String(UkeKeyboard::service))) return;
         m_bus.registerObject(QLatin1String(UkeKeyboard::path), this,

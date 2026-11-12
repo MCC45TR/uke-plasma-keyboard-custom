@@ -14,10 +14,10 @@ set(UKE_KWIN_PLUGIN_ID "uke_keyboard_backend_${UKE_PLUGIN_BUILD_SUFFIX}" CACHE I
 # so KWin can load its code without replacing the compositor or user session.
 set_target_properties(uke_keyboard_backend PROPERTIES OUTPUT_NAME "${UKE_KWIN_PLUGIN_ID}")
 target_compile_definitions(uke-plasma-keyboard-custom PRIVATE UKE_KWIN_PLUGIN_ID="${UKE_KWIN_PLUGIN_ID}")
-target_sources(uke_keyboard_backend PRIVATE backend.cpp refreshguard.cpp)
+target_sources(uke_keyboard_backend PRIVATE backend.cpp refreshguard.cpp nativerefreshbackend.cpp)
 target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_BUILD_VERSION="${KWin_VERSION}" UKE_PLUGIN_BUILD_ID="${UKE_PLUGIN_BUILD_ID}")
 target_include_directories(uke_keyboard_backend PRIVATE ../src/laptop)
-target_link_libraries(uke_keyboard_backend PRIVATE KWin::kwin Qt::DBus KF6::ConfigCore KF6::Screen)
+target_link_libraries(uke_keyboard_backend PRIVATE KWin::kwin Qt::DBus KF6::ConfigCore)
 if(KWin_VERSION VERSION_GREATER_EQUAL 6.8)
     target_compile_definitions(uke_keyboard_backend PRIVATE UKE_KWIN_68=1)
 endif()

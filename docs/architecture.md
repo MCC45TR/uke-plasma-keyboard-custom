@@ -21,13 +21,31 @@ calling UID and unique D-Bus sender before attaching. It releases keys, buttons,
 gestures and isolation on client disappearance or lock. Input is refused while
 locked. No root daemon, general uinput grant or direct DRM ownership is added.
 
-Standard KScreen APIs query/configure the internal output. Power, position,
-scale and rotation are never set by the keyboard. Fixed refresh selection is
-scoped to static mode. The four settings are keep, 30, 60 and native 30–60 VRR.
+KScreen discovers output capabilities. Candidate29 applies fixed refresh through
+a synchronous, partial original-KWin request containing only the internal panel's
+current mode and VRR policy. It leaves the persistent desired mode, power,
+position, scale, rotation and unrelated output settings unset. Fixed refresh
+selection is scoped to static mode. The four settings are keep, 30, 60 and
+native 30–60 VRR.
 The adaptive option remains unavailable until the actual kernel range and
 physical touch/cadence have been qualified; a capability flag alone is not proof.
 No timer-based modesetting is used to imitate VRR. Kernel changes, if required,
 join the existing cumulative unstable coordinator queue.
+
+The refresh review uses KWin6.8.2 commit
+`f130ab33c8e6f3b9d728aade87836086ae9a8ed4`,
+[`core/outputconfiguration.h`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/core/outputconfiguration.h),
+`core/backendoutput.h`, `workspace.cpp` and `wayland/outputmanagement_v2.cpp`
+(original GPL/LGPL headers retained in unchanged reference sources). Its
+temporary currentMode is distinct from the user's desiredMode; the native
+configuration uses Source::System. Libkscreen6.8.2 commit
+`f9ca271de44ebb0e36e15e50f5ca1386d7d26b5c`,
+[`waylandoutputdevice.cpp`](https://github.com/KDE/libkscreen/blob/f9ca271de44ebb0e36e15e50f5ca1386d7d26b5c/backends/kwayland/waylandoutputdevice.cpp)
+and `waylandconfig.cpp` (LGPL-2.1-or-later), compares every supplied output field
+with its current state. This makes a copied asynchronous graph unsuitable for
+the keyboard's narrow temporary ownership. No distribution library is modified.
+Candidate29's native request and recovery tests still require COPR qualification;
+source structure alone does not prove physical mode or optical behavior.
 
 ## Data and dependencies
 

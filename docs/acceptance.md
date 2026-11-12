@@ -1,17 +1,21 @@
 # Acceptance status
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
+The delivered checkpoint is 0.1.0-28 / COPR11315309, with 33 passing CTests on
+Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate29
+changes fixed-refresh ownership and still requires its complete native gate.
+The chronological sections below retain earlier failures and superseded states.
 
 | Area | Source | Build/package | Physical |
 |---|---|---|---|
-| Fork and independent identity | Implemented | Native tests pass; RPM file fixes pending | Not applicable |
-| Static surface and KWin routing | Initial implementation | Compile/controller tests pass; compositor integration pending | Pending |
+| Fork and independent identity | Implemented | Signed RPM, coexistence, upgrade/reinstall pass | Not applicable |
+| Static surface and KWin routing | Initial implementation | Controller, authentication, native attachment and reload pass; physical routing open | Pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
 | Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
-| Fixed refresh profiles and restoration | Initial implementation | Compiles; mode/restoration qualification pending | Pending |
-| Native 30–60 VRR | Existing kernel interface reviewed; gated | Not qualified | Pending |
-| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; compositor integration pending | Not tested |
+| Fixed refresh profiles and restoration | Candidate29: scoped native requests and recovery correction | New native tests pending; no physical mode acceptance | Pending |
+| Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
+| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -615,3 +619,28 @@ Static/dynamic physical gestures, ordinary lock-screen typing, refresh ownership
 restoration and native adaptive 30–60 Hz cadence/touch qualification remain open.
 The cover is closed and the internal panel stays disabled; laptop mode correctly
 refuses entry. No panel, display layout, kernel or boot selection is changed.
+
+## 0.1.0-29 — fixed-refresh ownership correction pending
+
+A source audit finds that the old asynchronous KScreen path supplies a complete
+copied output graph. Original libkscreen applies differences in all supplied
+fields, so a concurrent user layout change could be overwritten. The old failed
+30→60 transition also records the failed target before apply and leaves it as
+owned after an error; exit can then discard the recovery baseline. These are
+source findings, not observed physical display failures.
+
+Candidate29 constructs a synchronous original-KWin request for the selected,
+already enabled internal output, with only currentMode and vrrPolicy set.
+Persistent desiredMode, geometry, power, scaling, rotation, color and other
+output preferences are not populated. The recovery logic retains the last
+successfully applied ownership on failure, compares rates in millihertz and
+waits for an enabled panel without enabling one. No idle timer is introduced.
+
+Two native CTests are added: private-filesystem recovery/failure cases and
+actual original-KWin request-field checks. They cover failed switching followed
+by crash recovery, nearby user-selected rates, policy changes, disconnect and
+mode withdrawal, untrusted recovery files, journal write failures and reentrant
+exit. The expected complete matrix is35 CTests per Fedora aarch64 target;
+source guards pass but native/package/device results remain pending. Installed28
+and its qualified receipts remain the current delivery checkpoint. Adaptive
+30–60 is still refused; no kernel/display/touch acceptance is implied.
