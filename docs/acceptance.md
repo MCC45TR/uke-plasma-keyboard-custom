@@ -2,7 +2,7 @@
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
 The delivered checkpoint is 0.1.0-28 / COPR11315309, with 33 passing CTests on
-Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate29
+Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate30
 changes fixed-refresh ownership and still requires its complete native gate.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -13,7 +13,7 @@ The chronological sections below retain earlier failures and superseded states.
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
 | Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
-| Fixed refresh profiles and restoration | Candidate29: scoped native requests and recovery correction | New native tests pending; no physical mode acceptance | Pending |
+| Fixed refresh profiles and restoration | Candidate30: scoped native requests and recovery correction | New native tests pending; no physical mode acceptance | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
 | Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
 
@@ -645,3 +645,13 @@ exit. The expected complete matrix is35 CTests per Fedora aarch64 target;
 source guards pass but native/package/device results remain pending. Installed28
 and its qualified receipts remain the current delivery checkpoint. Adaptive
 30–60 is still refused; no kernel/display/touch acceptance is implied.
+
+## COPR11315526 /29 — test SDK target scope failure
+
+All three Fedora aarch64 workers stop at CMake generation. The new native request
+test cannot see KWin::kwin because the SDK was found only in the sibling plugin
+directory. The source worker pins0528060b7a017806c4b62bbbd6756997ddca55b6 and its
+published recipe matches (SHA256 f2a2e7b6aace1c179dce033ab3c3ea61ad0fa3c8686eef830f673d5ecc11dddc).
+No new C++ compile,35-test result or RPM is accepted. Candidate30 explicitly
+finds the same original KWin6.8 SDK in the test directory; no test or version
+gate is removed. Installed28 remains unchanged.

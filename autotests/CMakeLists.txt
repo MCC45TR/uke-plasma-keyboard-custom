@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Test WaylandCompositor)
+find_package(KWin 6.8 REQUIRED COMPONENTS kwin)
 include(ECMAddTests)
 
 find_program(BASH_EXECUTABLE bash REQUIRED)
