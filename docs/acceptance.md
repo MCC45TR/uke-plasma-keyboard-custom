@@ -418,3 +418,25 @@ The runtime audit also found that plugin metadata requested automatic loading
 at every KWin startup. The next package changes that flag tofalse, retaining
 the keyboard's existing explicit LoadPlugin request. Physical/manual input-method
 and native VRR qualification remain open.
+
+## Installed UI checks and touchpad size correction
+
+The actual0.1.0-20 RPM also passes DNF reinstallation and a removal solve using
+the real system reason-state; removal would affect only this fork. Removal was
+not applied. Both settings and laptop scenes open from the installed payload
+with isolated preferences and software rendering. The existing scale/portrait,
+Turkish Q/F, English and Arabic geometry assertions pass on the tablet. This
+executes the prebuilt application and QML; no native build runs on the device.
+A bounded recent audit query found no keyboard-process AVC records. Physical
+interaction and wider SELinux acceptance remain separate.
+
+Rendering the actual deck exposed a layout defect: its nested layout expanded
+the touchpad to the full area regardless of the requested percentage and physical
+height. The next source centers the pad in its own expanding area, applying the
+chosen percentage/full width and millimetre height within available bounds.
+The existing QML test now checks60%,40%, full width,45/35mm heights and horizontal
+and vertical centering, including portrait. These source-QML runtime checks pass
+with the installed binary and the distribution's original KDE control style.
+The first preview attempt used a C++ window item without a QML engine; capturing
+the deck itself resolves that fixture error. Preview renders are synthetic,
+not photographs or physical acceptance evidence.

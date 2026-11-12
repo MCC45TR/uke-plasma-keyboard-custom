@@ -116,6 +116,7 @@ optimizing that dependency for a particular builder CPU.
 The integration's metadata disables automatic loading at desktop startup.
 The keyboard requests it through LoadPlugin when needed; an explicit existing
 user plugin preference still takes precedence. KWin's PluginManager at the
-reviewed revision checks EnabledByDefault only during startup and permits an
+reviewed revision's [PluginManager](https://github.com/KDE/kwin/blob/cefd679e046f44e637a4785077a4cb1a00124524/src/pluginmanager.cpp)
+checks EnabledByDefault only during startup and permits an
 explicit LoadPlugin request independently. This keeps the extra virtual device
 and input filter absent when the user continues using the stock keyboard.

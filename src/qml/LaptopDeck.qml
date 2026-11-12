@@ -85,14 +85,19 @@ Rectangle {
             horizontalAlignment:Text.AlignHCenter
             opacity:0
         }
-        Touchpad {
-            id: pad
+        Item {
+            Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 15*deck.perMm
             Layout.preferredHeight: Keyboard.Laptop.options.touchpadHeightMm*deck.perMm
-            Layout.preferredWidth: Keyboard.Laptop.options.touchpadFullWidth?parent.width:parent.width*Keyboard.Laptop.options.touchpadWidthPercent/100
-            Layout.alignment:Qt.AlignHCenter
-            perMm:deck.perMm
+            Touchpad {
+                id: pad
+                objectName: "ukeTouchpad"
+                anchors.centerIn: parent
+                width: Keyboard.Laptop.options.touchpadFullWidth?parent.width:parent.width*Keyboard.Laptop.options.touchpadWidthPercent/100
+                height: Math.min(parent.height,Keyboard.Laptop.options.touchpadHeightMm*deck.perMm)
+                perMm: deck.perMm
+            }
         }
         RowLayout {
             Layout.fillWidth:true
