@@ -69,7 +69,7 @@ configuration uses Source::System. Libkscreen6.8.2 commit
 and `waylandconfig.cpp` (LGPL-2.1-or-later), compares every supplied output field
 with its current state. This makes a copied asynchronous graph unsuitable for
 the keyboard's narrow temporary ownership. No distribution library is modified.
-Release32 passes the complete35-test matrix on three Fedora aarch64 targets;
+Release33 passes the complete36-test matrix on three Fedora aarch64 targets;
 source/native checks alone do not prove physical mode or optical behavior.
 KWin's same-revision `core/backendoutput.cpp` and `outputconfigurationstore.cpp`
 also show that VRR policy enters persistent output state. The keyboard therefore

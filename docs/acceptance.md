@@ -1,8 +1,8 @@
 # Acceptance status
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
-The delivered checkpoint is 0.1.0-32 / COPR11315666, with 35 passing CTests on
-Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from28. Reinstallation and
+The delivered checkpoint is 0.1.0-33 / COPR11316039, with 36 passing CTests on
+Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from32. Reinstallation and
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -10,10 +10,11 @@ The chronological sections below retain earlier failures and superseded states.
 |---|---|---|---|
 | Fork and independent identity | Implemented | Signed RPM, coexistence, upgrade/reinstall pass | Not applicable |
 | Static surface and KWin routing | Initial implementation | Controller, authentication, native attachment and reload pass; physical routing open | Pending |
+| USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
 | Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
-| Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 32 passes35 CTests including recovery/failure cases; physical modes/restoration open | Pending |
+| Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
 | Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
 
@@ -25,38 +26,64 @@ with a physical ruler; TR Q/F, EN, RTL and CJK; Qt/GTK/browser/terminal/XWayland
 multitouch, gestures, modifier latches and release cleanup; SELinux enforcing,
 password/unknown contexts, idle CPU/wakeups/PSS and sustained memory use.
 
-The tablet currently has its cover closed and internal panel disabled. That is
-an ineligible static-mode case, not permission to enable the panel or to claim
-successful touch/keyboard acceptance. Original kernel and boot selection remain
-outside this package's delivery scope.
+The system currently reports a closed cover and disabled internal panel. Normal
+application operation preserves that state. The separately authorized bounded
+software trials below restored both states afterward; they establish no real
+cover or touch acceptance. Kernel and boot selection remain outside this
+package's delivery scope.
 
 12 November inventory integration: the application-owned migration entry
 records the explicitly requested fork, separate COPR producer and remaining
 original-package return path. It is supplied for the shared migration policy;
-the owning policy and its current coverage report require separate confirmation.
+the owning policy integrated it in commit04f24818, inspected separately.
 With a private copy of that policy and a fresh complete28-producer main COPR
 inventory plus installed RPM snapshot, the original jq audit reports complete
 source coverage and no unknown packages/producers. The installed32 keyboard
-maps to this component with no main-project producer. This prospective audit
-does not assert that the shared policy has already integrated the entry; all
-four audit acceptance flags remain false. No runtime package, panel state or
-acceptance gate changes with this record.
-
-## COPR 11309616 — source worker failure
+maps to this component with no main-project producer. Source mapping alone
+supplies no functional evidence; all four audit acceptance flags remain false.
+No runtime package, panel state or acceptance gate changes with this record.
 
 ## Release33 — physical USB keyboard policy
 
-12 November source: static entry is refused for physical USB typing keyboards
-and receivers. Device attachment exits static mode through the existing input,
+12 November, source `3edc599` / COPR11316039: static entry is refused for physical
+USB typing keyboards and receivers. Device attachment exits static mode through the existing input,
 window and refresh cleanup. Normal/dynamic modes and non-USB pogo transport
-are unaffected. New native classification tests and controller hotplug,
-pending-entry and stale-reply cases await COPR qualification; the device is
-still32. No native compilation runs on the tablet.
+are unaffected. All36 CTests pass on Fedora44/45/Rawhide aarch64, including the
+new classification and controller hotplug, pending-entry and stale-reply cases.
+The reviewed published spec is byte-equal, SHA256
+`72249f28dc51f2685dcc37210f27a5540e56f1871e28ef569b533d3341195027`.
+No native compilation runs on the tablet.
+
+The signed Rawhide RPM, SHA256
+`223a444f05ba7c0abcf9a1a16e3c5848e3f78d7ef90e28dc7a2b5ad35d28c51d`,
+passes two signatures, header/payload digests and file coexistence checks.
+Requires and scriptlets equal the accepted26 baseline. Actual DNF upgrades
+only32→33; the selected provider automatically renews in the same compositor
+and boot. Native build33/readiness and USB detection are observed; tracked
+preferences and input-method selection are unchanged.
+
+With33 installed, the bounded open-cover simulation and enabled DSI-1 retain
+the extended DP-1. Physical USB keyboards are detected and the tray activation
+request stays inactive with an explicit USB refusal. The original closed switch,
+disabled panel and recorded display fields are restored afterward. The isolated
+original-KWin trial also passes native33 attachment, unrelated-caller rejection
+and normal-keyboard visibility. These are software checks; physical USB hotplug,
+pogo attachment, typing/touch and optical/VRR acceptance remain open.
 
 The user additionally authorized a bounded temporary open-cover simulation and
 panel wake for software testing, followed by restoration. This does not add a
 production bypass or qualify physical cover/touch behavior. Real home testing
 and native30–60 VRR qualification remain open.
+
+Before33 delivery, the installed32 baseline passed an actual bounded software
+trial on the tablet: a temporary SW_LID open event, an enabled DSI-1 and native
+static entry. Normal mode, the original closed switch state and disabled panel
+were then restored. Recorded output enable/mode/position/scale/rotation fields,
+the five tracked preference files, selected input method, boot and compositor
+were unchanged afterward. The helper dropped privilege immediately after
+opening the exact switch and retained only that descriptor for restoration.
+This demonstrates software entry with a simulated cover, not physical touch,
+held-input, optical or real-cover acceptance. No kernel/boot change was made.
 
 ## COPR 11309616 — source worker failure
 
