@@ -78,9 +78,10 @@ An incompatible plugin disables static mode with an explanation; it does not
 force a KWin downgrade. Native code and native tests are built only in COPR.
 There is no project Python runtime or build generator.
 
-COPR [11315309](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11315309/)
-builds version 0.1.0-28 on all three targets, each with 33 passing CTests.
-DNF upgrade/reinstallation and native attachment are verified on the tablet.
+COPR [11315666](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11315666/)
+builds version 0.1.0-32 on all three targets, each with 35 passing CTests.
+The tablet's DNF upgrade to 32 and native attachment are verified; the earlier
+28 checkpoint also qualifies reinstallation and automatic provider renewal.
 Physical laptop-mode and adaptive-refresh qualification remain open; see the
 [first tablet trial](docs/device-trial.md) before using laptop mode.
 

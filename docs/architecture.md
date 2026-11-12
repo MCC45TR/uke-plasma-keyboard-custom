@@ -21,7 +21,7 @@ calling UID and unique D-Bus sender before attaching. It releases keys, buttons,
 gestures and isolation on client disappearance or lock. Input is refused while
 locked. No root daemon, general uinput grant or direct DRM ownership is added.
 
-KScreen discovers output capabilities. Candidate29 applies fixed refresh through
+KScreen discovers output capabilities. Fixed refresh is applied through
 a synchronous, partial original-KWin request containing only the internal panel's
 current mode and VRR policy. It leaves the persistent desired mode, power,
 position, scale, rotation and unrelated output settings unset. Fixed refresh
@@ -44,15 +44,16 @@ configuration uses Source::System. Libkscreen6.8.2 commit
 and `waylandconfig.cpp` (LGPL-2.1-or-later), compares every supplied output field
 with its current state. This makes a copied asynchronous graph unsuitable for
 the keyboard's narrow temporary ownership. No distribution library is modified.
-Candidate31 passes the complete35-test matrix on three Fedora aarch64 targets;
+Release32 passes the complete35-test matrix on three Fedora aarch64 targets;
 source/native checks alone do not prove physical mode or optical behavior.
 KWin's same-revision `core/backendoutput.cpp` and `outputconfigurationstore.cpp`
-also show that VRR policy enters persistent output state. Candidate32 therefore
+also show that VRR policy enters persistent output state. The keyboard therefore
 keeps a0600 recovery record under GenericStateLocation in a0700 keyboard-owned
 directory, with file/directory synchronization. It migrates trusted older runtime
 records and maintains the version1 runtime shadow for in-session downgrades.
-This adds no service or runtime package. Cross-runtime recovery cases still
-require the full COPR gate and physical restoration remains unqualified.
+This adds no service or runtime package. Cross-runtime recovery cases pass in
+the native suite; physical restoration and actual power-cycle behavior remain
+unqualified.
 
 ## Data and dependencies
 

@@ -1,9 +1,9 @@
 # Acceptance status
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
-The delivered checkpoint is 0.1.0-28 / COPR11315309, with 33 passing CTests on
-Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate32
-changes fixed-refresh ownership and still requires its complete native gate.
+The delivered checkpoint is 0.1.0-32 / COPR11315666, with 35 passing CTests on
+Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from28. Reinstallation and
+automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
 | Area | Source | Build/package | Physical |
@@ -13,7 +13,7 @@ The chronological sections below retain earlier failures and superseded states.
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
 | Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
-| Fixed refresh profiles and restoration | Candidate32: scoped native requests and durable recovery | 31 passes35 CTests; durable-state cases pending; no physical mode acceptance | Pending |
+| Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 32 passes35 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
 | Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
 
@@ -685,3 +685,40 @@ policy after boot-mode restoration, migrate legacy state while disconnected and
 reject a failed shadow write. These additions and signed delivery still require
 the complete35-test matrix. Hardware/power-cycle behavior is not established by
 these software fixtures. Installed28 remains the current device checkpoint.
+
+## COPR11315666 /32 — signed delivery and private normal session pass
+
+All three Fedora aarch64 targets pass 35/35 CTests, including cross-runtime state
+recovery, legacy migration while the panel is unavailable and failed shadow
+writes. Source 8a48b46f67f6b75c40adbc540bc9496eba900a0f and published recipe SHA256
+487aea4b4239d6d82c8dde1a47c8478dfd3c5cc64e36859493ed8c07809609fd match.
+The Rawhide KWin SDK remains 6.8.2, matching the installed original compositor.
+
+The actual Rawhide RPM is 17,613,205 bytes, SHA256
+e18b14586d14cf965dc2f106e4f8adf8ad3ab07c26dc0339785808b1f4d85e7b.
+Both package signatures and payload/header digests pass. Its 487 paths have no
+foreign owners, project Python or input grants; dependency/scriptlet output
+matches the earlier reviewed recipe. DNF upgrades only the keyboard from 28 to 32.
+The watcher automatically renews the main process 17003→48307 in the same boot
+and KWin 1165 process. Native readiness/build 32 and clean RPM verification pass.
+The selected provider and all five tracked preference hash/absence states match
+this checkpoint. No physical refresh profile is applied and neither real
+recovery record exists. The optional lock-switcher stays disabled/inactive;
+SELinux stays Enforcing. A removal solve lists only this RPM; it is not applied.
+
+A post-transaction original-KWin software fixture isolates runtime, state,
+config, data, cache and D-Bus. It reports known-unlocked state, native
+readiness/build 32, unrelated Attach denial and normal visibility in a synthetic
+text field. The 768 MiB/60s scope exits successfully. Its 5.04 s hidden sample is
+zero CPU, PSS 86,406 KiB/RSS 158,800 KiB, eight threads/zero context switches.
+Missing private PipeWire/accessibility services remain fixture limits.
+
+The real selected hidden 32 process is sampled for 30.03 s: zero CPU ticks,
+PSS 106,783 KiB/RSS 202,388 KiB, 18 threads/one context switch. These are bounded
+process measurements, not hardware-wakeup or stock-provider parity evidence.
+
+No 32 reinstallation or physical rollback is claimed from these results; earlier
+28 reinstallation and the new native compatibility fixtures have distinct
+scopes. Static/dynamic touch/typing/focus/window/pointer behavior, physical
+refresh restoration and native adaptive 30–60 remain open. No panel, layout,
+refresh profile, kernel or boot setting was changed for acceptance.
