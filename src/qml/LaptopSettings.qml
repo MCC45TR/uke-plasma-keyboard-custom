@@ -7,6 +7,19 @@ import org.uke.plasma.keyboard.lib as Keyboard
 Kirigami.ApplicationWindow {
     id: settings
     property bool ukePreferencesWindow: true
+    function moveToolbarTool(tool,step,restoreFocus) {
+        const items=Keyboard.Laptop.options.toolbar.slice();
+        const from=items.indexOf(tool),to=from+step;
+        if(from<0||to<0||to>=items.length)return;
+        [items[from],items[to]]=[items[to],items[from]];
+        Keyboard.Laptop.setOption("toolbar",items);
+        if(restoreFocus)Qt.callLater(function(){
+            for(let i=0;i<toolbarRepeater.count;++i){
+                const row=toolbarRepeater.itemAt(i);
+                if(row&&row.modelData===tool){row.restoreMoveFocus(step);return;}
+            }
+        });
+    }
     width: 860
     height: 780
     minimumWidth: 400
@@ -89,13 +102,44 @@ Kirigami.ApplicationWindow {
             QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:Keyboard.Laptop.dictionaryAvailable?i18nd("uke-plasma-keyboard-custom", "An installed dictionary is available. Suggestions require choosing a candidate; personal learning is disabled."):i18nd("uke-plasma-keyboard-custom", "Optional Fedora package: %1. Install the dictionary for this language to enable suggestions. Personal learning is disabled.").arg(Keyboard.Laptop.dictionaryPackage);}
             Kirigami.Heading {text:i18nd("uke-plasma-keyboard-custom", "Top toolbar");level:2;}
             Repeater {
-                model:["volume","brightness","media","clipboard","emoji","language","settings"]
+                id: toolbarRepeater
+                model: {
+                    const available=["volume","brightness","media","clipboard","emoji","language","settings"];
+                    const selected=Keyboard.Laptop.options.toolbar.slice();
+                    return selected.concat(available.filter(tool=>!selected.includes(tool)));
+                }
                 delegate: RowLayout {
+                    id: toolRow
+                    objectName: "toolbarSettings_"+modelData
+                    Layout.fillWidth: true
                     required property string modelData
                     readonly property int position:Keyboard.Laptop.options.toolbar.indexOf(modelData)
-                    QQC2.CheckBox {text:Keyboard.Laptop.toolLabel(modelData);checked:parent.position>=0;onToggled:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);if(checked&&n<0)items.push(modelData);else if(!checked&&n>=0)items.splice(n,1);Keyboard.Laptop.setOption("toolbar",items);}}
-                    QQC2.ToolButton {text:"↑";enabled:parent.position>0;onClicked:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);[items[n-1],items[n]]=[items[n],items[n-1]];Keyboard.Laptop.setOption("toolbar",items);}}
-                    QQC2.ToolButton {text:"↓";enabled:parent.position>=0&&parent.position<Keyboard.Laptop.options.toolbar.length-1;onClicked:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);[items[n+1],items[n]]=[items[n],items[n+1]];Keyboard.Laptop.setOption("toolbar",items);}}
+                    readonly property string label:Keyboard.Laptop.toolLabel(modelData)
+                    function restoreMoveFocus(step){
+                        const button=step<0?earlier:later;
+                        if(button.enabled)button.forceActiveFocus();else toolEnabled.forceActiveFocus();
+                    }
+                    QQC2.CheckBox {id:toolEnabled;Layout.fillWidth:true;text:toolRow.label;checked:toolRow.position>=0;onToggled:{const items=Keyboard.Laptop.options.toolbar.slice();const n=items.indexOf(modelData);if(checked&&n<0)items.push(modelData);else if(!checked&&n>=0)items.splice(n,1);Keyboard.Laptop.setOption("toolbar",items);}}
+                    QQC2.ToolButton {
+                        id: earlier
+                        objectName: "moveEarlier_"+modelData
+                        icon.name: "go-up"
+                        enabled: toolRow.position>0
+                        Accessible.name: i18nd("uke-plasma-keyboard-custom", "Move %1 earlier").arg(toolRow.label)
+                        QQC2.ToolTip.text: Accessible.name
+                        QQC2.ToolTip.visible: hovered
+                        onClicked: settings.moveToolbarTool(toolRow.modelData,-1,activeFocus)
+                    }
+                    QQC2.ToolButton {
+                        id: later
+                        objectName: "moveLater_"+modelData
+                        icon.name: "go-down"
+                        enabled: toolRow.position>=0&&toolRow.position<Keyboard.Laptop.options.toolbar.length-1
+                        Accessible.name: i18nd("uke-plasma-keyboard-custom", "Move %1 later").arg(toolRow.label)
+                        QQC2.ToolTip.text: Accessible.name
+                        QQC2.ToolTip.visible: hovered
+                        onClicked: settings.moveToolbarTool(toolRow.modelData,1,activeFocus)
+                    }
                 }
             }
             QQC2.Button {text:i18nd("uke-plasma-keyboard-custom", "Typing, themes, sound and voice settings");onClicked:Qt.openUrlExternally("systemsettings:kcm_uke_plasma_keyboard_custom");}

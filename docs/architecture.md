@@ -262,3 +262,10 @@ The client also verifies that the backend's bus connection belongs to its
 compositor parent and sends native requests only to that unique connection.
 Changing the public service name cannot redirect already authenticated input.
 Late attachment/lock replies are discarded after an ownership generation change.
+
+Toolbar settings use the selected order before the disabled tool choices. Move
+actions use standard Qt Quick Controls with localized names and tooltips, following
+[Qt's accessible-name guidance](https://doc.qt.io/qt-6/qml-qtquick-accessible.html#name-prop).
+After the model changes, a queued focus restoration finds the moved tool; a
+disabled boundary action returns focus to its checkbox. The native full-settings
+scenario checks the visible order and focus through the actual component.

@@ -7,7 +7,12 @@
 class QmlSmokeTest:public QObject {
  Q_OBJECT
 private Q_SLOTS:
- void preferencesLoad_data(){QTest::addColumn<QString>("scene");QTest::newRow("settings")<<QString();QTest::newRow("keyboard-and-touchpad")<<QStringLiteral(LAPTOP_SMOKE_SCENE);}
+ void preferencesLoad_data(){
+  QTest::addColumn<QString>("scene");
+  QTest::newRow("settings")<<QString();
+  QTest::newRow("keyboard-and-touchpad")<<QStringLiteral(LAPTOP_SMOKE_SCENE);
+  QTest::newRow("toolbar-order-and-focus")<<QStringLiteral(TOOLBAR_SETTINGS_SCENE);
+ }
  void preferencesLoad(){
   QFETCH(QString,scene);
   QTemporaryDir directory;QVERIFY(directory.isValid());

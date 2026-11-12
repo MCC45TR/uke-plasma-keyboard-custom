@@ -319,3 +319,9 @@ msgstr "Doğal imleç hızlandırması"
 
 msgid "Subtle pixel shifting in static mode"
 msgstr "Sabit modda hafif piksel kaydırma"
+
+msgid "Move %1 earlier"
+msgstr "%1 aracını öne taşı"
+
+msgid "Move %1 later"
+msgstr "%1 aracını arkaya taşı"

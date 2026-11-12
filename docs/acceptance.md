@@ -898,3 +898,18 @@ calls with roughly33ms intervals; the activity differs from the earlier trial
 and supplies no performance comparison. Advanced gestures, held-input/lock,
 physical hotplug/pogo, refresh restoration, native30–60 and future-image gates
 remain open. Long-term panel protection has not been measured.
+
+## Release39 — actual same-version reinstall
+
+An actual signed-repository DNF39→39 reinstall replaces the executable inode
+without changing its NEVRA, size or reproducible timestamp. The provider renews
+automatically; the same compositor/boot and all five tracked preferences plus
+input-method selection are preserved. The installed header still matches signed39
+and RPM verification is clean. Cover/display/USB gates remain ineligible and are
+not bypassed. This qualifies current reinstall renewal, not physical input.
+
+Candidate40 also addresses toolbar settings: its rows follow the selected order,
+move actions have localized tool-specific accessible names/tooltips, and keyboard
+focus is restored after moving a row. A new full-settings QML smoke case exercises
+the actual action, rendered order and focus. Native/package qualification is
+pending; this does not establish end-to-end screen-reader acceptance.
