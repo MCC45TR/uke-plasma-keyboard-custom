@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
@@ -18,12 +19,15 @@ Rectangle {
     function keyGeometry(code) { return pc.keyGeometry(code); }
     readonly property bool toolbarFits: tools.childrenRect.width<=tools.width+0.1
     readonly property bool toolbarPopupsFit: tools.popupsFit
-    readonly property rect imeRect: Qt.rect(imePlaceholder.x+content.x,imePlaceholder.y+content.y,imePlaceholder.width,imePlaceholder.height)
+    readonly property real shiftX: Keyboard.Laptop.pixelShift.x/Math.max(0.1,Screen.devicePixelRatio)
+    readonly property real shiftY: Keyboard.Laptop.pixelShift.y/Math.max(0.1,Screen.devicePixelRatio)
+    readonly property rect imeRect: Qt.rect(imePlaceholder.x+content.x+shiftX,imePlaceholder.y+content.y+shiftY,imePlaceholder.width,imePlaceholder.height)
     color: Kirigami.Theme.backgroundColor
     radius: Keyboard.Laptop.dynamicActive ? Kirigami.Units.cornerRadius : 0
     border.width: 0
     ColumnLayout {
         id: content
+        transform: Translate {x:deck.shiftX;y:deck.shiftY;}
         anchors.fill: parent
         anchors.margins: deck.perMm*2
         spacing: deck.perMm*1.2

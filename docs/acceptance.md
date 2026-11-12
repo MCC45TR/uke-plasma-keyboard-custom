@@ -42,7 +42,7 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 | Static surface and KWin routing | Implemented | Native connection identity, controller and authentication pass at35 | User confirms tablet-only placement, persistence and basic typing/pointer/click; extended routing open |
 | USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
-| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;37 adds frame-independent small-motion regression | Basic movement/click pass; stutter and missed small movements reported; extended gestures pending |
+| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;38 adds frame-independent small-motion and acceleration regressions | Basic movement/click pass; smoothness, acceleration and extended gestures pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
@@ -828,3 +828,25 @@ setup expects a QQmlEngine pointer, rather than QQuickView. No39-test result or
 RPM is accepted, and the installed35 surface remains. Candidate37 passes the
 view's engine and preserves the actual Touchpad.qml small-motion test, private
 D-Bus ordering/no-reply test and all earlier gates.
+
+## COPR11316725 /37 — isolated touch test imports unrelated resources
+
+Sourceb292956 and published specf721d6be match. All three workers compile and
+pass38/39 tests, including the full application QML smoke test and ordered
+no-reply input regression. The isolated Touchpad.qml test cannot instantiate
+because its recording bridge import also loads the staged application theme,
+whose LocaleResolver resource belongs to the main executable. No37 RPM or
+device delivery is accepted. Candidate38 protects the test-only procedural
+bridge module and clears that test's staged QML import path; the full application
+smoke test retains its normal resource closure. The actual touchpad logic and
+every earlier test remain. Each quarter-pixel delta is now checked individually.
+
+During a later45s installed35 trial, timing-only metadata records1827 raw touch
+updates and1072 pointer calls; within-stroke median/p95 gaps are8.58/16.28ms and
+11.24/24.48ms respectively. These are event intervals, not end-to-end latency
+or proof that every raw event originated inside the pad. No coordinates or
+entered text are recorded. The user then reports usable motion and requests
+natural acceleration to cross the monitor sooner, plus pixel shifting.38 adds
+a velocity-based physical-motion curve, optional coarse-timed static content
+shifting and native policy/interaction regressions. All40 native tests, signed
+RPM delivery and physical acceleration/pixel-shift acceptance remain pending.

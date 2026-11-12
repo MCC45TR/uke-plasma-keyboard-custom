@@ -79,9 +79,24 @@ class LaptopControllerTest final : public QObject {
         controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void pixelShiftStopsAndDefersForTouchesAndButtons() {
+        LaptopController controller;eligible(controller,false);controller.m_active=true;
+        controller.syncPixelShift();QVERIFY(controller.m_pixelShiftTimer.isActive());
+        QCOMPARE(controller.m_pixelShiftTimer.timerType(),Qt::VeryCoarseTimer);
+        controller.setTouchActive(true);controller.advancePixelShift();
+        QVERIFY(controller.pixelShift().isNull());QVERIFY(controller.m_pixelShift.pending());QVERIFY(!controller.m_pixelShiftTimer.isActive());
+        controller.setTouchActive(false);QCOMPARE(controller.pixelShift(),QPoint(-1,-1));QVERIFY(controller.m_pixelShiftTimer.isActive());
+        controller.button(272,true);controller.advancePixelShift();QCOMPARE(controller.pixelShift(),QPoint(-1,-1));
+        controller.button(272,false);QCOMPARE(controller.pixelShift(),QPoint(0,-1));
+        controller.m_options[QStringLiteral("pixelShift")]=false;controller.syncPixelShift();
+        QVERIFY(controller.pixelShift().isNull());QVERIFY(!controller.m_pixelShiftTimer.isActive());
+        controller.m_options[QStringLiteral("pixelShift")]=true;controller.syncPixelShift();controller.leave();
+        QVERIFY(controller.pixelShift().isNull());QVERIFY(!controller.m_pixelShiftTimer.isActive());
+    }
     void inputMessagesKeepOrderAndDoNotRequestReplies() {
         LaptopController controller;eligible(controller,false);
-        QCoreApplication::processEvents();
+        auto fence=controller.backendCall(QStringLiteral("Profile"),{QStringLiteral("keep")});
+        QTRY_VERIFY(fence.isFinished());
         m_backend.inputs.clear();m_backend.inputReplies.clear();m_backend.motions.clear();
         controller.m_options[QStringLiteral("pointerSpeed")]=1.0;
         controller.button(272,true);

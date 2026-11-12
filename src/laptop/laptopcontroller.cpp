@@ -51,7 +51,7 @@ LaptopController *LaptopController::s_instance=nullptr;
 LaptopController *LaptopController::instance(){return s_instance;}
 QVariantMap LaptopController::defaults() {
  return {{"keyWidthMm",14.0},{"keyHeightMm",12.0},{"gapMm",0.8},{"touchpadHeightMm",45.0},
- {"touchpadWidthPercent",60},{"touchpadFullWidth",false},{"pointerSpeed",1.3},{"naturalScroll",true},{"palmGuard",true},
+ {"touchpadWidthPercent",60},{"touchpadFullWidth",false},{"pointerSpeed",1.3},{"pointerAcceleration",true},{"pixelShift",true},{"naturalScroll",true},{"palmGuard",true},
  {"leftButton",false},{"middleButton",false},{"rightButton",false},{"functionRow",true},{"modifierRow",true},{"arrowRow",true},
  {"navigationRow",true},{"systemRow",true},{"nativePcLayout",true},{"normalPcLayout",false},{"spaceGesture",true},{"deleteGesture",true},
  {"keyPreview",false},{"calibrationRuler",false},{"refreshProfile",QStringLiteral("keep")},{"physicalWidthMm",0.0},{"physicalHeightMm",0.0},
@@ -62,6 +62,12 @@ LaptopController::LaptopController(QObject *parent):QObject(parent),m_bus(QDBusC
  s_instance=this;m_clock.start();reload();loadLayouts();
  m_typingTimer.setSingleShot(true);m_typingTimer.setInterval(250);
  connect(&m_typingTimer,&QTimer::timeout,this,[this]{m_typing=false;Q_EMIT typingChanged();});
+ m_pixelShiftTimer.setSingleShot(true);m_pixelShiftTimer.setInterval(60000);m_pixelShiftTimer.setTimerType(Qt::VeryCoarseTimer);
+ connect(&m_pixelShiftTimer,&QTimer::timeout,this,&LaptopController::advancePixelShift);
+ connect(this,&LaptopController::stateChanged,this,&LaptopController::syncPixelShift);
+ connect(this,&LaptopController::optionsChanged,this,&LaptopController::syncPixelShift);
+ connect(this,&LaptopController::keyStateChanged,this,&LaptopController::updatePixelShiftBusy);
+ connect(this,&LaptopController::typingChanged,this,&LaptopController::updatePixelShiftBusy);
  const QString config=QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
  m_files.addPath(config);
  if(QFile::exists(QStringLiteral("/usr/share/hunspell")))m_files.addPath(QStringLiteral("/usr/share/hunspell"));
@@ -414,9 +420,33 @@ void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingCha
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
 bool LaptopController::consumeLatched(){bool changed=false;const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);changed=true;}return changed;}
 void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);consumeLatched();markTyping();++m_revision;Q_EMIT keyStateChanged();}
-void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
+void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_pointerButtons.clear();resetPadMotion();m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendInput(QStringLiteral("Motion"),{x*speed,y*speed});}
-void LaptopController::button(uint code,bool pressed){if(pressed&&!nativeInputAllowed())return;backendInput(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
+void LaptopController::resetPadMotion(){m_padMotion.reset(m_clock.nsecsElapsed()/1000);}
+void LaptopController::padMotion(double x,double y){
+ if(!nativeInputAllowed())return;
+ const auto delta=m_padMotion.map(QPointF(x,y),m_clock.nsecsElapsed()/1000,m_options.value("pointerAcceleration").toBool());
+ if(!delta.isNull())motion(delta.x(),delta.y());
+}
+void LaptopController::setTouchActive(bool active){m_touchActive=active;updatePixelShiftBusy();}
+void LaptopController::syncPixelShift(){
+ const bool enabled=!m_preferencesOnly&&staticActive()&&m_options.value("pixelShift").toBool();
+ if(m_pixelShift.setActive(enabled))Q_EMIT pixelShiftChanged();
+ updatePixelShiftBusy();
+ if(!enabled)m_pixelShiftTimer.stop();
+ else if(!m_pixelShift.pending()&&!m_pixelShiftTimer.isActive())m_pixelShiftTimer.start();
+}
+void LaptopController::updatePixelShiftBusy(){
+ if(m_pixelShift.setBusy(m_touchActive||m_typing||!m_held.isEmpty()||!m_pointerButtons.isEmpty())){
+  Q_EMIT pixelShiftChanged();if(m_pixelShift.active())m_pixelShiftTimer.start();
+ }
+}
+void LaptopController::advancePixelShift(){
+ m_pixelShiftTimer.stop();
+ if(m_pixelShift.step())Q_EMIT pixelShiftChanged();
+ if(m_pixelShift.active()&&!m_pixelShift.pending())m_pixelShiftTimer.start();
+}
+void LaptopController::button(uint code,bool pressed){if(code<BTN_LEFT||code>BTN_MIDDLE||(pressed&&!nativeInputAllowed()))return;if(pressed)m_pointerButtons.insert(code);else m_pointerButtons.remove(code);updatePixelShiftBusy();backendInput(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
 void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendInput(QStringLiteral("Scroll"),{x*sign,y*sign});}
 void LaptopController::swipe(int fingers,int phase,double x,double y){backendInput(QStringLiteral("Swipe"),{fingers,phase,x,y});}
 void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendInput(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
@@ -442,7 +472,7 @@ QStringList LaptopController::alternatives(const QString&text)const{
  static const QHash<QString,QString> values{{"a","áàâäãåæā"},{"e","éèêëē"},{"i","ıíìîïī"},{"ı","iíìîï"},{"o","öóòôõøœō"},{"u","üúùûū"},{"c","çćč"},{"g","ğǧ"},{"s","şßśš"},{"n","ñń"},{"y","ýÿ"},{"z","źžż"}};
  const QString variants=values.value(text.toLower());QStringList result;for(QChar c:variants)result.append(text==text.toUpper()?QString(c).toUpper():QString(c));return result;
 }
-QVariantMap LaptopController::status()const{return {{"active",active()},{"dynamic",dynamicActive()},{"available",available()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()},{"usbKeyboardKnown",m_usbKeyboardKnown},{"usbKeyboardPresent",m_usbKeyboardPresent},{"presentation",m_options.value(QStringLiteral("presentation"))},{"staticAutoShow",m_options.value(QStringLiteral("staticAutoShow"))}};}
+QVariantMap LaptopController::status()const{return {{"active",active()},{"dynamic",dynamicActive()},{"available",available()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()},{"usbKeyboardKnown",m_usbKeyboardKnown},{"usbKeyboardPresent",m_usbKeyboardPresent},{"presentation",m_options.value(QStringLiteral("presentation"))},{"staticAutoShow",m_options.value(QStringLiteral("staticAutoShow"))},{"pointerAcceleration",m_options.value(QStringLiteral("pointerAcceleration"))},{"pixelShiftEnabled",m_pixelShift.active()},{"pixelShiftX",m_pixelShift.offset().x()},{"pixelShiftY",m_pixelShift.offset().y()}};}
 void LaptopController::refreshRemote(){
  auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("status"))),this);
  connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_dynamic=p.value("dynamic").toBool();m_ready=p.value("ready").toBool();m_available=p.value("available").toBool();m_usbKeyboardKnown=p.value("usbKeyboardKnown").toBool();m_usbKeyboardPresent=p.value("usbKeyboardPresent").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=i18nd("uke-plasma-keyboard-custom", "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});

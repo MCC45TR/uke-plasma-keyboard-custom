@@ -29,4 +29,5 @@ void TouchHoldWatcher::touch(int phase,int id,double x,double y,double slopX,dou
  else if(phase==1){if(std::abs(m_position.x()-m_start.x())>slopX||std::abs(m_position.y()-m_start.y())>slopY){m_moved=true;m_timer.stop();}}
  else if(phase==2){const bool single=m_contacts.size()==1;m_contacts.remove(id);m_timer.stop();if(single&&!m_moved&&m_elapsed.isValid()){m_completed=int(m_elapsed.elapsed());m_released.restart();}if(!m_persistent)m_armed=false;}
  else{m_contacts.clear();m_moved=true;m_completed=-1;m_timer.stop();}
+ if(phase!=1)if(auto *laptop=LaptopController::instance())laptop->setTouchActive(!m_contacts.isEmpty());
 }

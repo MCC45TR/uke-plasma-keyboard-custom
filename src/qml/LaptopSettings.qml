@@ -65,6 +65,8 @@ Kirigami.ApplicationWindow {
                 QQC2.Slider {Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom", "Touchpad width:");from:30;to:100;stepSize:1;value:Keyboard.Laptop.options.touchpadWidthPercent;onMoved:Keyboard.Laptop.setOption("touchpadWidthPercent",Math.round(value));}
                 QQC2.Slider {Kirigami.FormData.label:i18nd("uke-plasma-keyboard-custom", "Pointer speed:");from:0.2;to:4;value:Keyboard.Laptop.options.pointerSpeed;onMoved:Keyboard.Laptop.setOption("pointerSpeed",value);}
             }
+            QQC2.CheckBox {text:i18nd("uke-plasma-keyboard-custom", "Natural pointer acceleration");checked:Keyboard.Laptop.options.pointerAcceleration;onToggled:Keyboard.Laptop.setOption("pointerAcceleration",checked);}
+            QQC2.CheckBox {text:i18nd("uke-plasma-keyboard-custom", "Subtle pixel shifting in static mode");checked:Keyboard.Laptop.options.pixelShift;onToggled:Keyboard.Laptop.setOption("pixelShift",checked);}
             QQC2.CheckBox {text:i18nd("uke-plasma-keyboard-custom", "Show a 50 mm calibration ruler on the tablet in laptop mode");checked:Keyboard.Laptop.options.calibrationRuler;onToggled:Keyboard.Laptop.setOption("calibrationRuler",checked);}
             QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Measure the ruler on the tablet panel. If its length is wrong, enter the visible panel width and height in millimetres. Keys adapt to rotation and fit smaller screens.");}
             Repeater {

@@ -61,22 +61,24 @@ ColumnLayout {
                 const p=snapshot();
                 if(p.n===0) {
                     if(!sequence)return;
+                    Keyboard.Laptop.resetPadMotion();
                     if(dragged)Keyboard.Laptop.button(272,false);
                     else if(!blocked&&!moved&&Date.now()-started<300&&maxFingers<=2){const button=maxFingers===2?273:272;Keyboard.Laptop.button(button,true);Keyboard.Laptop.button(button,false);lastTap=maxFingers===1?Date.now():0;}
                     stopGesture(false);sequence=false;fingers=0;return;
                 }
                 if(!sequence) {
+                    Keyboard.Laptop.resetPadMotion();
                     sequence=true;started=Date.now();maxFingers=p.n;moved=false;gesture="";dragged=false;
                     blocked=Keyboard.Laptop.options.palmGuard&&Keyboard.Laptop.typing&&!Keyboard.Laptop.modifierActive;
                     if(!blocked&&p.n===1&&Date.now()-lastTap<300){Keyboard.Laptop.button(272,true);dragged=true;}
                     fingers=p.n;origin=p;previous=p;return;
                 }
                 maxFingers=Math.max(maxFingers,p.n);
-                if(p.n!==fingers){stopGesture(true);fingers=p.n;origin=p;previous=p;return;}
+                if(p.n!==fingers){stopGesture(true);Keyboard.Laptop.resetPadMotion();fingers=p.n;origin=p;previous=p;return;}
                 if(blocked)return;
                 const dx=p.x-previous.x,dy=p.y-previous.y;
                 if(Math.hypot(p.x-origin.x,p.y-origin.y)>1.5*root.perMm)moved=true;
-                if(p.n===1)Keyboard.Laptop.motion(dx/root.perMm*8,dy/root.perMm*8);
+                if(p.n===1)Keyboard.Laptop.padMotion(dx/root.perMm,dy/root.perMm);
                 else if(p.n===2) {
                     const ratio=origin.distance>0?p.distance/origin.distance:1;
                     if(gesture===""&&(Math.abs(ratio-1)>0.06||Math.abs(p.angle-origin.angle)>7)){gesture="pinch";moved=true;Keyboard.Laptop.pinch(0,1,0,0,0);}
@@ -91,9 +93,9 @@ ColumnLayout {
             onPressed: update()
             onUpdated: update()
             onReleased: update()
-            onCanceled: {stopGesture(true);if(dragged)Keyboard.Laptop.button(272,false);sequence=false;fingers=0;}
+            onCanceled: {stopGesture(true);Keyboard.Laptop.resetPadMotion();if(dragged)Keyboard.Laptop.button(272,false);sequence=false;fingers=0;}
             onGestureStarted: gesture => gesture.grab()
-            Component.onDestruction: {stopGesture(true);if(dragged)Keyboard.Laptop.button(272,false);}
+            Component.onDestruction: {stopGesture(true);Keyboard.Laptop.resetPadMotion();if(dragged)Keyboard.Laptop.button(272,false);}
         }
     }
     RowLayout {

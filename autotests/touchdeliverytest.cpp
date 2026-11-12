@@ -7,6 +7,7 @@
 #include <QTouchEvent>
 #include <QtTest>
 #include <KLocalizedQmlContext>
+#include <qqml.h>
 #include <qpa/qwindowsysteminterface.h>
 #include <cmath>
 
@@ -22,7 +23,8 @@ public:
     double pixelsPerMm()const{return 3.0;}
     bool typing()const{return false;}
     QVariantMap options()const{return {{QStringLiteral("palmGuard"),false},{QStringLiteral("leftButton"),false},{QStringLiteral("middleButton"),false},{QStringLiteral("rightButton"),false}};}
-    Q_INVOKABLE void motion(double x,double y){motions.append(QPointF(x,y));}
+    Q_INVOKABLE void padMotion(double x,double y){motions.append(QPointF(x,y));}
+    Q_INVOKABLE void resetPadMotion(){}
     Q_INVOKABLE void button(uint,bool){}
     Q_INVOKABLE void scroll(double,double){}
     Q_INVOKABLE void swipe(int,int,double,double){}
@@ -34,6 +36,7 @@ private Q_SLOTS:
     void smallMotionDoesNotWaitForRenderedFrames() {
         RecordingLaptop laptop;
         qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",&laptop);
+        QVERIFY(qmlProtectModule("org.uke.plasma.keyboard.lib",1));
         QQuickView window;window.resize(600,300);
         KLocalization::setupLocalizedContext(window.engine());
         QQmlComponent component(window.engine(),QUrl::fromLocalFile(QStringLiteral(TOUCHPAD_SOURCE)));
@@ -59,8 +62,10 @@ private Q_SLOTS:
         for(int i=1;i<=24;++i)
             deliver(QEventPoint::State::Updated,QPointF(40+i*0.25,40));
         QCOMPARE(laptop.motions.size(),24);
-        QPointF total;for(const auto &delta:laptop.motions)total+=delta;
-        QVERIFY(std::abs(total.x()-16.0)<0.00001);QCOMPARE(total.y(),0.0);
+        QPointF total;for(const auto &delta:laptop.motions){
+            QVERIFY(std::abs(delta.x()-0.25/3.0)<0.00001);QCOMPARE(delta.y(),0.0);total+=delta;
+        }
+        QVERIFY(std::abs(total.x()-2.0)<0.00001);QCOMPARE(total.y(),0.0);
         deliver(QEventPoint::State::Released,QPointF(46,40));
     }
 };

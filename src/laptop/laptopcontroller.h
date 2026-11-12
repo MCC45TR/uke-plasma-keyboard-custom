@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
+#include "pixelshift.h"
+#include "touchpadmotion.h"
 #include <QObject>
 #include <QDBusConnection>
 #include <QElapsedTimer>
@@ -42,6 +44,7 @@ class LaptopController final : public QObject {
     Q_PROPERTY(bool typing READ typing NOTIFY typingChanged)
     Q_PROPERTY(int keyRevision READ keyRevision NOTIFY keyStateChanged)
     Q_PROPERTY(bool modifierActive READ modifierActive NOTIFY keyStateChanged)
+    Q_PROPERTY(QPoint pixelShift READ pixelShift NOTIFY pixelShiftChanged)
 public:
     explicit LaptopController(QObject *parent=nullptr);
     ~LaptopController() override;
@@ -67,6 +70,7 @@ public:
     bool typing() const { return m_typing; }
     int keyRevision() const { return m_revision; }
     bool modifierActive() const;
+    QPoint pixelShift()const{return m_pixelShift.offset();}
     Q_INVOKABLE QString keyLabel(uint code,const QString &fallback) const;
     Q_INVOKABLE bool latched(uint code) const;
     Q_INVOKABLE QStringList alternatives(const QString &text) const;
@@ -82,6 +86,9 @@ public:
     Q_INVOKABLE void deleteWords(int count);
     Q_INVOKABLE void releaseAll();
     Q_INVOKABLE void motion(double x,double y);
+    Q_INVOKABLE void padMotion(double millimetresX,double millimetresY);
+    Q_INVOKABLE void resetPadMotion();
+    void setTouchActive(bool active);
     Q_INVOKABLE void button(uint code,bool pressed);
     Q_INVOKABLE void scroll(double x,double y);
     Q_INVOKABLE void swipe(int fingers,int phase,double x,double y);
@@ -100,6 +107,7 @@ public:
     QDBusPendingCall backendCall(const QString &method,const QVariantList &args={}) const;
     void backendInput(const QString &method,const QVariantList &args={}) const;
 Q_SIGNALS:
+    void pixelShiftChanged();
     void stateChanged();
     void optionsChanged();
     void layoutChanged();
@@ -107,6 +115,9 @@ Q_SIGNALS:
     void keyStateChanged();
     void preferencesRequested();
 private Q_SLOTS:
+    void syncPixelShift();
+    void updatePixelShiftBusy();
+    void advancePixelShift();
     void backendStatic(bool active);
     void backendDynamic(bool active);
     void systemLayout(uint index);
@@ -158,7 +169,11 @@ private:
     QSet<uint> m_modifierUsed,m_cancelLatch;
     QHash<uint,qint64> m_pressTimes,m_tapTimes;
     QElapsedTimer m_clock;
-    QTimer m_typingTimer;
+    QTimer m_typingTimer,m_pixelShiftTimer;
+    UkeKeyboard::TouchpadMotion m_padMotion;
+    UkeKeyboard::PixelShift m_pixelShift;
+    QSet<uint> m_pointerButtons;
+    bool m_touchActive=false;
     int m_revision=0;
     QFileSystemWatcher m_files;
     struct XkbDeleter { void operator()(xkb_context *p) const {xkb_context_unref(p);} void operator()(xkb_keymap *p) const {xkb_keymap_unref(p);} void operator()(xkb_state *p) const {xkb_state_unref(p);} };

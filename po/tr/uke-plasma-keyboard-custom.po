@@ -313,3 +313,9 @@ msgstr "Sabit dizüstü moduna geçmeden önce USB klavyeyi çıkarın. Pogo kla
 
 msgid "Open static mode automatically when its conditions are met"
 msgstr "Koşulları sağlandığında sabit modu otomatik aç"
+
+msgid "Natural pointer acceleration"
+msgstr "Doğal imleç hızlandırması"
+
+msgid "Subtle pixel shifting in static mode"
+msgstr "Sabit modda hafif piksel kaydırma"

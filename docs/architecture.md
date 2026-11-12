@@ -49,7 +49,7 @@ extended physical acceptance remain open.
 
 ## Touch delivery and surface polish
 
-Candidate37 addresses stuttering motion and missed small movements. Original
+Candidate38 addresses stuttering motion and missed small movements. Original
 Qt Quick6.12 coalesces touch updates until a rendered frame. Its process-local
 `QML_NO_TOUCH_COMPRESSION` opt-out is selected before creating the application;
 the installed original Quick library also contains this control. The actual
@@ -71,6 +71,25 @@ Reviewed references: original qtdeclarative6.12.0
 and original Qt6.12
 [`QDBusConnection::send`](https://doc.qt.io/qt-6/qdbusconnection.html#send).
 Reference sources are unchanged; Qt implementation code is not copied.
+
+The virtual pad's optional acceleration uses physical millimetres and monotonic
+time, with a 25 ms velocity filter and a smooth 8–40 logical-pixel/mm curve before
+the existing user speed multiplier. Slow movement keeps the previous precision
+gain; lifts, pauses, reversals and sharp deceleration remove stale high velocity.
+No delta is rounded or discarded by a distance threshold. This is an application
+profile, informed by original [libinput's velocity/acceleration concepts](https://wayland.freedesktop.org/libinput/doc/latest/pointer-acceleration.html),
+not a copy or replacement of libinput's device-specific implementation.
+Physical feel and screen crossing remain acceptance gates.
+
+Static content can shift within one physical pixel on each axis about once per minute.
+A single-shot VeryCoarseTimer runs only in the active static provider. The opaque
+fullscreen background stays fixed; the content and its hit regions share a
+transform divided by the actual screen pixel ratio. Touch contacts, typing and
+held keys/buttons defer a pending step until interaction ends. A deferred step
+waits for an event rather than polling. Disable/exit resets the transform and
+stops the timer. The input-method rectangle follows the same offset. Preferences
+windows, normal/dynamic mode and hidden/ineligible static mode do not run it.
+This reduces static pixel repetition; long-term panel protection is not measured.
 
 Static laptop mode additionally requires no physical USB typing keyboard.
 The original KWin6.8.2 InputDevice busType/sysPath and alphaNumericKeyboard
