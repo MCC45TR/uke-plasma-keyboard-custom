@@ -4,6 +4,8 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QQmlComponent>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QTouchEvent>
 #include <QtTest>
 #include <KLocalizedQmlContext>
@@ -35,11 +37,20 @@ class TouchDeliveryTest final : public QObject {
 private Q_SLOTS:
     void smallMotionDoesNotWaitForRenderedFrames() {
         RecordingLaptop laptop;
-        qmlRegisterSingletonInstance("org.uke.plasma.keyboard.lib",1,0,"Laptop",&laptop);
-        QVERIFY(qmlProtectModule("org.uke.plasma.keyboard.lib",1));
+        qmlRegisterSingletonInstance("UkeTouchpadTest",1,0,"Laptop",&laptop);
+        QVERIFY(qmlProtectModule("UkeTouchpadTest",1));
         QQuickView window;window.resize(600,300);
         KLocalization::setupLocalizedContext(window.engine());
-        QQmlComponent component(window.engine(),QUrl::fromLocalFile(QStringLiteral(TOUCHPAD_SOURCE)));
+        QFile source(QStringLiteral(TOUCHPAD_SOURCE));QVERIFY(source.open(QIODevice::ReadOnly));
+        auto data=source.readAll();
+        const QByteArray bridgeImport="import org.uke.plasma.keyboard.lib as Keyboard";
+        QCOMPARE(data.count(bridgeImport),1);
+        data.replace(bridgeImport,"import UkeTouchpadTest 1.0 as Keyboard");
+        // Only substitute the recording bridge import. Keep every gesture and
+        // movement handler byte-identical, outside the app's implicit module.
+        QTemporaryDir directory;QVERIFY(directory.isValid());
+        QQmlComponent component(window.engine());
+        component.setData(data,QUrl::fromLocalFile(directory.filePath(QStringLiteral("Touchpad.qml"))));
         QScopedPointer<QObject> object(component.create());
         auto *pad=qobject_cast<QQuickItem*>(object.data());
         QVERIFY2(pad,qPrintable(component.errorString()));

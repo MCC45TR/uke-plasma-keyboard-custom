@@ -850,3 +850,16 @@ natural acceleration to cross the monitor sooner, plus pixel shifting.38 adds
 a velocity-based physical-motion curve, optional coarse-timed static content
 shifting and native policy/interaction regressions. All40 native tests, signed
 RPM delivery and physical acceleration/pixel-shift acceptance remain pending.
+
+## COPR11317739 /38 — recording module isolation still incomplete
+
+Source6cfaa70 and published spec7bfe7865 match. All three targets pass39/40
+tests, including acceleration/precision/rate/reversal/flat-profile checks,
+bounded/deferred/reset pixel policy, controller timer/touch/button deferral,
+full application QML and no-reply input ordering. The isolated touch test still
+loads the application theme and cannot start; protecting the original module
+name and clearing the import environment was insufficient. No38 RPM or device
+delivery is accepted.39 gives the recording facade a unique URI, reads the
+actual Touchpad source and replaces exactly its bridge import, leaving every
+input handler unchanged. A separate temporary source context avoids the app
+module/cache association. All40 gates remain required.
