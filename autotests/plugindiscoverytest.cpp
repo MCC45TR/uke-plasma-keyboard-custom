@@ -15,9 +15,10 @@ private Q_SLOTS:
     {
         const auto root=qEnvironmentVariable("UKE_KEYBOARD_PLUGIN_ROOT");
         QVERIFY2(!root.isEmpty(),"The staged RPM plugin root must be provided");
-        QCoreApplication::addLibraryPath(root);
         const auto id=QString::fromLatin1(UkeKeyboard::pluginId);
-        const auto metadata=KPluginMetaData::findPluginById(QStringLiteral("kwin/plugins"),id);
+        // KCoreAddons prioritizes the executable's build-tree plugin directory.
+        // An absolute namespace must validate the actual staged RPM payload.
+        const auto metadata=KPluginMetaData::findPluginById(root+QStringLiteral("/kwin/plugins"),id);
         QVERIFY(metadata.isValid());
         QCOMPARE(metadata.pluginId(),id);
         QCOMPARE(QFileInfo(metadata.fileName()).canonicalFilePath(),QFileInfo(root+QStringLiteral("/kwin/plugins/")+id+QStringLiteral(".so")).canonicalFilePath());

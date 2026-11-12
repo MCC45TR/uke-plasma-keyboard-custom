@@ -492,3 +492,14 @@ private-bus checks reject an unrelated backend and move its public alias to a
 different connection to verify that requests do not follow that alias. These
 new discovery/ownership checks still require the full COPR gate and installed
 runtime qualification; source checks alone do not establish acceptance.
+
+## COPR11311655 — discovery fixture rejects a build-tree shadow
+
+All application, process-parent, controller reload, unrelated-server rejection
+and unique-connection pinning checks pass. The complete result is30/31 CTests:
+the discovery test resolves the correct module ID but KCoreAddons prioritizes
+the executable's build-tree plugin directory over the added staged search path.
+Its exact-path assertion correctly rejects that shadow and no RPM is accepted.
+The next fixture passes the absolute staged namespace to the same metadata API;
+it keeps both the ID and exact installed-path assertions. No gate is removed or
+relaxed. Full native/package and installed-session checks remain required.

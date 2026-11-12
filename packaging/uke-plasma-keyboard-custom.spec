@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 25%{?dist}
+Release: 26%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -106,6 +106,9 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-26
+- Keep the discovery gate on the staged RPM instead of build-tree precedence.
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-25
 - Resolve versioned native modules using KDE's filename-derived identifiers.
 - Bind native calls to the authenticated compositor's unique bus connection.
