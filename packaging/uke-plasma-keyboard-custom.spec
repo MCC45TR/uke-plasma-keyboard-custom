@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 19%{?dist}
+Release: 20%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -85,7 +85,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 
 %files
 %license LICENSE LICENSES data/emoji/UNICODE-LICENSE.txt
-%doc README.md docs
+%doc README.md README.upstream.md docs
 %{_bindir}/%{name}
 %{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/UkeBreeze/
 %{_libdir}/qt6/qml/org/uke/plasma/keyboard/lib/
@@ -104,6 +104,11 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-20
+- Keep entered and selected text out of overlay debug messages.
+- Exercise text-free debug output with synthetic input in the native suite.
+- Include the retained upstream README in installed documentation.
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-19
 - Add a movable laptop panel with manual tray and optional focus activation.
 - Support mobile and PC cursor/word-deletion gestures with optional key previews.

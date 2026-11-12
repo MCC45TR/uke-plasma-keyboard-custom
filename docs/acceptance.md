@@ -349,3 +349,16 @@ systemd removal/upgrade macros. Fresh installation does not preset or enable it;
 final removal stops it, and upgrade marks an active service for restart. Actual
 DNF transaction and preference-preservation checks remain pending. Rollback
 instructions explicitly disable this optional policy before selecting stock.
+
+## COPR 11310768 — first complete binary package matrix
+
+Fedora 44, Fedora 45 and Rawhide aarch64 each pass all 29 CTests and RPM
+assembly. Worker build times are 603, 563 and 581 seconds respectively. This
+establishes native test and packaging acceptance, not device or DNF acceptance.
+No package has been installed on the tablet.
+
+The pre-install privacy audit found existing overlay debug messages containing
+selected or pending text. The next source replaces them with event-only messages
+and adds a native synthetic-input test with debug logging explicitly enabled.
+It also installs the retained upstream README referenced by the package docs.
+The full native suite must pass again before delivery.

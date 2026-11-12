@@ -3,9 +3,25 @@
 #include "overlaycontroller.h"
 #include "inputplugin.h"
 #include "logging.h"
+#include <QScopeGuard>
 #include <QTest>
 
 Q_LOGGING_CATEGORY(PlasmaKeyboard, "overlaycontrollertest")
+namespace {
+QStringList *capturedMessages = nullptr;
+void captureMessage(QtMsgType, const QMessageLogContext &, const QString &message)
+{
+    if (capturedMessages) {
+        capturedMessages->append(message);
+    }
+}
+void enableOverlayDebug(QLoggingCategory *category)
+{
+    if (qstrcmp(category->categoryName(), "overlaycontrollertest") == 0) {
+        category->setEnabled(QtDebugMsg, true);
+    }
+}
+}
 
 class HoldTrigger : public OverlayTrigger
 {
@@ -60,6 +76,41 @@ class OverlayControllerTest : public QObject
         return QKeyEvent(QEvent::KeyRelease, Qt::Key_A, Qt::NoModifier, 30, 'a', 0, QStringLiteral("a"));
     }
 private Q_SLOTS:
+    void commitsDoNotLogTextWithDebugEnabled()
+    {
+        const QString sentinel = QStringLiteral("SYNTHETIC_PRIVATE_SENTINEL");
+        QStringList messages;
+        InputPlugin input;
+        OverlayController controller(&input);
+        controller.registerTrigger(new HoldTrigger);
+        bool started = false;
+        bool opened = false;
+        {
+            capturedMessages = &messages;
+            const auto oldFilter = QLoggingCategory::installFilter(enableOverlayDebug);
+            const auto oldHandler = qInstallMessageHandler(captureMessage);
+            const auto restore = qScopeGuard([&] {
+                qInstallMessageHandler(oldHandler);
+                QLoggingCategory::installFilter(oldFilter);
+                capturedMessages = nullptr;
+            });
+            QKeyEvent press(QEvent::KeyPress, Qt::Key_A, Qt::NoModifier, 30, 'a', 0, sentinel);
+            started = controller.processKeyPress(&press);
+            QMetaObject::invokeMethod(&controller, "handleTimerExpired", Qt::DirectConnection);
+            controller.commitCandidate(0);
+            opened = controller.openAlternates({sentinel});
+            controller.commitCandidate(0);
+        }
+        QVERIFY(started);
+        QVERIFY(opened);
+        QCOMPARE(input.commits.size(), 2);
+        QCOMPARE(input.commits.last(), sentinel);
+        QVERIFY(!messages.isEmpty());
+        for (const auto &message : messages) {
+            QVERIFY(!message.contains(sentinel));
+            QVERIFY(!message.contains(QStringLiteral("à")));
+        }
+    }
     void cancelBalancesRepeat()
     {
         InputPlugin input;

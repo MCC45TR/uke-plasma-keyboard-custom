@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QPair>
 #include <QString>
+#include <QStringList>
 
 // Recording facade for the real OverlayController, without a compositor/UI.
 class InputPlugin : public QObject
@@ -28,13 +29,15 @@ public:
     {
         events.append({code, state});
     }
-    void commit(const QString &)
+    void commit(const QString &text)
     {
+        commits.append(text);
     }
     void deleteSurroundingText(int, int)
     {
     }
     QList<QPair<quint32, KeyState>> events;
+    QStringList commits;
 Q_SIGNALS:
     void contextAboutToChange();
 };

@@ -110,7 +110,7 @@ bool OverlayController::processKeyPress(QKeyEvent *event)
         if (event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9) {
             int index = event->key() - Qt::Key_1;
             if (index < m_candidateModel->rowCount()) {
-                qCDebug(PlasmaKeyboard) << "Number key" << (index + 1) << "pressed; committing candidate" << index;
+                qCDebug(PlasmaKeyboard) << "Committing an overlay candidate";
                 commitCandidate(index);
                 return true;
             }
@@ -361,7 +361,7 @@ void OverlayController::commitAlternate(const QString &text)
     // bar, a search field) treat the input as finished, and the compositor
     // takes the keyboard down with it. Take the same route here.
     if (m_inputEngine && m_inputEngine->virtualKeyClick(Qt::Key_unknown, text, Qt::KeyboardModifiers())) {
-        qCDebug(PlasmaKeyboard) << "Committing alternate as a key click:" << text;
+        qCDebug(PlasmaKeyboard) << "Committing an alternate as a key click";
         setOverlayVisible(false);
         resetState();
         return;
@@ -393,7 +393,7 @@ void OverlayController::commitText(const QString &text)
         return;
     }
 
-    qCDebug(PlasmaKeyboard) << "Committing overlay selection:" << text << "pendingText" << m_pendingText;
+    qCDebug(PlasmaKeyboard) << "Committing an overlay selection";
 
     if (m_inputPlugin) {
         // The base character (m_pendingText) is still present in the text field —
@@ -467,8 +467,7 @@ void OverlayController::handleSurroundingTextChanged()
     // An external event changed the cursor (e.g. user tapped elsewhere in the
     // text field). Cancel any pending overlay state.
     if (m_holdTimer.isActive() || m_overlayVisible) {
-        qCDebug(PlasmaKeyboard) << "External cursor move detected while overlay active; cancelling overlay"
-                                << "alternatesOnly" << m_alternatesOnly << "pendingText" << m_pendingText;
+        qCDebug(PlasmaKeyboard) << "External cursor move detected while overlay active; cancelling overlay";
         cancelOverlay();
     }
 }
