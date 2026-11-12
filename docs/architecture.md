@@ -49,13 +49,13 @@ extended physical acceptance remain open.
 
 ## Touch delivery and surface polish
 
-Candidate39 addresses stuttering motion and missed small movements. Original
+Release39 addresses stuttering motion and missed small movements. Original
 Qt Quick6.12 coalesces touch updates until a rendered frame. Its process-local
 `QML_NO_TOUCH_COMPRESSION` opt-out is selected before creating the application;
 the installed original Quick library also contains this control. The actual
 Touchpad.qml is tested with quarter-pixel updates delivered through Qt's native
 window-system input path, without a rendered frame between updates. Native
-qualification is pending. Rendering cadence, refresh policy and user pointer
+qualification passes on all three Fedora aarch64 targets. Rendering cadence, refresh policy and user pointer
 speed remain separate from input delivery.
 
 High-frequency input uses the existing authenticated unique backend owner and

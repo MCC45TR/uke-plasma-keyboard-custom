@@ -83,16 +83,19 @@ An incompatible plugin disables static mode with an explanation; it does not
 force a KWin downgrade. Native code and native tests are built only in COPR.
 There is no project Python runtime or build generator.
 
-COPR [11316515](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11316515/)
-builds version 0.1.0-35 on all three targets, each with 38 passing CTests.
-The tablet's DNF upgrade, tablet-only placement and persistent surface pass.
-The user confirms basic pointer movement, clicks and typing, but reports
-stuttering motion, missed small movements and a thin outer frame. These are
-being corrected in39; smoothness and extended physical acceptance remain open.
-Candidate39 also adds optional velocity-based pointer acceleration and subtle
-pixel shifting during idle static mode, as requested in the physical trial.
-The35 upgrade needed a provider-only reload; automatic renewal is not qualified
-by that transaction. Adaptive-refresh qualification also remains open; see the
+COPR [11317837](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11317837/)
+builds version 0.1.0-39 on all three targets, each with 40 passing CTests.
+The signed DNF35→39 upgrade automatically renews the selected provider in the
+same compositor and boot, preserving tracked preferences and display fields.
+The actual fullscreen surface is on the tablet. Touch updates are independent
+of rendered frames; optional physical/time-based acceleration preserves slow
+precision and makes fast swipes travel farther. Static content can shift by
+one physical pixel on each axis between interactions, about once per minute.
+The opaque background stays fixed; exit/disable stops and resets the shift.
+Both features can be disabled in keyboard settings. The native small-motion,
+acceleration and pixel policies pass; runtime shifting is observed. User feedback
+on39's feel and new appearance, advanced physical tests and adaptive-refresh
+qualification remain open; see the
 [first tablet trial](docs/device-trial.md) before using laptop mode.
 
 See [architecture and source provenance](docs/architecture.md),

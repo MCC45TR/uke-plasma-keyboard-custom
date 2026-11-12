@@ -2,10 +2,11 @@
 
 12 November 2026. Work in progress. The user confirms tablet-only placement,
 persistent keyboard/touchpad visibility and basic pointer movement, clicks and
-typing at35. Subsequent feedback identifies stuttering pointer motion, a thin
-outer border and unfinished visual design; these remain open.
-The delivered checkpoint is 0.1.0-35 / COPR11316515, with 38 passing CTests on
-Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from34. Reinstallation and
+typing at35. Release39 implements frame-independent small motion, optional
+acceleration, a borderless Kirigami surface and optional idle pixel shifting.
+Its physical feel and new appearance await user feedback.
+The delivered checkpoint is 0.1.0-39 / COPR11317837, with 40 passing CTests on
+Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from35. Reinstallation and
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -42,7 +43,8 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 | Static surface and KWin routing | Implemented | Native connection identity, controller and authentication pass at35 | User confirms tablet-only placement, persistence and basic typing/pointer/click; extended routing open |
 | USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
-| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;38 adds frame-independent small-motion and acceleration regressions | Basic movement/click pass; smoothness, acceleration and extended gestures pending |
+| Touchpad gestures, buttons, typing guard | Implemented |39 passes actual QML quarter-pixel/no-frame, acceleration/precision/rate/reversal and input-order regressions | Basic movement/click at35;39 feel and extended gestures pending |
+| Static pixel shifting | Optional, active only in static provider; deferred during interaction |40-test matrix and actual runtime advance/exit reset pass | Long-term panel protection and optical acceptance unmeasured |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
@@ -863,3 +865,36 @@ delivery is accepted.39 gives the recording facade a unique URI, reads the
 actual Touchpad source and replaces exactly its bridge import, leaving every
 input handler unchanged. A separate temporary source context avoids the app
 module/cache association. All40 gates remain required.
+
+## COPR11317837 /39 —40 tests, signed DNF and actual runtime pass
+
+Source `f3305066032d78ebcdcb8a3eb2f24a2357adc27c` and published spec match
+(SHA256 `29df6493c0a8f4a1881f772f51c25953255c14426b37bd0687248ed4dc5e7fc5`).
+All three Fedora aarch64 targets pass40/40, including the actual Touchpad QML
+quarter-pixel/no-frame regression, acceleration and pixel policies, controller
+interaction/timer guards, complete application QML and earlier security gates.
+The signed Rawhide RPM has SHA256
+`7089e0368eecf66181d38376bbb9779038905f39eebffe7f9d00561608549987`,
+17,631,762 bytes. Two signatures and digests pass;487 paths coexist with original
+Fedora providers, and requirements/scriptlets equal the accepted26 baseline.
+
+Actual DNF upgrades only35→39. The selected provider renews automatically in
+the same compositor and boot; five tracked preference files, input-method
+selection and output enable/mode/position/scale/rotation fields are unchanged.
+The installed RPM header matches the reviewed signed file and RPM verification
+is clean. Native39 is active on DSI-1, with a1280×854 logical surface. Acceleration
+and pixel shifting are enabled; the first(-1,-1) pixel offset is observed. The
+isolated original-KWin39 fixture passes native attachment, owned-surface geometry,
+unrelated-caller refusal and normal visibility; its scope exits successfully.
+Private portal/accessibility/PipeWire limitations and orderly compositor shutdown
+messages do not qualify or invalidate physical input.
+
+The system later reports a closed cover, an absent internal output and
+physical USB keyboards connected. Static mode exits, the shift disables and its
+offset resets to(0,0), following the requested gates. No panel wake, layout
+change or USB bypass is applied. User feedback on39 acceleration and the new
+appearance remains pending. A45s timing-only sample has39 raw updates/33 pointer
+calls with roughly33ms intervals; the activity differs from the earlier trial
+and supplies no performance comparison. Advanced gestures, held-input/lock,
+physical hotplug/pogo, refresh restoration, native30–60 and future-image gates
+remain open. Long-term panel protection has not been measured.

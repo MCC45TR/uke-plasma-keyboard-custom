@@ -8,16 +8,16 @@
   "original_packages": [
     "plasma-keyboard"
   ],
-  "remaining_work": "Retain the explicitly requested independent keyboard application alongside the original Plasma Keyboard. The remaining delta is the configurable laptop keyboard/touchpad surface, physical sizing, language and toolbar policy, and same-RPM native KWin routing/refresh integration. These are application/compositor policies, not hardware protocols suitable for kernel/DT or a separate bridge RPM. Propose compatible changes upstream and retire the application only after equivalent original-package features, settings, DNF ownership and rollback are qualified. Release35 passes38 native tests per target and corrects tablet-only static placement. The user confirms persistent visibility and basic pointer/click/typing, but reports stutter and missed small movements. Smoothness, extended physical input, lock, refresh restoration, native30-60 VRR and future-image acceptance remain open.",
+  "remaining_work": "Retain the explicitly requested independent keyboard application alongside the original Plasma Keyboard. The remaining delta is the configurable laptop keyboard/touchpad surface, physical sizing, language and toolbar policy, and same-RPM native KWin routing/refresh integration. These are application/compositor policies, not hardware protocols suitable for kernel/DT or a separate bridge RPM. Propose compatible changes upstream and retire the application only after equivalent original-package features, settings, DNF ownership and rollback are qualified. Release39 passes40 native tests per target, including actual QML small motion, acceleration and pixel policies. Signed DNF35-to39 automatically renews the provider while preserving preferences, display fields, compositor and boot. Tablet-only geometry and runtime pixel advance/exit reset pass. Basic user pointer/click/typing acceptance is from35;39 feel and appearance await user feedback after cover/display/USB eligibility is restored. Extended physical input, lock, refresh restoration, native30-60 VRR and future-image acceptance remain open.",
   "retirement_eligible": false,
   "external_copr": {
     "owner": "mcc45tr",
     "project": "uke-plasma-keyboard-custom",
     "producer_name": "uke-plasma-keyboard-custom",
     "producer_id": 3281444,
-    "qualified_build": 11316515,
-    "qualified_source": "8f1e4ab07117e805dcbd2391b5abceb0085af861",
-    "qualified_version": "0.1.0-35",
+    "qualified_build": 11317837,
+    "qualified_source": "f3305066032d78ebcdcb8a3eb2f24a2357adc27c",
+    "qualified_version": "0.1.0-39",
     "review_date": "2026-11-12"
   },
   "source_repository": "https://github.com/MCC45TR/uke-plasma-keyboard-custom"
