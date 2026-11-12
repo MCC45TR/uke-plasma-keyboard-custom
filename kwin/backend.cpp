@@ -7,6 +7,7 @@
 #include "nativerefreshbackend.h"
 #include "versionguard.h"
 #include "usbkeyboardpolicy.h"
+#include "pointerconfinement.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
 #include <core/session.h>
@@ -83,7 +84,7 @@ class Backend final : public Plugin, protected QDBusContext, public InputEventFi
     Q_CLASSINFO("D-Bus Interface", "org.uke.PlasmaKeyboard.Backend1")
 public:
     Backend() : InputEventFilter(InputFilterOrder::LockScreen), m_bus(QDBusConnection::sessionBus()),
-        m_watcher(this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);},nativeRefreshBackend())
+        m_watcher(this),m_pointerCorrection([this]{confinePointerNow();},this), m_refresh(this,[this](const QString &reason){Q_EMIT ProfileError(reason);},nativeRefreshBackend())
     {
         if (!m_bus.registerService(QLatin1String(UkeKeyboard::service))) return;
         m_bus.registerObject(QLatin1String(UkeKeyboard::path), this,
@@ -163,10 +164,8 @@ public:
         if (locked()) { endStatic(); return false; }
         const QPointF target = constrain(event->position);
         if (target != event->position) {
-            event->position = target;
-            m_warping = true;
-            input()->pointer()->warp(target);
-            m_warping = false;
+            queuePointerConfinement();
+            return true;
         }
         return false;
     }
@@ -216,7 +215,7 @@ public Q_SLOTS:
         m_active = true;
         m_refresh.begin(tablet);
         for (Window *w : workspace()->windows()) moveAway(w);
-        input()->pointer()->warp(constrain(input()->globalPointer()));
+        queuePointerConfinement();
         Q_EMIT StaticChanged(true);
         return true;
     }
@@ -334,16 +333,27 @@ private:
         return !screens.isEmpty() && std::none_of(screens.begin(), screens.end(), [&area](auto *o) { return rectangle(o->geometry()).intersects(area); });
     }
     QPointF constrain(QPointF p) const {
-        const auto screens = external();
-        QPointF best = p;
-        double distance = std::numeric_limits<double>::max();
-        for (auto *o : screens) {
-            const QRectF r = rectangle(o->geometry());
-            const QPointF q(std::clamp(p.x(),r.left(),r.right()-0.01),std::clamp(p.y(),r.top(),r.bottom()-0.01));
-            const double d = (q.x()-p.x())*(q.x()-p.x())+(q.y()-p.y())*(q.y()-p.y());
-            if (d < distance) { distance=d; best=q; }
-        }
-        return best;
+        QList<QRectF> areas;
+        for (auto *output : external()) areas.append(rectangle(output->geometry()));
+        return UkeKeyboard::externalPointerPosition(areas,p);
+    }
+    void queuePointerConfinement() {
+        // KWin drains warps requested inside an input filter recursively.
+        // Coalesce the correction outside that stack, then recheck current
+        // topology and stop static mode if native confinement cannot succeed.
+        m_pointerCorrection.request();
+    }
+    void confinePointerNow() {
+            if (!m_active) return;
+            if (!eligible(m_tabletName)) {endStatic();return;}
+            const auto position=input()->globalPointer();
+            const auto target=constrain(position);
+            if (target==position) return;
+            m_warping=true;input()->pointer()->warp(target);m_warping=false;
+            if (constrain(input()->globalPointer())!=input()->globalPointer()) {
+                endStatic();
+                Q_EMIT ProfileError(QStringLiteral("Static mode stopped because the pointer could not be confined to an external display."));
+            }
     }
     void observe(Window *w) {
         connect(w,&Window::bufferGeometryChanged,this,[this,w] {
@@ -429,6 +439,7 @@ private:
     QDBusConnection m_bus;
     QDBusServiceWatcher m_watcher;
     VirtualDevice m_device;
+    UkeKeyboard::DeferredPointerCorrection m_pointerCorrection;
     RefreshGuard m_refresh;
     QString m_client,m_tabletName;
     uint m_clientPid=0;

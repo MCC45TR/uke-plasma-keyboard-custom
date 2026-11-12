@@ -102,6 +102,8 @@ ecm_add_test(nativerefreshrequesttest.cpp TEST_NAME nativerefreshrequesttest LIN
 target_include_directories(nativerefreshrequesttest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../kwin)
 ecm_add_test(usbkeyboardpolicytest.cpp TEST_NAME usbkeyboardpolicytest LINK_LIBRARIES KWin::kwin Qt::Core Qt::Test)
 target_include_directories(usbkeyboardpolicytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../kwin)
+ecm_add_test(pointerconfinementtest.cpp TEST_NAME pointerconfinementtest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(pointerconfinementtest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../kwin)
 ecm_add_test(processidentitytest.cpp TEST_NAME processidentitytest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(processidentitytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 ecm_add_test(plugindiscoverytest.cpp TEST_NAME plugindiscoverytest LINK_LIBRARIES Qt::Core Qt::Test KF6::CoreAddons)

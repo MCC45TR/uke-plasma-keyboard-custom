@@ -17,6 +17,22 @@ or physical acceptance. KWin, Qt and Plasma Keyboard remain original packages.
 
 ## Session boundaries
 
+Candidate34 enables automatic static entry when every existing condition passes.
+Each eligibility cycle has one automatic attempt. An explicit Normal keyboard
+action suppresses reopening until a new cycle; native revocation cancels pending
+entry, and text-focus loss does not exit static mode. The persistent surface is
+bound to the selected internal Qt screen, including late window registration.
+
+A real33 static entry exposed repeated native pointer-motion recursion. Review
+of original6.8.2 `pointer_input.cpp` at the pinned revision below confirms that
+PositionUpdateBlocker drains nested warp requests recursively. Pointer correction
+now uses a coalesced Qt queued call, outside the filter's native stack. Output
+membership follows KWin's floored-point convention; existing external positions
+remain exact, and new targets lie inside the native output bounds. A failed
+native correction ends static mode instead of retrying. The original compositor
+package is unchanged. Geometry, deferred/coalesced work, unload cancellation and
+automatic-entry/revocation cases await native37-test qualification.
+
 Static laptop mode additionally requires no physical USB typing keyboard.
 The original KWin6.8.2 InputDevice busType/sysPath and alphaNumericKeyboard
 properties identify keyboards and USB receivers without treating a mouse's

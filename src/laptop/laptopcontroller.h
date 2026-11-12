@@ -72,7 +72,7 @@ public:
     Q_INVOKABLE QStringList alternatives(const QString &text) const;
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void enter();
-    Q_INVOKABLE void leave();
+    Q_INVOKABLE void leave(bool manual=true);
     void textFocusChanged(bool focused);
     Q_INVOKABLE void setOption(const QString &key,const QVariant &value);
     Q_INVOKABLE void reload();
@@ -122,6 +122,7 @@ private:
     void queryLid();
     void queryUsbKeyboard();
     void updateEligibility();
+    void updateAutoStatic();
     void updateTopology();
     void loadLayouts();
     void rebuildKeymap();
@@ -148,6 +149,7 @@ private:
     uint m_backendGeneration=0;
     uint m_usbKeyboardGeneration=0;
     bool m_usbKeyboardKnown=false,m_usbKeyboardPresent=false;
+    bool m_staticAutoAttempted=false,m_staticAutoSuppressed=false;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;

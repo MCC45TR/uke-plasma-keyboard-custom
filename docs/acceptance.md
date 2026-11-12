@@ -6,6 +6,16 @@ Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from32. Reinstallation an
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
+Current blocker found after33 delivery: a real static entry with the pointer
+on the tablet crashed the compositor through repeated pointer-motion recursion.
+The wrapper restarted KWin; the selected keyboard provider was restored. The
+earlier simulated-open trials did not qualify this pointer path. Candidate34
+defers/coalesces pointer corrections outside KWin's recursive input queue,
+uses stable output-interior targets and stops static mode if confinement fails.
+It also implements the user's clarified automatic-entry default and applies
+active laptop state when its window registers late. Native37-test qualification,
+signed delivery and actual corrected static entry are pending;33 remains installed.
+
 | Area | Source | Build/package | Physical |
 |---|---|---|---|
 | Fork and independent identity | Implemented | Signed RPM, coexistence, upgrade/reinstall pass | Not applicable |

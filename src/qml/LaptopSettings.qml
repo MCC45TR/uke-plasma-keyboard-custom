@@ -30,6 +30,12 @@ Kirigami.ApplicationWindow {
                     onActivated:Keyboard.Laptop.setOption("presentation",currentIndex===1?"dynamic":"static")
                 }
                 QQC2.CheckBox {
+                    visible:Keyboard.Laptop.options.presentation==="static"
+                    text:i18nd("uke-plasma-keyboard-custom","Open static mode automatically when its conditions are met")
+                    checked:Keyboard.Laptop.options.staticAutoShow
+                    onToggled:Keyboard.Laptop.setOption("staticAutoShow",checked)
+                }
+                QQC2.CheckBox {
                     visible:Keyboard.Laptop.options.presentation==="dynamic"
                     text:i18nd("uke-plasma-keyboard-custom","Open dynamic mode automatically on text focus")
                     checked:Keyboard.Laptop.options.dynamicAutoShow

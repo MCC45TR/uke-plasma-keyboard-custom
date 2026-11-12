@@ -18,7 +18,9 @@ tablet, copy binaries into the system or download speech models for this trial.
    an installed RTL layout and CJK engine separately. Only input layouts should
    synchronize; the desktop interface language should stay the same. Turn off
    synchronization to test the separate virtual-language preference.
-4. Enter static laptop mode with the bottom button. The tablet should show the
+4. With automatic static entry enabled (the new default), the mode should open
+   once all requirements pass. It can also be opened with the bottom button.
+   The tablet should show the
    top toolbar, keyboard and lower touchpad persistently. The pointer and normal
    application windows should stay on external screens, with text focus in the
    external application. Check F/modifier/arrow/navigation/system row controls.
@@ -41,7 +43,8 @@ tablet, copy binaries into the system or download speech models for this trial.
    still owned. Preserve intervening user changes.
    Repeat with a USB keyboard attached while static mode is active: static mode
    must exit and release held input. Removing the last USB keyboard permits
-   manual entry again; it must not open the surface automatically. Check pogo
+   automatic entry again when enabled. An explicit Normal keyboard action keeps
+   it closed until the next eligibility cycle. Check pogo
    separately without treating the native software classification as a physical
    accessory receipt.
 9. Start with the keep refresh profile. Test advertised fixed 30/60 modes only

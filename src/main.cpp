@@ -392,27 +392,7 @@ public:
     {
         m_keyboard = window;
         if (auto *laptop = LaptopController::instance()) {
-            connect(laptop,&LaptopController::stateChanged,this,[this,laptop]{
-                if (!m_keyboard) return;
-                if(m_staticApplied==laptop->active()){if(laptop->active())applyPanelLayout();return;}
-                m_staticApplied = laptop->active();
-                m_outputRelocationTimer.stop();
-                m_keyboard->setProperty("ukeStaticTransition",true);
-                m_keyboard->setVisible(false);
-                m_keyboard->destroy();
-                if (m_staticApplied) {
-                    m_normalScreen=m_keyboard->screen();
-                    m_keyboard->setScreen(laptop->tabletScreen());
-                } else {
-                    m_layerShell->setScreen(nullptr);
-                    m_layerShell->setWantsToBeOnActiveScreen(true);
-                    if(m_normalScreen)m_keyboard->setScreen(m_normalScreen);
-                }
-                applyPanelLayout();
-                m_keyboard->setVisible(m_staticApplied || QGuiApplication::inputMethod()->isVisible());
-                m_keyboard->setProperty("ukeStaticTransition",false);
-                if(m_staticApplied)activateKeyboardWindow(m_keyboard);
-            });
+            connect(laptop,&LaptopController::stateChanged,this,&KeyboardWindowBridge::syncLaptopState);
         }
         syncKeyboardScreen();
         connect(window, &QWindow::screenChanged, this, &KeyboardWindowBridge::syncKeyboardScreen);
@@ -441,8 +421,35 @@ public:
             activateKeyboardWindow(window);
         }
         syncStubVisibility();
+        syncLaptopState();
         qCDebug(PlasmaKeyboard) << "keyboard window registered, kwin visible" << m_kwinVisible << "active" << window->isActive() << "focus window"
                                 << QGuiApplication::focusWindow() << "focus object" << QGuiApplication::focusObject();
+    }
+
+    void syncLaptopState()
+    {
+        auto *laptop=LaptopController::instance();
+        if (!laptop) return;
+        if (!m_keyboard) return;
+        if(m_staticApplied==laptop->active()){if(laptop->active())applyPanelLayout();return;}
+        m_staticApplied = laptop->active();
+        m_outputRelocationTimer.stop();
+        m_keyboard->setProperty("ukeStaticTransition",true);
+        m_keyboard->setVisible(false);
+        m_keyboard->destroy();
+        if (m_staticApplied) {
+            m_normalScreen=m_keyboard->screen();
+            m_keyboard->setScreen(laptop->tabletScreen());
+        } else {
+            m_layerShell->setScreen(nullptr);
+            m_layerShell->setWantsToBeOnActiveScreen(true);
+            if(m_normalScreen)m_keyboard->setScreen(m_normalScreen);
+        }
+        applyPanelLayout();
+        m_keyboard->setVisible(m_staticApplied || QGuiApplication::inputMethod()->isVisible());
+        m_keyboard->setProperty("ukeStaticTransition",false);
+        if(m_staticApplied)activateKeyboardWindow(m_keyboard);
+
     }
 
     //! The rectangle of the visible panel, in the coordinates of the screen.

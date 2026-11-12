@@ -10,5 +10,10 @@
   temporary open-cover simulation and panel wake for testing; restore the
   previous state afterward and keep this out of production eligibility policy.
 - Never publish a physical acceptance claim based only on a source/build test.
+- Latest user steering, 12 November: static mode must open automatically on
+  the tablet when all gates pass and remain visible with its touchpad across
+  text-focus changes. USB exclusion still applies. Preserve the explicit
+  Normal keyboard action; manual dismissal lasts until the next eligibility
+  cycle. This supersedes the earlier manual-entry default.
 - Update the external Desktop tracker and docs/acceptance.md after material
   results. Do not log entered text, clipboard contents or private identities.

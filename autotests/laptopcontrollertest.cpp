@@ -71,8 +71,58 @@ class LaptopControllerTest final : public QObject {
         controller.m_lidClosed=false;controller.m_tabletName=QStringLiteral("synthetic-panel");
         controller.m_usbKeyboardKnown=true;controller.m_usbKeyboardPresent=false;
         controller.m_options[QStringLiteral("presentation")]=dynamic?QStringLiteral("dynamic"):QStringLiteral("static");
+        controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void automaticStaticEntryAndManualDismissal() {
+        QVERIFY(LaptopController::defaults().value(QStringLiteral("staticAutoShow")).toBool());
+        LaptopController controller;eligible(controller,false);
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        const int before=m_backend.staticBegins;
+        controller.updateEligibility();QTRY_COMPARE(m_backend.staticBegins,before+1);
+        controller.updateEligibility();controller.updateEligibility();
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());
+        controller.textFocusChanged(true);controller.textFocusChanged(false);QVERIFY(controller.staticActive());
+        controller.leave();controller.updateEligibility();
+        QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
+        QCOMPARE(m_backend.staticBegins,before+1);QVERIFY(!controller.active());
+        controller.m_lidClosed=true;controller.updateEligibility();
+        controller.m_lidClosed=false;controller.updateEligibility();
+        QTRY_COMPARE(m_backend.staticBegins,before+2);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
+    }
+    void automaticEntryRespectsUsbAndRearmsAfterRemoval() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        const int before=m_backend.staticBegins;
+        controller.usbKeyboardChanged(true);QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+        controller.usbKeyboardChanged(false);QTRY_COMPARE(m_backend.staticBegins,before+1);
+        controller.usbKeyboardChanged(true);QVERIFY(!controller.m_starting);
+        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
+        controller.usbKeyboardChanged(false);QTRY_COMPARE(m_backend.staticBegins,before+2);
+        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
+    }
+    void queuedAutomaticEntryCanBeDisabledOrDismissed() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_options[QStringLiteral("staticAutoShow")]=true;
+        const int before=m_backend.staticBegins;
+        controller.updateEligibility();controller.leave();
+        QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+        controller.m_staticAutoSuppressed=false;controller.m_staticAutoAttempted=false;
+        controller.updateEligibility();controller.m_options[QStringLiteral("staticAutoShow")]=false;
+        QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+    }
+    void pendingNativeRevocationWinsOverEntryReply_data() {
+        QTest::addColumn<bool>("dynamic");QTest::newRow("static")<<false;QTest::newRow("dynamic")<<true;
+    }
+    void pendingNativeRevocationWinsOverEntryReply() {
+        QFETCH(bool,dynamic);LaptopController controller;eligible(controller,dynamic);
+        const int before=m_backend.staticBegins+m_backend.dynamicBegins;
+        controller.enter();QTRY_COMPARE(m_backend.staticBegins+m_backend.dynamicBegins,before+1);
+        if(dynamic)controller.backendDynamic(false);else controller.backendStatic(false);
+        QVERIFY(!controller.m_starting);
+        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
+    }
     void usbKeyboardBlocksOnlyStatic() {
         LaptopController controller;eligible(controller,false);
         controller.usbKeyboardChanged(true);QVERIFY(!controller.available());
