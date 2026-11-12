@@ -62,14 +62,26 @@ sudo dnf copr enable mcc45tr/uke-plasma-keyboard-custom fedora-rawhide-aarch64
 sudo dnf install uke-plasma-keyboard-custom
 ```
 
+When upgrading from 0.1.0-27 or earlier, the old watcher can miss an executable
+replacement with unchanged size and timestamp. If the running version stays
+old, reload the selected Uke provider once after DNF finishes:
+
+```sh
+uke-plasma-keyboard-custom --restart-input-method
+```
+
+This helper preserves a different provider selection made during the reload.
+It does nothing when an unrelated keyboard is selected.
+
 The KWin plugin is part of this RPM and must be rebuilt for each KWin ABI.
 An incompatible plugin disables static mode with an explanation; it does not
 force a KWin downgrade. Native code and native tests are built only in COPR.
 There is no project Python runtime or build generator.
 
-COPR [11310862](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11310862/)
-builds version 0.1.0-20 on all three targets, each with 29 passing CTests.
-Device installation and physical qualification are separate gates; see the
+COPR [11315309](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11315309/)
+builds version 0.1.0-28 on all three targets, each with 33 passing CTests.
+DNF upgrade/reinstallation and native attachment are verified on the tablet.
+Physical laptop-mode and adaptive-refresh qualification remain open; see the
 [first tablet trial](docs/device-trial.md) before using laptop mode.
 
 See [architecture and source provenance](docs/architecture.md),

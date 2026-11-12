@@ -558,11 +558,60 @@ replacement. Calling the installed preference-safe restart helper once loads
 resolved provider selection survives. This is an explicit provider reload, not
 proof that the old automatic watcher handled the upgrade.
 
-## 0.1.0-28 — equal-size replacement detection pending
+## COPR11315309 /0.1.0-28 — installed replacement regression passes
 
 The event-driven watcher additionally compares the regular file's device/inode
 identity. No idle polling is added. A native filesystem regression atomically
 replaces a file with different contents but equal size and timestamp while the
 old inode remains open, matching the observed RPM transition. It also rejects
-missing and nonregular paths. Source checks pass; all 33 CTests, RPM assembly
-and installed upgrade/reinstallation qualification remain required.
+missing and nonregular paths. All 33 CTests and RPM assembly pass independently
+on Fedora 44, 45 and Rawhide aarch64. The source worker pins commit
+56b262b60551880f11204556d40abc63db1f2a60 and the published spec is byte-equal
+to the reviewed recipe (SHA256 8d2015ffabf995105fb5e340166a5940ab22d5e21ff07029b57ccaca4ebdf05b).
+The Rawhide KWin SDK is 6.8.2, matching the actual original compositor.
+
+The signed Rawhide RPM's SHA256 is
+ecf4f9c1940bd26069540fce67236fbb2beda4ef51ece37499eb399f3d7eecd5.
+Both package signatures and header/payload digests pass; 487 paths add no
+foreign ownership, Python files or input grants. Dependencies and scriptlets
+match the earlier installed recipe. DNF upgrades only the keyboard to 28.
+The old 27 watcher also misses this equal-size/equal-time transition, so the
+installed helper reloads that provider once; build28 and native readiness then
+appear in the same original compositor, PID1165.
+
+An actual DNF reinstallation now replaces the inode while keeping the binary's
+size 18,444,032 bytes and timestamp 1794441600. The new watcher automatically
+renews the main process from PID16702 to PID17003, without a manual helper or
+compositor restart. Native build28/readiness return, RPM verification is clean,
+the resolved input-method selection survives, and all five tracked preference
+hash/absence states match the immediate pre-reinstallation checkpoint. These
+file-hash observations apply to this checkpoint, not every earlier upgrade.
+The optional lock-switcher remains disabled/inactive. A removal solve with
+--assumeno removes only the Uke RPM; no removal is applied and original
+plasma-keyboard remains installed.
+
+The final stable private original-KWin fixture reports known-unlocked state,
+native build28/readiness, unrelated Attach denial and normal keyboard visibility
+after synthetic text activation. It exits successfully in a 768 MiB/60 second
+transient scope. Its five-second hidden sample records zero CPU ticks,
+PSS84,784 KiB, RSS156,912 KiB, eight threads and zero context switches. The first
+overlapping fixture sample was discarded when the reinstallation restarted its
+keyboard; a stable post-transaction run supplies this evidence. Missing private
+accessibility/PipeWire services remain fixture limits.
+
+The actual selected hidden process records zero CPU ticks over 30.03 seconds,
+PSS108,758 KiB, RSS204,488 KiB, 16 threads and one context switch. This bounded
+sample does not establish hardware-wakeup or stock-provider parity. SELinux
+remains Enforcing. The bounded ausearch query did not return a recognized
+result, so no audit-log absence claim is made.
+
+The rejected, never-installed 24 build (11311632) is withdrawn after the
+qualified replacement is installed. Its source commit and reviewed recipe
+remain recorded. The API returns 404 and refreshed primary metadata on all
+three targets excludes 24 while retaining 28. No extra rebuild or metadata
+regeneration request is needed.
+
+Static/dynamic physical gestures, ordinary lock-screen typing, refresh ownership
+restoration and native adaptive 30–60 Hz cadence/touch qualification remain open.
+The cover is closed and the internal panel stays disabled; laptop mode correctly
+refuses entry. No panel, display layout, kernel or boot selection is changed.
