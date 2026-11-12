@@ -304,3 +304,9 @@ msgstr "Dinamik mod varsayılan olarak tepsiden açılır. Tutamacını sürükl
 
 msgid "Close"
 msgstr "Kapat"
+
+msgid "Checking for a connected USB keyboard."
+msgstr "Bağlı USB klavye denetleniyor."
+
+msgid "Disconnect the USB keyboard before entering static laptop mode. Pogo keyboards are excluded."
+msgstr "Sabit dizüstü moduna geçmeden önce USB klavyeyi çıkarın. Pogo klavyeler bu koşula dahil değildir."

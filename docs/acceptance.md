@@ -44,6 +44,22 @@ acceptance gate changes with this record.
 
 ## COPR 11309616 — source worker failure
 
+## Release33 — physical USB keyboard policy
+
+12 November source: static entry is refused for physical USB typing keyboards
+and receivers. Device attachment exits static mode through the existing input,
+window and refresh cleanup. Normal/dynamic modes and non-USB pogo transport
+are unaffected. New native classification tests and controller hotplug,
+pending-entry and stale-reply cases await COPR qualification; the device is
+still32. No native compilation runs on the tablet.
+
+The user additionally authorized a bounded temporary open-cover simulation and
+panel wake for software testing, followed by restoration. This does not add a
+production bypass or qualify physical cover/touch behavior. Real home testing
+and native30–60 VRR qualification remain open.
+
+## COPR 11309616 — source worker failure
+
 Source `20a2d674feed5eca42c6b63659dcd08ac0202eeb`. The source worker checked out
 the exact revision and invoked the reviewed Makefile, then failed because its
 minimal chroot did not contain `git`. No native compilation or binary RPM was

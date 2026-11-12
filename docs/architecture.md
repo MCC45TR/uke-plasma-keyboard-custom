@@ -17,6 +17,24 @@ or physical acceptance. KWin, Qt and Plasma Keyboard remain original packages.
 
 ## Session boundaries
 
+Static laptop mode additionally requires no physical USB typing keyboard.
+The original KWin6.8.2 InputDevice busType/sysPath and alphaNumericKeyboard
+properties identify keyboards and USB receivers without treating a mouse's
+media keys as a typing keyboard. Virtual devices and non-USB transports such
+as the native pogo path are excluded; names and vendor allowlists do not grant
+exceptions. InputRedirection deviceAdded/deviceRemoved events recompute the
+state without polling. The backend independently rejects BeginStatic and
+ends an active static session on attachment, using the existing release and
+refresh/window restoration path. Normal and dynamic modes are unaffected.
+The client queries the authenticated backend and ignores stale capability
+replies after a newer device event; unknown detection blocks static entry.
+
+Reviewed original headers:
+[`core/inputdevice.h`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/core/inputdevice.h),
+[`backends/libinput/device.h`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/backends/libinput/device.h)
+and `input.cpp`, at the same original6.8.2 revision used below. GPL attribution
+remains in the unchanged reference sources; this uses their existing APIs.
+
 The keyboard owns its QML surfaces, language model and per-user preferences.
 The KWin extension owns virtual input and pointer/window isolation. Its virtual
 InputDevice follows the original KDE buttonrebinds pattern (David Redondo,

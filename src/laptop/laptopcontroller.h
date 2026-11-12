@@ -49,7 +49,8 @@ public:
     bool active() const { return m_active; }
     bool staticActive() const { return m_active && !m_dynamic; }
     bool dynamicActive() const { return m_active && m_dynamic; }
-    bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed; }
+    bool available() const { return m_ready && m_available && !m_locked && !m_lidClosed &&
+        (m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic") || (m_usbKeyboardKnown && !m_usbKeyboardPresent)); }
     bool backendReady() const { return m_ready; }
     bool nativeInputAllowed() const { return m_ready && !m_locked; }
     QString reason() const { return m_reason; }
@@ -109,6 +110,7 @@ private Q_SLOTS:
     void backendDynamic(bool active);
     void systemLayout(uint index);
     void propertiesChanged(const QString &iface,const QVariantMap &changed,const QStringList &invalidated);
+    void usbKeyboardChanged(bool present);
     void refreshRemote();
     void profileError(const QString &reason);
     void syncLocks(bool caps,bool num,bool scroll);
@@ -118,6 +120,8 @@ private:
     void replaceBackend(QStringList remaining);
     void connectBackend();
     void queryLid();
+    void queryUsbKeyboard();
+    void updateEligibility();
     void updateTopology();
     void loadLayouts();
     void rebuildKeymap();
@@ -142,6 +146,8 @@ private:
     uint m_transition=0;
     uint m_lidGeneration=0;
     uint m_backendGeneration=0;
+    uint m_usbKeyboardGeneration=0;
+    bool m_usbKeyboardKnown=false,m_usbKeyboardPresent=false;
     bool m_caps=false,m_num=false,m_scroll=false;
     bool m_preferencesOnly=false;
     double m_remoteDensity=0;

@@ -27,6 +27,9 @@ Key sizing uses physical millimetres with a calibration ruler. Function,
 modifier, arrow, navigation and system-key regions are independently selectable.
 The touchpad supports tap, drag, scroll, pinch and three/four-finger gestures.
 Its width, buttons and short typing guard are configurable.
+Static mode is blocked while a physical USB typing keyboard or USB receiver
+is connected, and exits on attachment. Pogo, Bluetooth and virtual keyboards
+do not trigger this USB condition. Normal and dynamic modes remain available.
 
 Space dragging moves the text cursor; dragging left from Backspace deletes
 words. Suggestions use optional original Fedora Hunspell dictionaries. Personal

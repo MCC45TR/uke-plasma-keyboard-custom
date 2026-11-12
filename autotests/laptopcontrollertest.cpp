@@ -29,9 +29,17 @@ public:
     QDBusMessage request;
     int staticBegins=0,dynamicBegins=0,staticEnds=0,dynamicEnds=0,profiles=0,attaches=0;
     QString lastReceiver;
+    bool deferCapabilities=false;
+    QDBusMessage capabilitiesRequest;
+    int capabilityQueries=0;
     QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
     void reply() { server.send(request.createReply(QVariantList{true})); }
 public Q_SLOTS:
+    QVariantMap Capabilities() {
+        ++capabilityQueries;
+        if(deferCapabilities){capabilitiesRequest=message();setDelayedReply(true);return {};}
+        return {{QStringLiteral("usbKeyboardPresent"),false}};
+    }
     bool Attach() {++attaches;return true;}
     bool BeginStatic(const QString &) {request=message();setDelayedReply(true);++staticBegins;return false;}
     bool BeginDynamic(const QString &) {lastReceiver=connection().baseService();request=message();setDelayedReply(true);++dynamicBegins;return false;}
@@ -61,9 +69,50 @@ class LaptopControllerTest final : public QObject {
         controller.m_backendOwner=m_backend.server.baseService();
         controller.m_ready=true;controller.m_available=true;controller.m_locked=false;
         controller.m_lidClosed=false;controller.m_tabletName=QStringLiteral("synthetic-panel");
+        controller.m_usbKeyboardKnown=true;controller.m_usbKeyboardPresent=false;
         controller.m_options[QStringLiteral("presentation")]=dynamic?QStringLiteral("dynamic"):QStringLiteral("static");
     }
 private Q_SLOTS:
+    void usbKeyboardBlocksOnlyStatic() {
+        LaptopController controller;eligible(controller,false);
+        controller.usbKeyboardChanged(true);QVERIFY(!controller.available());
+        QVERIFY(controller.reason().contains(QStringLiteral("USB")));
+        const int before=m_backend.staticBegins;controller.enter();QCOMPARE(m_backend.staticBegins,before);
+        controller.m_options[QStringLiteral("presentation")]=QStringLiteral("dynamic");
+        QVERIFY(controller.available());
+        controller.m_usbKeyboardKnown=false;QVERIFY(controller.available());
+        controller.m_options[QStringLiteral("presentation")]=QStringLiteral("static");
+        QVERIFY(!controller.available());
+        controller.usbKeyboardChanged(false);QVERIFY(controller.available());QVERIFY(!controller.active());
+    }
+    void usbHotplugCancelsPendingStaticEntry() {
+        LaptopController controller;eligible(controller,false);
+        const int begins=m_backend.staticBegins,ends=m_backend.staticEnds;
+        controller.enter();QTRY_COMPARE(m_backend.staticBegins,begins+1);
+        controller.usbKeyboardChanged(true);QVERIFY(!controller.m_starting);
+        QTRY_COMPARE(m_backend.staticEnds,ends+1);
+        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
+        QVERIFY(!controller.active());QVERIFY(!controller.available());
+    }
+    void usbHotplugLeavesActiveStaticButKeepsDynamic() {
+        LaptopController controller;eligible(controller,false);controller.m_active=true;
+        const int ends=m_backend.staticEnds;
+        controller.usbKeyboardChanged(true);QVERIFY(!controller.active());QTRY_COMPARE(m_backend.staticEnds,ends+1);
+        eligible(controller,true);controller.m_active=true;controller.m_dynamic=true;
+        controller.usbKeyboardChanged(true);QVERIFY(controller.dynamicActive());QVERIFY(controller.available());
+        controller.leave();
+    }
+    void usbSignalWinsOverOldCapabilityReply() {
+        LaptopController controller;eligible(controller,false);
+        m_backend.deferCapabilities=true;
+        const auto restore=qScopeGuard([&]{m_backend.deferCapabilities=false;});
+        const int before=m_backend.capabilityQueries;
+        controller.queryUsbKeyboard();QTRY_COMPARE(m_backend.capabilityQueries,before+1);
+        controller.usbKeyboardChanged(true);
+        m_backend.server.send(m_backend.capabilitiesRequest.createReply(QVariantList{QVariantMap{{QStringLiteral("usbKeyboardPresent"),false}}}));
+        QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
+        QVERIFY(controller.m_usbKeyboardPresent);QVERIFY(!controller.available());
+    }
     void initTestCase() {
         QCOMPARE(qgetenv("PLASMA_KEYBOARD_TEST_ISOLATED_BUS"),QByteArray("1"));
         QCOMPARE(qgetenv("DBUS_SYSTEM_BUS_ADDRESS"),qgetenv("DBUS_SESSION_BUS_ADDRESS"));

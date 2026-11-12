@@ -6,6 +6,7 @@
 #include "refreshguard.h"
 #include "nativerefreshbackend.h"
 #include "versionguard.h"
+#include "usbkeyboardpolicy.h"
 #include <core/inputdevice.h>
 #include <core/output.h>
 #include <core/session.h>
@@ -102,6 +103,9 @@ public:
         input()->addInputDevice(&m_device);
         m_deviceAdded = true;
         input()->installInputEventFilter(this);
+        connect(input(), &InputRedirection::deviceAdded, this, [this] { updateUsbKeyboard(); });
+        connect(input(), &InputRedirection::deviceRemoved, this, [this] { updateUsbKeyboard(); });
+        updateUsbKeyboard();
         connect(workspace(), &Workspace::outputsChanged, this, [this] {
             if (m_active && !eligible(m_tabletName)) endStatic();
             if (m_dynamic && !eligible(m_tabletName)) endDynamic();
@@ -177,7 +181,8 @@ public Q_SLOTS:
         return {{QStringLiteral("version"), UkeKeyboard::protocolVersion},
                 {QStringLiteral("build"), QStringLiteral(UKE_PLUGIN_BUILD_ID)},
                 {QStringLiteral("internal"), internal}, {QStringLiteral("external"), external},
-                {QStringLiteral("active"), m_active}, {QStringLiteral("tablet"), m_tabletName}};
+                {QStringLiteral("active"), m_active}, {QStringLiteral("tablet"), m_tabletName},
+                {QStringLiteral("usbKeyboardPresent"), hasUsbKeyboard()}};
     }
     bool Attach() {
         if (!calledFromDBus() || locked()) return false;
@@ -204,7 +209,7 @@ public Q_SLOTS:
         return true;
     }
     bool BeginStatic(const QString &tablet) {
-        if (!authorized() || !eligible(tablet)) return false;
+        if (!authorized() || !eligible(tablet) || hasUsbKeyboard()) return false;
         if (m_active) return m_tabletName == tablet;
         endDynamic();
         m_tabletName = tablet;
@@ -278,9 +283,21 @@ Q_SIGNALS:
     void StaticChanged(bool active);
     void DynamicChanged(bool active);
     void TopologyChanged();
+    void UsbKeyboardChanged(bool present);
     void ProfileError(const QString &reason);
 
 private:
+    bool hasUsbKeyboard() const {
+        const auto devices = input()->devices();
+        return std::any_of(devices.begin(), devices.end(), UkeKeyboard::isPhysicalUsbKeyboard);
+    }
+    void updateUsbKeyboard() {
+        const bool present = hasUsbKeyboard();
+        if (present == m_usbKeyboardPresent) return;
+        m_usbKeyboardPresent = present;
+        if (present) endStatic();
+        Q_EMIT UsbKeyboardChanged(present);
+    }
     void relayTouch(int phase,int id,const QPointF &position) {
         if(m_client.isEmpty()||locked())return;
         OutputType *output=nullptr;
@@ -415,7 +432,7 @@ private:
     RefreshGuard m_refresh;
     QString m_client,m_tabletName;
     uint m_clientPid=0;
-    bool m_active=false,m_dynamic=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false;
+    bool m_active=false,m_dynamic=false,m_warping=false,m_moving=false,m_deviceAdded=false,m_swiping=false,m_pinching=false,m_usbKeyboardPresent=false;
     QSet<uint> m_keys,m_buttons;
     QHash<int,QPointF>m_touches;
     QSet<int>m_directTouches,m_cancelledTouches;
