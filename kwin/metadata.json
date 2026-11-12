@@ -4,6 +4,6 @@
         "Name": "Uke keyboard integration",
         "Description": "Session-scoped virtual input and tablet keyboard surface isolation",
         "License": "GPL-2.0-or-later",
-        "EnabledByDefault": true
+        "EnabledByDefault": false
     }
 }

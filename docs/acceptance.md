@@ -397,3 +397,24 @@ First input-method selection remains manual. SELinux runtime, visible/hidden
 idle measurements, static/dynamic touch and keyboard behavior, refresh
 restoration, lock/disconnect/cover transitions and native30–60 VRR remain open.
 Passing the package matrix does not establish physical acceptance.
+
+## First device installation and native plugin load
+
+Version0.1.0-20 was installed through the explicitly selected Rawhide aarch64
+COPR repository. DNF added only this package and verified/imported the expected
+COPR signing key. The original plasma-keyboard6.8.2 and KWin6.8.2 remain
+installed. RPM verification reports no differences; all recorded keyboard,
+layout and lock preferences are unchanged. The optional lock-switcher remains
+disabled/inactive and SELinux remains Enforcing.
+
+The actual KWin process successfully loaded the native plugin. Its capabilities
+reported no enabled internal output, one external output and an inactive
+surface, matching the closed-panel session. An unrelated client Attach request
+was refused. Unloading restored the original loaded-plugin list without changing
+the selected input method or outputs. This proves live ABI loading and caller
+rejection, not keyboard/pad interaction.
+
+The runtime audit also found that plugin metadata requested automatic loading
+at every KWin startup. The next package changes that flag tofalse, retaining
+the keyboard's existing explicit LoadPlugin request. Physical/manual input-method
+and native VRR qualification remain open.

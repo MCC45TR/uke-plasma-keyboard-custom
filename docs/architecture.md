@@ -112,3 +112,10 @@ disabled. Source archives include the acceptance and architecture documents,
 while legacy reference screenshots stay in Git only. The private transcribe
 build inherits GGML_NATIVE from the outer recipe; COPR requests OFF rather than
 optimizing that dependency for a particular builder CPU.
+
+The integration's metadata disables automatic loading at desktop startup.
+The keyboard requests it through LoadPlugin when needed; an explicit existing
+user plugin preference still takes precedence. KWin's PluginManager at the
+reviewed revision checks EnabledByDefault only during startup and permits an
+explicit LoadPlugin request independently. This keeps the extra virtual device
+and input filter absent when the user continues using the stock keyboard.
