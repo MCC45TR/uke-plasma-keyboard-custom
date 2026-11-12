@@ -49,7 +49,7 @@ extended physical acceptance remain open.
 
 ## Touch delivery and surface polish
 
-Candidate42 makes automatic normal-mode opening touch-only. An input-method
+Candidate43 makes automatic normal-mode opening touch-only. An input-method
 context can be activated by mouse focus or application state, so context and
 surrounding-text notifications alone must not map the layer-shell keyboard.
 The selected provider asynchronously asks its actual compositor parent whether
@@ -58,14 +58,16 @@ backend rejects unrelated callers, and the client pins the bus owner's PID to
 its direct parent. Missing integration, errors and non-touch input refuse the
 automatic request. Context loss, hide and lock boundaries invalidate pending
 replies. The normal Plasma panel follows the actual visible keyboard surface.
+Compositor visibility does not activate an unmapped layer window: doing so
+would let QML's active-window handler map it before the touch decision.
 
 Explicit keyboard shortcuts retain their manual show action. Persistent static
 mode, manual dynamic mode and compositor-owned lock-screen visibility retain
 their separate policies. The old mouse-focus preference is kept on disk for
 configuration compatibility but no longer enables mouse-triggered opening;
 the corresponding switches are removed. A private mock-compositor test exercises
-the actual application with touch allowed/refused, surrounding-text updates and
-a delayed reply after context loss. These are software tests, not physical
+the actual application with touch allowed/refused, a compositor visibility edge,
+surrounding-text updates and a delayed reply after context loss. These are software tests, not physical
 touch or lock-screen acceptance.
 
 Reviewed original KWin6.8.2

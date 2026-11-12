@@ -948,3 +948,10 @@ compositor-owned lock policies are retained. Source/packaging guards pass;
 native42, signed RPM, DNF and physical mouse/touch acceptance are pending.
 The host currently selects the original Plasma Keyboard; that preference is
 preserved. This fork cannot change the original provider's application logic.
+
+Candidate43 also prevents `setKwinVisible(true)` from activating a still hidden
+layer window. The QML active-window handler could otherwise show it ahead of
+the asynchronous decision. The real-application regression now supplies that
+compositor visibility edge while refusing touch authorization and requires the
+layer surface to stay unmapped.42 is not delivered while this known route
+remains; the cumulative43 native and delivery gates remain pending.

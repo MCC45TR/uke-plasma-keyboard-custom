@@ -517,6 +517,28 @@ public Q_SLOTS:
     }
 };
 
+class TestVirtualKeyboard final : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.kde.kwin.VirtualKeyboard")
+    Q_PROPERTY(bool visible READ visible NOTIFY visibleChanged)
+    Q_PROPERTY(int mode READ mode WRITE setMode)
+public:
+    bool visible() const { return m_visible; }
+    int mode() const { return m_mode; }
+    void setMode(int mode) { m_mode = mode; }
+    void setVisible(bool visible) {
+        if (m_visible == visible) return;
+        m_visible = visible;
+        Q_EMIT visibleChanged();
+    }
+Q_SIGNALS:
+    void visibleChanged();
+private:
+    bool m_visible = false;
+    int m_mode = 1;
+};
+
 class InputMethodV1 : public QWaylandCompositorExtensionTemplate<InputMethodV1>, public QtWaylandServer::zwp_input_method_v1
 {
     Q_OBJECT
@@ -633,6 +655,9 @@ private Q_SLOTS:
         QVERIFY(bus.registerObject(QStringLiteral("/ScreenSaver"),&m_screenSaver,QDBusConnection::ExportAllSlots));
         QVERIFY(bus.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
         QVERIFY(bus.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"), &m_touchActivation, QDBusConnection::ExportAllSlots));
+        QVERIFY(bus.registerService(QStringLiteral("org.kde.KWin")));
+        QVERIFY(bus.registerObject(QStringLiteral("/VirtualKeyboard"), &m_virtualKeyboard,
+            QDBusConnection::ExportAllProperties | QDBusConnection::ExportAllSignals));
         // Keep test configuration/data separate without changing HOME.
         if (!m_home.isValid()) {
             qFatal("Couldn't create temporary configuration folder for the test");
@@ -853,6 +878,13 @@ private Q_SLOTS:
         QTRY_VERIFY(m_touchActivation.queries > before);
         QTest::qWait(350);
         QVERIFY(!visible()); // Mouse/keyboard/programmatic activation.
+        // A compositor visibility edge must not activate an unmapped layer
+        // window and bypass the touch decision through QML's active handler.
+        m_virtualKeyboard.setVisible(true);
+        QTest::qWait(150);
+        QVERIFY(!visible());
+        m_virtualKeyboard.setVisible(false);
+        QTest::qWait(100);
         auto *context = m_inputMethod->context();
         for (auto *resource : context->resourceMap()) {
             context->send_surrounding_text(resource->handle, QStringLiteral("synthetic"), 0, 0);
@@ -1309,6 +1341,7 @@ private:
     std::unique_ptr<TestLayerShell> m_layerShell;
     TestScreenSaver m_screenSaver;
     TestTouchActivation m_touchActivation;
+    TestVirtualKeyboard m_virtualKeyboard;
     std::unique_ptr<QProcess> m_child;
 };
 

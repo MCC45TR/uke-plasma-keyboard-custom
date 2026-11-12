@@ -510,11 +510,11 @@ public:
         }
         m_kwinVisible = visible;
         qCDebug(PlasmaKeyboard) << "KWin reports the keyboard visible:" << visible;
-        if (visible) {
+        if (visible && m_keyboard && m_keyboard->isVisible()) {
             // Qt Virtual Keyboard only enables the keys while the window holding
             // the input item is active, and a layer-shell window is not activated
-            // by the compositor: announce the activation to Qt as soon as the
-            // keyboard is on screen.
+            // by the compositor. An unmapped layer window still needs touch
+            // authorization; activating it here would let QML show it first.
             activateKeyboardWindow(m_keyboard);
         }
         Q_EMIT kwinVisibleChanged();
