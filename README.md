@@ -41,10 +41,30 @@ then select **Uke Plasma Keyboard Custom** in System Settings → Virtual Keyboa
 Installation does not replace the selected input method. The original
 `plasma-keyboard` package remains required and available for rollback.
 
+On Fedora 44 or 45 aarch64:
+
+```sh
+sudo dnf copr enable mcc45tr/uke-plasma-keyboard-custom
+sudo dnf install uke-plasma-keyboard-custom
+```
+
+On Rawhide aarch64, explicitly select the Rawhide chroot. Its repository name
+does not follow Rawhide's numeric `$releasever`:
+
+```sh
+sudo dnf copr enable mcc45tr/uke-plasma-keyboard-custom fedora-rawhide-aarch64
+sudo dnf install uke-plasma-keyboard-custom
+```
+
 The KWin plugin is part of this RPM and must be rebuilt for each KWin ABI.
 An incompatible plugin disables static mode with an explanation; it does not
 force a KWin downgrade. Native code and native tests are built only in COPR.
 There is no project Python runtime or build generator.
+
+COPR [11310862](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11310862/)
+builds version 0.1.0-20 on all three targets, each with 29 passing CTests.
+Device installation and physical qualification are separate gates; see the
+[first tablet trial](docs/device-trial.md) before using laptop mode.
 
 See [architecture and source provenance](docs/architecture.md),
 [acceptance status](docs/acceptance.md) and the retained

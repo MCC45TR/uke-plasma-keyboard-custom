@@ -362,3 +362,38 @@ selected or pending text. The next source replaces them with event-only messages
 and adds a native synthetic-input test with debug logging explicitly enabled.
 It also installs the retained upstream README referenced by the package docs.
 The full native suite must pass again before delivery.
+
+## COPR 11310862 — qualified package matrix and signed Rawhide RPM
+
+Source `f7c39c1a134607e91c043026a2e493c8ddc4fce5`, version 0.1.0-20:
+Fedora 44, Fedora 45 and Rawhide aarch64 each pass all 29 CTests and RPM assembly.
+The overlay regression runs with debug logging enabled and verifies that
+synthetic selected/pending text does not appear in messages. Actual source-worker
+revision and published recipe match the submitted inputs. Recipe SHA256:
+`040bd3b45a513c408a24f38fe0f68528861135256c4a1b4ac399a0c29a4a9128`.
+
+The Rawhide binary's header and legacy OpenPGP signatures and payload/header
+digests verify against COPR key
+`359e586fa7bff815105a41b9ee9b13208dfa961c` in an isolated RPM keyring.
+Binary SHA256:
+`9ce5f8dc53a5964eb87fdac85c6cc18f16309016b99b6a1291502c4dfefd2aee`.
+The 17,589,798-byte download contains 487 paths and occupies 33,441,286 bytes
+installed. No existing non-directory path overlaps, original QML-library
+provider names, Python payload or input-grant udev rules were found. Scriptlets
+only handle optional user-service removal and upgrade; there is no fresh-install
+activation or input-method setter.
+
+DNF resolves the exact signed RPM against the installed RPM database with only
+this one addition. This read-only solve uses a separate empty DNF reason-state
+directory and `--assumeno`; it is not an applied transaction. A stale metadata
+cache initially could not find release20; checking the exact verified RPM avoids
+confusing that observation with a missing package or dependency. The native
+desktop authorization attempt found no authentication agent. Local terminal
+authentication, actual DNF installation and preference-preservation checks are
+still pending. No source RPM or model was stored on the tablet, and no native
+compilation ran there.
+
+First input-method selection remains manual. SELinux runtime, visible/hidden
+idle measurements, static/dynamic touch and keyboard behavior, refresh
+restoration, lock/disconnect/cover transitions and native30–60 VRR remain open.
+Passing the package matrix does not establish physical acceptance.
