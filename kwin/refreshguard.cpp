@@ -27,9 +27,13 @@ std::optional<RefreshGuard::Mode> findMode(const QList<RefreshGuard::Mode>&modes
  }
  return best;
 }
-bool owns(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
+bool ownsMode(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
 {
- return current.current==recordedMode(saved,true)&&current.policy==saved.value(QStringLiteral("appliedPolicy")).toInt();
+ return current.current==recordedMode(saved,true);
+}
+bool ownsPolicy(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
+{
+ return current.policy==saved.value(QStringLiteral("appliedPolicy")).toInt();
 }
 }
 
@@ -111,12 +115,15 @@ void RefreshGuard::step()
  const auto current=m_backend.read(target);
  if(!current)return; // A missing/disabled panel is never enabled for recovery.
  if(restore){
-  if(!owns(*current,m_saved))clear();
+  const bool modeOwned=ownsMode(*current,m_saved);
+  const bool policyOwned=ownsPolicy(*current,m_saved);
+  if(!modeOwned&&!policyOwned)clear();
   else{
    const auto original=recordedMode(m_saved,false);
-   const auto mode=findMode(current->modes,original.size,original.milliHz);
+   const auto mode=modeOwned?findMode(current->modes,original.size,original.milliHz):std::optional<Mode>(current->current);
    if(!mode){m_error(QStringLiteral("The original refresh mode is no longer advertised; the display was left unchanged."));return;}
-   if(!m_backend.apply(target,*mode,m_saved.value("policy").toInt())){
+   const int policy=policyOwned?m_saved.value("policy").toInt():current->policy;
+   if(!m_backend.apply(target,*mode,policy)){
     m_error(QStringLiteral("KWin refused the temporary refresh configuration."));return;
    }
    clear();
@@ -127,9 +134,18 @@ void RefreshGuard::step()
 
  const auto next=findMode(current->modes,current->current.size,m_wanted.toInt()*1000,600);
  if(!next){m_error(QStringLiteral("This display does not advertise the requested fixed refresh rate."));return;}
- const bool previouslyOwned=!m_saved.isEmpty()&&owns(*current,m_saved);
- if(!previouslyOwned&&!m_saved.isEmpty())clear();
- if(current->current==*next&&current->policy==0)return;
+ if(!m_saved.isEmpty()){
+  const bool modeOwned=ownsMode(*current,m_saved);
+  const bool policyOwned=ownsPolicy(*current,m_saved);
+  if(!modeOwned&&!policyOwned)clear();
+  else{
+   // A user edit relinquishes only that field. Keep the other field's original
+   // baseline across later profile switches and restoration.
+   if(!modeOwned){m_saved["width"]=current->current.size.width();m_saved["height"]=current->current.size.height();m_saved["hz"]=current->current.milliHz/1000.0;}
+   if(!policyOwned)m_saved["policy"]=current->policy;
+  }
+ }
+ if(current->current==*next&&current->policy==0){if(!m_saved.isEmpty())save();return;}
  const auto previous=m_saved;
  if(m_saved.isEmpty())m_saved={{"version",1},{"name",target},{"width",current->current.size.width()},{"height",current->current.size.height()},{"hz",current->current.milliHz/1000.0},{"policy",current->policy}};
  m_saved["appliedWidth"]=next->size.width();m_saved["appliedHeight"]=next->size.height();m_saved["appliedHz"]=next->milliHz/1000.0;m_saved["appliedPolicy"]=0;

@@ -632,8 +632,9 @@ source findings, not observed physical display failures.
 Candidate29 constructs a synchronous original-KWin request for the selected,
 already enabled internal output, with only currentMode and vrrPolicy set.
 Persistent desiredMode, geometry, power, scaling, rotation, color and other
-output preferences are not populated. The recovery logic retains the last
-successfully applied ownership on failure, compares rates in millihertz and
+output preferences are not populated. Mode and VRR-policy ownership are tracked
+independently so an edit to one field preserves the other's baseline. The
+recovery logic retains the last successfully applied ownership on failure, compares rates in millihertz and
 waits for an enabled panel without enabling one. No idle timer is introduced.
 
 Two native CTests are added: private-filesystem recovery/failure cases and

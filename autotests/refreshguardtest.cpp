@@ -73,16 +73,26 @@ private Q_SLOTS:
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("60"));
   QCOMPARE(outputs.states[panel].current.milliHz,60000);
   outputs.states[panel].current=mode(59940);guard.end();
-  QCOMPARE(outputs.states[panel].current.milliHz,59940);QCOMPARE(outputs.appliedRates.size(),1);QVERIFY(!QFile::exists(journal()));
+  QCOMPARE(outputs.states[panel].current.milliHz,59940);QCOMPARE(outputs.states[panel].policy,2);QCOMPARE(outputs.appliedRates.size(),2);QVERIFY(!QFile::exists(journal()));
  }
  void anInterveningVrrPolicyIsPreserved(){
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
   outputs.states[panel].policy=1;guard.end();
-  QCOMPARE(outputs.states[panel].current.milliHz,30000);QCOMPARE(outputs.states[panel].policy,1);QCOMPARE(outputs.appliedRates.size(),1);QVERIFY(!QFile::exists(journal()));
+  QCOMPARE(outputs.states[panel].current.milliHz,90000);QCOMPARE(outputs.states[panel].policy,1);QCOMPARE(outputs.appliedRates.size(),2);QVERIFY(!QFile::exists(journal()));
  }
  void aFailedFirstApplyOwnsNothing(){
   outputs.failRate=30000;RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
   QCOMPARE(outputs.states[panel].current.milliHz,90000);QVERIFY(!QFile::exists(journal()));guard.end();QCOMPARE(outputs.appliedRates.size(),1);
+ }
+ void anEditedPolicyRemainsTheBaselineAcrossSwitches(){
+  RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
+  outputs.states[panel].policy=1;guard.set(QStringLiteral("60"));guard.end();
+  QCOMPARE(outputs.states[panel].current.milliHz,90000);QCOMPARE(outputs.states[panel].policy,1);
+ }
+ void anEditedModeRemainsTheBaselineAcrossSwitches(){
+  RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
+  outputs.states[panel].current=mode(59940);guard.set(QStringLiteral("60"));guard.end();
+  QCOMPARE(outputs.states[panel].current.milliHz,59940);QCOMPARE(outputs.states[panel].policy,2);
  }
  void recoveryWaitsForAnAlreadyEnabledPanel(){
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
