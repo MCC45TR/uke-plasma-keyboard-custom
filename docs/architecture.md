@@ -8,6 +8,13 @@ native input routing and event-driven clipboard integration. Other desktop
 packages are not forked. Upstream-compatible fixes can be proposed upstream;
 feature retirement requires equivalent original-package support.
 
+The [migration inventory entry](../packaging/native-migration-component.json)
+records this application exception, its exact remaining delta and upstream
+return path. Its producer is in the separate keyboard COPR project, so the
+main unstable project's producer list is empty for this component. Mapping an
+installed source establishes inventory coverage only; it grants no retirement
+or physical acceptance. KWin, Qt and Plasma Keyboard remain original packages.
+
 ## Session boundaries
 
 The keyboard owns its QML surfaces, language model and per-user preferences.

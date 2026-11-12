@@ -30,6 +30,12 @@ an ineligible static-mode case, not permission to enable the panel or to claim
 successful touch/keyboard acceptance. Original kernel and boot selection remain
 outside this package's delivery scope.
 
+12 November inventory integration: the application-owned migration entry
+records the explicitly requested fork, separate COPR producer and remaining
+original-package return path. It is supplied for the shared migration policy;
+the owning policy and its current coverage report require separate confirmation.
+No runtime package, panel state or acceptance gate changes with this record.
+
 ## COPR 11309616 — source worker failure
 
 Source `20a2d674feed5eca42c6b63659dcd08ac0202eeb`. The source worker checked out
