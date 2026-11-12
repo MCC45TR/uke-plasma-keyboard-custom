@@ -16,7 +16,7 @@ The chronological sections below retain earlier failures and superseded states.
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
-| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
+| Dynamic laptop mode | Initial movable/tray/optional focus implementation | Native tests and actual USB-connected entry/exit with simulated open cover pass; physical interactions open | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -69,6 +69,17 @@ disabled panel and recorded display fields are restored afterward. The isolated
 original-KWin trial also passes native33 attachment, unrelated-caller rejection
 and normal-keyboard visibility. These are software checks; physical USB hotplug,
 pogo attachment, typing/touch and optical/VRR acceptance remain open.
+
+An additional trial lasting 4.72 seconds selected dynamic presentation
+temporarily through the original KConfig tool. With USB keyboards still present,
+the simulated-open cover and enabled internal panel, the tray request entered
+dynamic mode and then returned to normal. Recorded output enable/mode/position/
+scale/rotation fields stayed unchanged during dynamic mode. The exact original
+configuration bytes (or original file absence), closed switch and disabled panel
+were restored. All five tracked preference hashes, input-method selection,
+application, compositor and boot remained unchanged. This verifies software
+entry/exit only; drag, focus, touch, gestures and actual cover behavior remain
+physical acceptance gates.
 
 The user additionally authorized a bounded temporary open-cover simulation and
 panel wake for software testing, followed by restoration. This does not add a

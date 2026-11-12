@@ -11,6 +11,9 @@ tablet, copy binaries into the system or download speech models for this trial.
    and an extended external monitor. Keep mirroring off. The keyboard does not
    enable or reposition displays. Laptop mode becomes available only when its
    existing requirements are met.
+   For static mode, disconnect physical USB typing keyboards and USB receivers;
+   the native pogo connection is excluded from this USB condition. First verify
+   that a connected USB keyboard prevents static entry with an explanation.
 3. In a non-private external text field, check Turkish Q/F and English. Check
    an installed RTL layout and CJK engine separately. Only input layouts should
    synchronize; the desktop interface language should stay the same. Turn off
@@ -36,6 +39,11 @@ tablet, copy binaries into the system or download speech models for this trial.
    the keyboard separately. Static mode must exit rather than enable a screen.
    Verify held keys/buttons release and temporary refresh settings restore when
    still owned. Preserve intervening user changes.
+   Repeat with a USB keyboard attached while static mode is active: static mode
+   must exit and release held input. Removing the last USB keyboard permits
+   manual entry again; it must not open the surface automatically. Check pogo
+   separately without treating the native software classification as a physical
+   accessory receipt.
 9. Start with the keep refresh profile. Test advertised fixed 30/60 modes only
    after the basic trial. Adaptive 30–60 remains gated on the kernel/display/touch
    coordinator's physical qualification; do not change boot parameters here.
@@ -55,6 +63,10 @@ RPM through DNF if desired. Preserve keyboard preferences and the original
 provider. Future image defaults require first-session and lock-screen acceptance.
 
 ## Dynamic surface
+
+Dynamic mode remains eligible with a USB keyboard. Software entry/exit on the
+tablet has been checked with a temporary open-cover simulation; the interaction
+checks below remain physical acceptance work.
 
 Select Dynamic in keyboard settings. With automatic opening disabled, focusing a
 text field must not open either the normal keyboard or the deck. Open/close the
