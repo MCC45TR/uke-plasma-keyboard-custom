@@ -1042,3 +1042,14 @@ directory, preserving the default repository and installed39. Delivery, provider
 admission and actual inclination/mouse/touch testing remain open. No client
 poller, new runtime bridge package, device grant or keyboard-owned kernel build
 is added.
+
+## COPR11318392 /46 — missing native test include
+
+All three native targets stop while compiling the new private-bus fixture:
+QSignalSpy is not declared because QTest does not include that header. No CTest
+matrix or RPM is accepted from46. Candidate47 includes QSignalSpy explicitly.
+Source review also found that a timestamp-zero unknown edge could lose priority
+to a pending known snapshot.47 preserves that revocation and its replay barrier,
+with an actual bus race test. A second regression renews the lease inside an
+observation handler and verifies that old callback state cannot poison the new
+lease. Native results and real provider/frame admission remain pending.

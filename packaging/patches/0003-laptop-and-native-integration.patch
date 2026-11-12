@@ -2203,10 +2203,10 @@ index 0000000000000000000000000000000000000000..34042a3566308205fdf2aa684f7ebdba
 +}
 diff --git a/src/laptop/tabletposturemonitor.cpp b/src/laptop/tabletposturemonitor.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7e6f351f3
+index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e3565752f9aea8
 --- /dev/null
 +++ b/src/laptop/tabletposturemonitor.cpp
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,209 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "tabletposturemonitor.h"
 +
@@ -2214,6 +2214,7 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +#include <QDBusPendingCallWatcher>
 +#include <QDBusServiceWatcher>
 +#include <QUuid>
++#include <algorithm>
 +#include <cmath>
 +#include <ctime>
 +
@@ -2227,6 +2228,11 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +    timespec time{};
 +    if (clock_gettime(CLOCK_BOOTTIME, &time) != 0) return 0;
 +    return qulonglong(time.tv_sec) * 1000000 + qulonglong(time.tv_nsec) / 1000;
++}
++
++bool freshTimestamp(qulonglong timestamp) {
++    const auto now = boottimeUsec();
++    return timestamp > 0 && now >= timestamp && now - timestamp <= maximumDeliveryAgeUsec;
 +}
 +
 +QDBusMessage request(const QString &owner, const QString &method) {
@@ -2291,7 +2297,7 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +    ++m_generation;
 +    m_claimed = false;
 +    m_pendingSample.reset();
-+    m_lastTimestamp = 0;
++    m_lastTimestamp = m_pendingTimestamp = 0;
 +    if (m_signalReceiver) { m_signalReceiver->disconnect(this); m_signalReceiver->deleteLater(); }
 +    m_signalReceiver = nullptr;
 +    // Remove watchers before dropping their connection references. The ordered
@@ -2354,7 +2360,16 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +        if (generation != m_generation || sender != m_owner) return;
 +        const Sample sample{known, angle, timestamp};
 +        if (!m_claimed) {
-+            if (!m_pendingSample || timestamp > m_pendingSample->timestamp) m_pendingSample = sample;
++            const bool fresh = freshTimestamp(timestamp);
++            if (!known || !fresh || !std::isfinite(angle) || angle < 0 || angle > 180) {
++                // Unknown may have no sample timestamp. It still revokes an
++                // initial snapshot, without erasing the replay barrier.
++                m_pendingSample = Sample{false, 0, timestamp};
++                if (fresh) m_pendingTimestamp = std::max(m_pendingTimestamp, timestamp);
++            } else if (timestamp > m_pendingTimestamp) {
++                m_pendingSample = sample;
++                m_pendingTimestamp = timestamp;
++            }
 +        }
 +        else accept(sample);
 +    });
@@ -2376,20 +2391,26 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +        const auto args = reply.arguments();
 +        const Sample sample = m_pendingSample.value_or(Sample{args[0].toBool(), args[1].toDouble(), args[2].toULongLong()});
 +        m_pendingSample.reset();
-+        accept(sample);
++        const auto barrier = m_pendingTimestamp;
++        m_pendingTimestamp = 0;
++        accept(sample, barrier);
 +    });
 +}
 +
-+void TabletPostureMonitor::accept(const Sample &sample) {
-+    const auto now = boottimeUsec();
-+    const bool fresh = sample.timestamp > 0 && now >= sample.timestamp && now - sample.timestamp <= maximumDeliveryAgeUsec;
++void TabletPostureMonitor::accept(const Sample &sample, qulonglong replayBarrier) {
++    const auto previousTimestamp = m_lastTimestamp;
++    m_lastTimestamp = std::max(m_lastTimestamp, replayBarrier);
++    const bool fresh = freshTimestamp(sample.timestamp);
++    if (!sample.known) {
++        if (fresh) m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
++        invalidate(); return;
++    }
 +    if (!fresh) {
 +        invalidate(); return;
 +    }
-+    if (sample.timestamp <= m_lastTimestamp) return;
-+    m_lastTimestamp = sample.timestamp;
++    if (sample.timestamp <= previousTimestamp) return;
++    m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
 +    if (!std::isfinite(sample.angle) || sample.angle < 0 || sample.angle > 180) { invalidate(); return; }
-+    if (!sample.known) { invalidate(); return; }
 +    m_known = true;
 +    Q_EMIT observation(true, sample.angle);
 +}
@@ -2397,7 +2418,7 @@ index 0000000000000000000000000000000000000000..3f0bd4277f8acae0b3a1de958c1b9ea7
 +#include "tabletposturemonitor.moc"
 diff --git a/src/laptop/tabletposturemonitor.h b/src/laptop/tabletposturemonitor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..9f8c30405d760defa1f25494d4c4dc226f6676c0
+index 0000000000000000000000000000000000000000..4d67e18a04afd5c7b537dd0ffcc63ab0a5d7a251
 --- /dev/null
 +++ b/src/laptop/tabletposturemonitor.h
 @@ -0,0 +1,44 @@
@@ -2434,7 +2455,7 @@ index 0000000000000000000000000000000000000000..9f8c30405d760defa1f25494d4c4dc22
 +    void closeConnection();
 +    void resolveOwner(quint64 generation, bool activate);
 +    void claim(const QString &owner, quint64 generation);
-+    void accept(const Sample &sample);
++    void accept(const Sample &sample, qulonglong replayBarrier = 0);
 +    void invalidate();
 +    QDBusConnection m_watchBus;
 +    std::unique_ptr<QDBusConnection> m_claimBus;
@@ -2442,7 +2463,7 @@ index 0000000000000000000000000000000000000000..9f8c30405d760defa1f25494d4c4dc22
 +    QString m_connectionName, m_owner;
 +    std::optional<Sample> m_pendingSample;
 +    quint64 m_generation = 0;
-+    qulonglong m_lastTimestamp = 0;
++    qulonglong m_lastTimestamp = 0, m_pendingTimestamp = 0;
 +    bool m_requested = false, m_claimed = false, m_known = false, m_sleeping = false;
 +};
 diff --git a/src/laptop/touchpadmotion.h b/src/laptop/touchpadmotion.h

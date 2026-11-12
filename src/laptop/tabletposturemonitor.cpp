@@ -5,6 +5,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
 #include <QUuid>
+#include <algorithm>
 #include <cmath>
 #include <ctime>
 
@@ -18,6 +19,11 @@ qulonglong boottimeUsec() {
     timespec time{};
     if (clock_gettime(CLOCK_BOOTTIME, &time) != 0) return 0;
     return qulonglong(time.tv_sec) * 1000000 + qulonglong(time.tv_nsec) / 1000;
+}
+
+bool freshTimestamp(qulonglong timestamp) {
+    const auto now = boottimeUsec();
+    return timestamp > 0 && now >= timestamp && now - timestamp <= maximumDeliveryAgeUsec;
 }
 
 QDBusMessage request(const QString &owner, const QString &method) {
@@ -82,7 +88,7 @@ void TabletPostureMonitor::closeConnection() {
     ++m_generation;
     m_claimed = false;
     m_pendingSample.reset();
-    m_lastTimestamp = 0;
+    m_lastTimestamp = m_pendingTimestamp = 0;
     if (m_signalReceiver) { m_signalReceiver->disconnect(this); m_signalReceiver->deleteLater(); }
     m_signalReceiver = nullptr;
     // Remove watchers before dropping their connection references. The ordered
@@ -145,7 +151,16 @@ void TabletPostureMonitor::claim(const QString &owner, quint64 generation) {
         if (generation != m_generation || sender != m_owner) return;
         const Sample sample{known, angle, timestamp};
         if (!m_claimed) {
-            if (!m_pendingSample || timestamp > m_pendingSample->timestamp) m_pendingSample = sample;
+            const bool fresh = freshTimestamp(timestamp);
+            if (!known || !fresh || !std::isfinite(angle) || angle < 0 || angle > 180) {
+                // Unknown may have no sample timestamp. It still revokes an
+                // initial snapshot, without erasing the replay barrier.
+                m_pendingSample = Sample{false, 0, timestamp};
+                if (fresh) m_pendingTimestamp = std::max(m_pendingTimestamp, timestamp);
+            } else if (timestamp > m_pendingTimestamp) {
+                m_pendingSample = sample;
+                m_pendingTimestamp = timestamp;
+            }
         }
         else accept(sample);
     });
@@ -167,20 +182,26 @@ void TabletPostureMonitor::claim(const QString &owner, quint64 generation) {
         const auto args = reply.arguments();
         const Sample sample = m_pendingSample.value_or(Sample{args[0].toBool(), args[1].toDouble(), args[2].toULongLong()});
         m_pendingSample.reset();
-        accept(sample);
+        const auto barrier = m_pendingTimestamp;
+        m_pendingTimestamp = 0;
+        accept(sample, barrier);
     });
 }
 
-void TabletPostureMonitor::accept(const Sample &sample) {
-    const auto now = boottimeUsec();
-    const bool fresh = sample.timestamp > 0 && now >= sample.timestamp && now - sample.timestamp <= maximumDeliveryAgeUsec;
+void TabletPostureMonitor::accept(const Sample &sample, qulonglong replayBarrier) {
+    const auto previousTimestamp = m_lastTimestamp;
+    m_lastTimestamp = std::max(m_lastTimestamp, replayBarrier);
+    const bool fresh = freshTimestamp(sample.timestamp);
+    if (!sample.known) {
+        if (fresh) m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
+        invalidate(); return;
+    }
     if (!fresh) {
         invalidate(); return;
     }
-    if (sample.timestamp <= m_lastTimestamp) return;
-    m_lastTimestamp = sample.timestamp;
+    if (sample.timestamp <= previousTimestamp) return;
+    m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
     if (!std::isfinite(sample.angle) || sample.angle < 0 || sample.angle > 180) { invalidate(); return; }
-    if (!sample.known) { invalidate(); return; }
     m_known = true;
     Q_EMIT observation(true, sample.angle);
 }

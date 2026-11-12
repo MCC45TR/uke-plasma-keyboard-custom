@@ -4,6 +4,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
 #include <QDBusVirtualObject>
+#include <QSignalSpy>
 #include <QTest>
 #include <QUuid>
 #include <ctime>
@@ -51,12 +52,12 @@ public:
         }
         return false;
     }
-    void reply(int index,bool known,double angle,qulonglong timestamp=0) {
-        bus.send(claims.at(index).createReply({known,angle,QVariant::fromValue(timestamp?timestamp:nowUsec())}));
+    void reply(int index,bool known,double angle,std::optional<qulonglong> timestamp={}) {
+        bus.send(claims.at(index).createReply({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))}));
     }
-    void change(const QString &destination,bool known,double angle,qulonglong timestamp=0) {
+    void change(const QString &destination,bool known,double angle,std::optional<qulonglong> timestamp={}) {
         auto message=QDBusMessage::createTargetedSignal(destination,QLatin1String(path),QLatin1String(interface),QStringLiteral("PostureChanged"));
-        message.setArguments({known,angle,QVariant::fromValue(timestamp?timestamp:nowUsec())});
+        message.setArguments({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))});
         bus.send(message);
     }
 private:
@@ -98,6 +99,29 @@ private Q_SLOTS:
         provider.reply(0,true,0);provider.change(oldCaller,true,0);provider.reply(1,false,0);
         QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(observations.isEmpty());
         provider.change(newCaller,true,0);QTRY_COMPARE(observations.size(),1);
+    }
+    void timestamplessUnknownPreservesTheReplayBarrier() {
+        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
+        monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
+        const auto caller=provider.claims.first().service();const auto initial=nowUsec();
+        provider.change(caller,true,0,initial);provider.change(caller,false,0,qulonglong(0));provider.reply(0,true,0,initial);
+        QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(observations.isEmpty());
+        provider.change(caller,true,0,initial);QTest::qWait(30);QVERIFY(observations.isEmpty());
+        provider.change(caller,true,0);QTRY_COMPARE(observations.size(),1);
+        provider.change(caller,false,0,qulonglong(0));QTRY_COMPARE(observations.size(),2);QVERIFY(!observations.last().at(0).toBool());
+    }
+    void signalTriggeredReleaseCannotPoisonTheNextLease() {
+        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
+        bool renewed=false;
+        connect(&monitor,&TabletPostureMonitor::observation,this,[&](bool known,double){
+            if(!known||renewed)return;
+            renewed=true;monitor.setRequested(false);monitor.setRequested(true);
+        });
+        monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
+        const auto sample=nowUsec();provider.change(provider.claims.first().service(),true,0,sample);provider.reply(0,true,0,sample);
+        QTRY_COMPARE(provider.claims.size(),2);QCOMPARE(observations.size(),2);
+        // A still-fresh physical sample is valid in a new, independent lease.
+        provider.reply(1,true,0,sample);QTRY_COMPARE(observations.size(),3);QVERIFY(observations.last().at(0).toBool());
     }
     void providerReplacementRevokesAndPinsTheNewOwner() {
         Provider first;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);

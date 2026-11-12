@@ -52,7 +52,7 @@
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "cf394fbdd0877393325c572bc2d699f3a46034910667aeb79846c56694c46bc9"
+      "sha256": "3bd5a1d188b4093a73c0b4a38ce454814eecabb3cead93190e9002a2f1763a64"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "41a90fa35f33e92a085105556a8b20d0370abfe4e2dc937c24f227874fdb117b"
+      "sha256": "49f62667a72e274be9d9a0d7bfb3138f79460505419fd056107761076b7beac5"
     }
   ],
   "production_files": [
@@ -314,7 +314,7 @@
     },
     {
       "path": "autotests/tabletposturemonitortest.cpp",
-      "sha256": "a29230d8b4195cd7af71964837090fbe6c8158b793ca12526fcdeaedf010e6ee"
+      "sha256": "f0de8e09ef3c948746ab0d3085f31621bec76a816e54036a72d4bb0dcaf2c6e5"
     },
     {
       "path": "autotests/tabletposturetest.cpp",
@@ -1206,11 +1206,11 @@
     },
     {
       "path": "src/laptop/tabletposturemonitor.cpp",
-      "sha256": "c38638868d078ccd2cb63048d65e33de5ceb2dcb0afef28eb3fd639416dca4b0"
+      "sha256": "ade8843f1cc718cda4e8353c8974e352c8814589f71e3abdc11b742904040c51"
     },
     {
       "path": "src/laptop/tabletposturemonitor.h",
-      "sha256": "e9e484304a91f2dc3e6d8ae22ea108dcbe97dc358ef0650cbdab7af3d25a9ff3"
+      "sha256": "2b1ec42a21d2d4e225a73cade1856fb6486a5e0a02b0b5b6099887e4bf6f6530"
     },
     {
       "path": "src/laptop/touchpadmotion.h",

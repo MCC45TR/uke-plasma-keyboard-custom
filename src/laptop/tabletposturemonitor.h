@@ -31,7 +31,7 @@ private:
     void closeConnection();
     void resolveOwner(quint64 generation, bool activate);
     void claim(const QString &owner, quint64 generation);
-    void accept(const Sample &sample);
+    void accept(const Sample &sample, qulonglong replayBarrier = 0);
     void invalidate();
     QDBusConnection m_watchBus;
     std::unique_ptr<QDBusConnection> m_claimBus;
@@ -39,6 +39,6 @@ private:
     QString m_connectionName, m_owner;
     std::optional<Sample> m_pendingSample;
     quint64 m_generation = 0;
-    qulonglong m_lastTimestamp = 0;
+    qulonglong m_lastTimestamp = 0, m_pendingTimestamp = 0;
     bool m_requested = false, m_claimed = false, m_known = false, m_sleeping = false;
 };
