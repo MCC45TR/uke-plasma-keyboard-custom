@@ -98,6 +98,7 @@ public:
     Q_INVOKABLE QVariantMap status() const;
     Q_INVOKABLE QVariantList emojiMatches(const QString &query) const;
     QDBusPendingCall backendCall(const QString &method,const QVariantList &args={}) const;
+    void backendInput(const QString &method,const QVariantList &args={}) const;
 Q_SIGNALS:
     void stateChanged();
     void optionsChanged();

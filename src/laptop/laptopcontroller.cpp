@@ -182,6 +182,14 @@ QDBusPendingCall LaptopController::backendCall(const QString &method,const QVari
  if(m_backendOwner.isEmpty())return QDBusPendingCall::fromError(QDBusError(QDBusError::Disconnected,QStringLiteral("No trusted KWin integration is attached.")));
  auto m=QDBusMessage::createMethodCall(m_backendOwner,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);m.setArguments(args);m.setAutoStartService(false);return m_bus.asyncCall(m);
 }
+void LaptopController::backendInput(const QString &method,const QVariantList &args)const {
+ if(m_backendOwner.isEmpty())return;
+ auto m=QDBusMessage::createMethodCall(m_backendOwner,QLatin1String(UkeKeyboard::path),QLatin1String(UkeKeyboard::interface),method);
+ m.setArguments(args);m.setAutoStartService(false);
+ // Input has no return value. Keep ordering on this connection without a
+ // pending call and a reply dispatch for every high-frequency touch update.
+ m_bus.send(m);
+}
 void LaptopController::requestTopology(){
  auto *op=new KScreen::GetConfigOperation(KScreen::GetConfigOperation::NoEDID,this);
  connect(op,&KScreen::ConfigOperation::finished,this,[this,op](KScreen::ConfigOperation*){if(!op->hasError()){m_config=op->config();KScreen::ConfigMonitor::instance()->addConfig(m_config);updateTopology();}});
@@ -379,7 +387,7 @@ QVariantList LaptopController::rows()const{
  }
  return rows;
 }
-void LaptopController::setRawKey(uint code,bool pressed){backendCall(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}
+void LaptopController::setRawKey(uint code,bool pressed){backendInput(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}
 void LaptopController::key(uint code,bool pressed){
  if(!m_ready||m_locked)return;
  const auto time=m_clock.elapsed();
@@ -406,12 +414,12 @@ void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingCha
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
 bool LaptopController::consumeLatched(){bool changed=false;const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);changed=true;}return changed;}
 void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);consumeLatched();markTyping();++m_revision;Q_EMIT keyStateChanged();}
-void LaptopController::releaseAll(){backendCall(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
-void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendCall(QStringLiteral("Motion"),{x*speed,y*speed});}
-void LaptopController::button(uint code,bool pressed){if(pressed&&!nativeInputAllowed())return;backendCall(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
-void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendCall(QStringLiteral("Scroll"),{x*sign,y*sign});}
-void LaptopController::swipe(int fingers,int phase,double x,double y){backendCall(QStringLiteral("Swipe"),{fingers,phase,x,y});}
-void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendCall(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
+void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
+void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendInput(QStringLiteral("Motion"),{x*speed,y*speed});}
+void LaptopController::button(uint code,bool pressed){if(pressed&&!nativeInputAllowed())return;backendInput(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
+void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendInput(QStringLiteral("Scroll"),{x*sign,y*sign});}
+void LaptopController::swipe(int fingers,int phase,double x,double y){backendInput(QStringLiteral("Swipe"),{fingers,phase,x,y});}
+void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendInput(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
 void LaptopController::openPreferences(){Q_EMIT preferencesRequested();}
 QString LaptopController::toolLabel(const QString&name)const{
  const QHash<QString,QString> labels{{"volume",i18nd("uke-plasma-keyboard-custom", "Volume")},{"brightness",i18nd("uke-plasma-keyboard-custom", "Brightness")},{"media",i18nd("uke-plasma-keyboard-custom", "Media")},{"volume-down",i18nd("uke-plasma-keyboard-custom", "Volume down")},{"volume-up",i18nd("uke-plasma-keyboard-custom", "Volume up")},{"mute",i18nd("uke-plasma-keyboard-custom", "Mute")},{"brightness-down",i18nd("uke-plasma-keyboard-custom", "Decrease brightness")},{"brightness-up",i18nd("uke-plasma-keyboard-custom", "Increase brightness")},{"previous",i18nd("uke-plasma-keyboard-custom", "Previous track")},{"play",i18nd("uke-plasma-keyboard-custom", "Play or pause")},{"next",i18nd("uke-plasma-keyboard-custom", "Next track")},{"clipboard",i18nd("uke-plasma-keyboard-custom", "Clipboard")},{"emoji",i18nd("uke-plasma-keyboard-custom", "Emoji")},{"language",i18nd("uke-plasma-keyboard-custom", "Input language")},{"settings",i18nd("uke-plasma-keyboard-custom", "Keyboard settings")}};

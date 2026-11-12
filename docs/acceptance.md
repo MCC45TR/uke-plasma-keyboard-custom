@@ -1,8 +1,11 @@
 # Acceptance status
 
-12 November 2026. Work in progress; no physical acceptance is claimed.
-The delivered checkpoint is 0.1.0-34 / COPR11316407, with 37 passing CTests on
-Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from33. Reinstallation and
+12 November 2026. Work in progress. The user confirms tablet-only placement,
+persistent keyboard/touchpad visibility and basic pointer movement, clicks and
+typing at35. Subsequent feedback identifies stuttering pointer motion, a thin
+outer border and unfinished visual design; these remain open.
+The delivered checkpoint is 0.1.0-35 / COPR11316515, with 38 passing CTests on
+Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from34. Reinstallation and
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -18,18 +21,28 @@ DNF delivery and automatic entry pass at34 without another compositor restart.
 The actual surface still lands on DP-1, confirmed by the user and bounded native
 window geometry, despite the backend's DSI-1 selection. The visible window's peer
 PID is the compositor PID because KWin created the inherited socketpair.
-Candidate35 uses the exact selected Wayland connection for surface ownership,
+Release35 uses the exact selected Wayland connection for surface ownership,
 window exclusion and touch routing. A native test creates two real original-KWin
-connections with identical peer PIDs and verifies distinct ownership. Native38
-qualification, delivery and corrected tablet-only visibility remain pending.
+connections with identical peer PIDs and verifies distinct ownership. All38 tests
+pass on all three targets. The signed Rawhide RPM has SHA256
+`19094ceb64d4be3fe2641510b1c16d7772b3a15734174f1dc6089a2ac98aa0e6`;
+two signatures, file coexistence and unchanged requirements/scriptlets pass.
+The DNF upgrade needed one explicit provider-only reload after automatic renewal
+did not finish; the same compositor and boot, selected input method and five
+tracked preference files are preserved. Native owned-surface diagnostics and
+bounded window geometry now place the full1280×854 logical surface on DSI-1.
+The user confirms the keyboard, touchpad and persistence, then basic pointer,
+click and typing operation. This does not qualify smoothness, advanced gestures,
+held-input cleanup, hotplug, lock or refresh restoration. The isolated original
+KWin35 fixture also passes owned-surface identity and unrelated-caller rejection.
 
 | Area | Source | Build/package | Physical |
 |---|---|---|---|
 | Fork and independent identity | Implemented | Signed RPM, coexistence, upgrade/reinstall pass | Not applicable |
-| Static surface and KWin routing | Initial implementation | Controller, authentication, native attachment and reload pass; physical routing open | Pending |
+| Static surface and KWin routing | Implemented | Native connection identity, controller and authentication pass at35 | User confirms tablet-only placement, persistence and basic typing/pointer/click; extended routing open |
 | USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
-| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
+| Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes;36 adds frame-independent small-motion regression | Basic movement/click pass; stutter and missed small movements reported; extended gestures pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
@@ -43,10 +56,10 @@ with a physical ruler; TR Q/F, EN, RTL and CJK; Qt/GTK/browser/terminal/XWayland
 multitouch, gestures, modifier latches and release cleanup; SELinux enforcing,
 password/unknown contexts, idle CPU/wakeups/PSS and sustained memory use.
 
-The system currently reports a closed cover and disabled internal panel. Normal
-application operation preserves that state. The separately authorized bounded
-software trials below restored both states afterward; they establish no real
-cover or touch acceptance. Kernel and boot selection remain outside this
+The earlier closed-cover/disabled-panel checkpoints below are historical.
+During the35 physical trial both displays are enabled and the cover is open;
+the application does not change those user-selected states. Earlier authorized
+software simulations restored both states afterward. Kernel and boot selection remain outside this
 package's delivery scope.
 
 12 November inventory integration: the application-owned migration entry

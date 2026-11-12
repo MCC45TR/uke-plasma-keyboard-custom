@@ -32,6 +32,9 @@ public:
     bool deferCapabilities=false;
     QDBusMessage capabilitiesRequest;
     int capabilityQueries=0;
+    QStringList inputs;
+    QList<bool> inputReplies;
+    QList<QPointF> motions;
     QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
     void reply() { server.send(request.createReply(QVariantList{true})); }
 public Q_SLOTS:
@@ -46,7 +49,9 @@ public Q_SLOTS:
     void EndStatic() {++staticEnds;}
     void EndDynamic() {++dynamicEnds;}
     bool Profile(const QString &) {++profiles;return true;}
-    void ReleaseAll() {}
+    void ReleaseAll() {inputs.append(QStringLiteral("release"));inputReplies.append(message().isReplyRequired());}
+    void Motion(double x,double y) {inputs.append(QStringLiteral("motion"));inputReplies.append(message().isReplyRequired());motions.append(QPointF(x,y));}
+    void Button(uint,bool pressed) {inputs.append(pressed?QStringLiteral("press"):QStringLiteral("release-button"));inputReplies.append(message().isReplyRequired());}
 };
 class PluginManager final : public QObject {
     Q_OBJECT
@@ -74,6 +79,23 @@ class LaptopControllerTest final : public QObject {
         controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void inputMessagesKeepOrderAndDoNotRequestReplies() {
+        LaptopController controller;eligible(controller,false);
+        QCoreApplication::processEvents();
+        m_backend.inputs.clear();m_backend.inputReplies.clear();m_backend.motions.clear();
+        controller.m_options[QStringLiteral("pointerSpeed")]=1.0;
+        controller.button(272,true);
+        for(int i=0;i<96;++i)controller.motion(0.125,-0.25);
+        controller.button(272,false);controller.releaseAll();
+        QTRY_COMPARE(m_backend.inputs.size(),99);
+        QCOMPARE(m_backend.inputs.first(),QStringLiteral("press"));
+        QCOMPARE(m_backend.inputs.at(97),QStringLiteral("release-button"));
+        QCOMPARE(m_backend.inputs.last(),QStringLiteral("release"));
+        QCOMPARE(m_backend.motions.size(),96);
+        QPointF total;for(const auto &delta:m_backend.motions)total+=delta;
+        QCOMPARE(total,QPointF(12,-24));
+        for(bool required:m_backend.inputReplies)QVERIFY(!required);
+    }
     void completedUsbDetectionRestoresTheTopologyReason() {
         LaptopController controller;eligible(controller,false);
         controller.m_usbKeyboardKnown=false;controller.updateEligibility();

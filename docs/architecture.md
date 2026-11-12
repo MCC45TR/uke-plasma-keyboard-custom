@@ -17,7 +17,7 @@ or physical acceptance. KWin, Qt and Plasma Keyboard remain original packages.
 
 ## Session boundaries
 
-Candidate35 identifies surfaces through `SurfaceInterface::client()` and the
+Release35 identifies surfaces through `SurfaceInterface::client()` and the
 original WaylandServer's `inputMethodConnection()`. Compositor-created socketpairs
 report the compositor's PID, as documented in original6.8.2
 [`ClientConnection`](https://github.com/KDE/kwin/blob/f130ab33c8e6f3b9d728aade87836086ae9a8ed4/src/wayland/clientconnection.h).
@@ -28,7 +28,7 @@ executable, direct-parent and unique D-Bus caller checks. These checks are not
 relaxed. Read-only capability fields report owned-surface count and largest
 surface output/dimensions without window titles or entered content.
 
-Candidate34 enables automatic static entry when every existing condition passes.
+Release34 enables automatic static entry when every existing condition passes.
 Each eligibility cycle has one automatic attempt. An explicit Normal keyboard
 action suppresses reopening until a new cycle; native revocation cancels pending
 entry, and text-focus loss does not exit static mode. The persistent surface is
@@ -42,7 +42,35 @@ membership follows KWin's floored-point convention; existing external positions
 remain exact, and new targets lie inside the native output bounds. A failed
 native correction ends static mode instead of retrying. The original compositor
 package is unchanged. Geometry, deferred/coalesced work, unload cancellation and
-automatic-entry/revocation cases await native37-test qualification.
+automatic-entry/revocation cases pass the native37-test matrix at34. Release35
+passes38 tests and corrects the visible surface's tablet-only placement. The user
+confirms persistence and basic pointer/click/typing, while motion smoothness and
+extended physical acceptance remain open.
+
+## Touch delivery and surface polish
+
+Candidate36 addresses stuttering motion and missed small movements. Original
+Qt Quick6.12 coalesces touch updates until a rendered frame. Its process-local
+`QML_NO_TOUCH_COMPRESSION` opt-out is selected before creating the application;
+the installed original Quick library also contains this control. The actual
+Touchpad.qml is tested with quarter-pixel updates delivered through Qt's native
+window-system input path, without a rendered frame between updates. Native
+qualification is pending. Rendering cadence, refresh policy and user pointer
+speed remain separate from input delivery.
+
+High-frequency input uses the existing authenticated unique backend owner and
+ordered D-Bus connection, with `QDBusConnection::send()` instead of allocating
+pending calls and processing unused replies. Control/eligibility calls still
+receive replies. A private-bus test checks the real wire flags, fractional
+motion totals and button/motion/release ordering. Authorization is unchanged.
+The fullscreen deck drops its painted perimeter; Kirigami colors, standard
+controls, spacing and corner metrics organize the toolbar, pad and footer.
+
+Reviewed references: original qtdeclarative6.12.0
+[`qquickdeliveryagent.cpp`](https://github.com/qt/qtdeclarative/blob/4332fbbb4c340463dc8cee36dda0c85d932122d8/src/quick/util/qquickdeliveryagent.cpp)
+and original Qt6.12
+[`QDBusConnection::send`](https://doc.qt.io/qt-6/qdbusconnection.html#send).
+Reference sources are unchanged; Qt implementation code is not copied.
 
 Static laptop mode additionally requires no physical USB typing keyboard.
 The original KWin6.8.2 InputDevice busType/sysPath and alphaNumericKeyboard

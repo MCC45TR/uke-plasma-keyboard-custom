@@ -16,6 +16,7 @@
 #include "panelstubgeometry.h"
 #include "plasmakeyboardsettings.h"
 #include "restartwatcher.h"
+#include "touchdeliverypolicy.h"
 #include "sessionlockstate.h"
 #include "settingsreloader.h"
 #include "sttmanager.h"
@@ -1010,6 +1011,7 @@ int main(int argc, char **argv)
         return runInputMethodWatchdog();
     }
 
+    UkeKeyboard::configureTouchDelivery();
     qputenv("QT_IM_MODULE", QByteArray("qtvirtualkeyboard"));
 
     initLayoutsPath();

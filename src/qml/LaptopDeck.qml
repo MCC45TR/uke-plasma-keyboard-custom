@@ -18,13 +18,15 @@ Rectangle {
     function keyGeometry(code) { return pc.keyGeometry(code); }
     readonly property bool toolbarFits: tools.childrenRect.width<=tools.width+0.1
     readonly property bool toolbarPopupsFit: tools.popupsFit
-    readonly property rect imeRect: Qt.rect(imePlaceholder.x+deck.perMm,imePlaceholder.y+deck.perMm,imePlaceholder.width,imePlaceholder.height)
+    readonly property rect imeRect: Qt.rect(imePlaceholder.x+content.x,imePlaceholder.y+content.y,imePlaceholder.width,imePlaceholder.height)
     color: Kirigami.Theme.backgroundColor
-    border.color: Kirigami.Theme.disabledTextColor
+    radius: Keyboard.Laptop.dynamicActive ? Kirigami.Units.cornerRadius : 0
+    border.width: 0
     ColumnLayout {
+        id: content
         anchors.fill: parent
-        anchors.margins: deck.perMm
-        spacing: deck.perMm*0.8
+        anchors.margins: deck.perMm*2
+        spacing: deck.perMm*1.2
         QQC2.Label {
             visible: Keyboard.Laptop.dynamicActive
             Layout.fillWidth:true
@@ -39,7 +41,20 @@ Rectangle {
                 onTranslationChanged:if(active){deck.x=Math.max(0,Math.min(deck.parent.width-deck.width,startX+translation.x));deck.y=Math.max(0,Math.min(deck.parent.height-deck.height,startY+translation.y));}
             }
         }
-        KeyboardTools { id: tools; Layout.fillWidth:true; target:deck.inputTarget; perMm:deck.perMm; popupAreaItem: pad; }
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: tools.implicitHeight+deck.perMm*2
+            radius: Kirigami.Units.cornerRadius
+            color: Kirigami.Theme.alternateBackgroundColor
+            KeyboardTools {
+                id: tools
+                anchors.fill: parent
+                anchors.margins: deck.perMm
+                target: deck.inputTarget
+                perMm: deck.perMm
+                popupAreaItem: pad
+            }
+        }
         Rectangle {
             visible: Keyboard.Laptop.options.calibrationRuler
             Layout.alignment: Qt.AlignHCenter
@@ -99,11 +114,13 @@ Rectangle {
                 perMm: deck.perMm
             }
         }
+        Kirigami.Separator { Layout.fillWidth: true; }
         RowLayout {
             Layout.fillWidth:true
-            QQC2.Button {text:i18nd("uke-plasma-keyboard-custom", "Normal keyboard");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.leave();}
+            spacing: deck.perMm
+            QQC2.ToolButton {text:i18nd("uke-plasma-keyboard-custom", "Normal keyboard");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.leave();}
             QQC2.Label {Layout.fillWidth:true;text:Keyboard.Laptop.reason;wrapMode:Text.Wrap;visible:text.length>0;}
-            QQC2.Button {text:i18nd("uke-plasma-keyboard-custom", "Layout");icon.name:"input-keyboard";focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.nextLayout();}
+            QQC2.ToolButton {text:Keyboard.Laptop.layoutName;icon.name:"input-keyboard";Accessible.name:i18nd("uke-plasma-keyboard-custom", "Layout");focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.nextLayout();}
             QQC2.ToolButton {icon.name:"configure";Accessible.name:i18nd("uke-plasma-keyboard-custom", "Keyboard settings");focusPolicy:Qt.NoFocus;onClicked:Keyboard.Laptop.openPreferences();}
         }
     }

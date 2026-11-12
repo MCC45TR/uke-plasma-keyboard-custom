@@ -11,13 +11,20 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: 2*root.perMm
+        radius: Kirigami.Units.cornerRadius
         color: Kirigami.Theme.alternateBackgroundColor
-        border.color: Kirigami.Theme.disabledTextColor
+        border.color: Qt.rgba(Kirigami.Theme.textColor.r,Kirigami.Theme.textColor.g,Kirigami.Theme.textColor.b,0.16)
         border.width: 1
         Accessible.role: Accessible.Pane
         Accessible.name: i18nd("uke-plasma-keyboard-custom", "Touchpad")
-        QQC2.Label { anchors.centerIn: parent; text: i18nd("uke-plasma-keyboard-custom", "Touchpad"); opacity: 0.35; visible: !touch.sequence; }
+        QQC2.Label {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: root.perMm*2
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: i18nd("uke-plasma-keyboard-custom", "Touchpad")
+            font: Kirigami.Theme.smallFont
+            color: Kirigami.Theme.disabledTextColor
+        }
         MultiPointTouchArea {
             id: touch
             anchors.fill: parent
@@ -94,7 +101,7 @@ ColumnLayout {
         visible: Keyboard.Laptop.options.leftButton||Keyboard.Laptop.options.middleButton||Keyboard.Laptop.options.rightButton
         Repeater {
             model: [{option:"leftButton",label:i18nd("uke-plasma-keyboard-custom", "Left"),code:272},{option:"middleButton",label:i18nd("uke-plasma-keyboard-custom", "Middle"),code:274},{option:"rightButton",label:i18nd("uke-plasma-keyboard-custom", "Right"),code:273}]
-            delegate: QQC2.Button {
+            delegate: QQC2.ToolButton {
                 required property var modelData
                 visible: Keyboard.Laptop.options[modelData.option]
                 Layout.fillWidth: true

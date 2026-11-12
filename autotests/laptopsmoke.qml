@@ -45,6 +45,7 @@ Kirigami.ApplicationWindow {
         return "";
     }
     function advanceTest() {
+        if(deck.border.width!==0)return "Laptop surface has an outer border";
         const key=deck.keyGeometry(30);
         if(!key)return "Missing A key";
         const pad=findItem(deck,"ukeTouchpad");
