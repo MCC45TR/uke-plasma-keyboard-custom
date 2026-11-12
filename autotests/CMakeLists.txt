@@ -89,6 +89,8 @@ ecm_add_test(layoutregistrytest.cpp ../src/laptop/layoutregistry.cpp TEST_NAME l
 target_include_directories(layoutregistrytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 ecm_add_test(kwinversiontest.cpp TEST_NAME kwinversiontest LINK_LIBRARIES Qt::Core Qt::Test)
 target_include_directories(kwinversiontest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../kwin)
+ecm_add_test(processidentitytest.cpp TEST_NAME processidentitytest LINK_LIBRARIES Qt::Core Qt::Test)
+target_include_directories(processidentitytest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 
 ecm_add_test(keyboardvisibilitystatetest.cpp
     TEST_NAME keyboardvisibilitystatetest

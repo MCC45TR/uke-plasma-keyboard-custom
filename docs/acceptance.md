@@ -440,3 +440,25 @@ with the installed binary and the distribution's original KDE control style.
 The first preview attempt used a C++ window item without a QML engine; capturing
 the deck itself resolves that fixture error. Preview renders are synthetic,
 not photographs or physical acceptance evidence.
+
+## Private original-KWin session exposed an attachment defect
+
+A bounded virtual-output session using the installed original Fedora KWin and
+keyboard starts successfully on a private bus with isolated runtime/config/data
+directories. A synthetic KDialog field activates the normal text-input context.
+The first five-second hidden sample records zero CPU ticks, PSS92,310KiB and
+RSS160,564KiB; this is an isolated software sample, not production parity or a
+hardware-wakeup measurement. All fixture processes terminate in a resource-bound
+transient user scope. Missing accessibility/PipeWire services are fixture limits;
+the real session and its settings are not changed.
+
+Waiting explicitly for native attachment then exposes a real failure: the
+backend reads /proc/PID/status with an atEnd guard. Qt's documented
+[procfs semantics](https://doc.qt.io/qt-6/qfile.html#platform-specific-issues)
+make that guard report EOF before the generated data is read. The next source
+reads bounded lines until no bytes remain and still requires the exact parent,
+UID, root-owned installed executable, selected desktop entry and unique sender.
+A new native test checks the real process/parent relationship and rejects wrong
+or invalid identities. Those native checks and a repeated original-KWin trial
+are required before accepting attachment; the earlier unrelated-client denial
+and successful plugin load alone did not establish it.

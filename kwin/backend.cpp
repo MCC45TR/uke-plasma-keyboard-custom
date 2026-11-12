@@ -2,6 +2,7 @@
 // Uses KWin's public-to-plugins InputDevice and Plugin interfaces. The virtual
 // device pattern follows KDE's buttonrebinds plugin (David Redondo, GPL).
 #include "protocol.h"
+#include "processidentity.h"
 #include "refreshguard.h"
 #include "versionguard.h"
 #include <core/inputdevice.h>
@@ -184,11 +185,7 @@ public Q_SLOTS:
         if (!uid.isValid() || uid.value() != getuid() || !pid.isValid()) return false;
         // The selected input method is launched directly by KWin. An arbitrary
         // same-UID instance of the executable must not acquire native input.
-        QFile status(QStringLiteral("/proc/%1/status").arg(pid.value()));
-        if(!status.open(QIODevice::ReadOnly))return false;
-        bool child=false;
-        while(!status.atEnd()) {const auto line=status.readLine();if(line.startsWith("PPid:")){child=line.mid(5).trimmed().toLongLong()==getpid();break;}}
-        if(!child)return false;
+        if (!UkeKeyboard::hasProcessParent(pid.value(), getpid())) return false;
         const QFileInfo executable(QStringLiteral("/proc/%1/exe").arg(pid.value()));
         const QString target = executable.symLinkTarget();
         const QFileInfo installed(QStringLiteral("/usr/bin/uke-plasma-keyboard-custom"));
