@@ -53,10 +53,10 @@ void RefreshGuard::load()
  if(!info.exists()||info.isSymLink()||!info.isFile()||info.ownerId()!=getuid()||info.size()>4096||(info.permissions()&(QFile::ReadGroup|QFile::WriteGroup|QFile::ReadOther|QFile::WriteOther)))return;
  QFile file(journal());if(!file.open(QIODevice::ReadOnly))return;
  const auto data=QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
- if(data.value("version").toInt()!=1||data.value("name").toString().size()>128||data.value("name").toString().isEmpty())return;
+ if(data.value(QStringLiteral("version")).toInt()!=1||data.value(QStringLiteral("name")).toString().size()>128||data.value(QStringLiteral("name")).toString().isEmpty())return;
  for(const QString &key:{QStringLiteral("width"),QStringLiteral("height"),QStringLiteral("appliedWidth"),QStringLiteral("appliedHeight")})if(data.value(key).toInt()<100||data.value(key).toInt()>16000)return;
  for(const QString &key:{QStringLiteral("hz"),QStringLiteral("appliedHz")})if(!std::isfinite(data.value(key).toDouble())||data.value(key).toDouble()<1||data.value(key).toDouble()>1000)return;
- if(data.value("policy").toInt()<0||data.value("policy").toInt()>2||data.value("appliedPolicy").toInt()<0||data.value("appliedPolicy").toInt()>2)return;
+ if(data.value(QStringLiteral("policy")).toInt()<0||data.value(QStringLiteral("policy")).toInt()>2||data.value(QStringLiteral("appliedPolicy")).toInt()<0||data.value(QStringLiteral("appliedPolicy")).toInt()>2)return;
  m_saved=data;
 }
 bool RefreshGuard::save()
@@ -79,7 +79,7 @@ void RefreshGuard::clear()
 void RefreshGuard::begin(const QString &name){m_name=name;m_active=true;}
 bool RefreshGuard::set(const QString &profile)
 {
- if(!m_active||!QStringList{"keep","30","60","adaptive"}.contains(profile))return false;
+ if(!m_active||!QStringList{QStringLiteral("keep"),QStringLiteral("30"),QStringLiteral("60"),QStringLiteral("adaptive")}.contains(profile))return false;
  if(profile==QLatin1String("adaptive")){
   m_error(QStringLiteral("30–60 Hz VRR requires physical kernel/display qualification; no display setting was changed."));return false;
  }
@@ -94,7 +94,7 @@ void RefreshGuard::end()
 }
 bool RefreshGuard::needsRestoration()const
 {
- return !m_active||m_wanted==QLatin1String("keep")||(!m_saved.isEmpty()&&m_saved.value("name").toString()!=m_name);
+ return !m_active||m_wanted==QLatin1String("keep")||(!m_saved.isEmpty()&&m_saved.value(QStringLiteral("name")).toString()!=m_name);
 }
 void RefreshGuard::topologyChanged()
 {
@@ -111,7 +111,7 @@ void RefreshGuard::step()
 {
  const bool restore=needsRestoration();
  if(restore&&m_saved.isEmpty())return;
- const QString target=restore?m_saved.value("name").toString():m_name;
+ const QString target=restore?m_saved.value(QStringLiteral("name")).toString():m_name;
  const auto current=m_backend.read(target);
  if(!current)return; // A missing/disabled panel is never enabled for recovery.
  if(restore){
@@ -122,7 +122,7 @@ void RefreshGuard::step()
    const auto original=recordedMode(m_saved,false);
    const auto mode=modeOwned?findMode(current->modes,original.size,original.milliHz):std::optional<Mode>(current->current);
    if(!mode){m_error(QStringLiteral("The original refresh mode is no longer advertised; the display was left unchanged."));return;}
-   const int policy=policyOwned?m_saved.value("policy").toInt():current->policy;
+   const int policy=policyOwned?m_saved.value(QStringLiteral("policy")).toInt():current->policy;
    if(!m_backend.apply(target,*mode,policy)){
     m_error(QStringLiteral("KWin refused the temporary refresh configuration."));return;
    }
@@ -141,14 +141,14 @@ void RefreshGuard::step()
   else{
    // A user edit relinquishes only that field. Keep the other field's original
    // baseline across later profile switches and restoration.
-   if(!modeOwned){m_saved["width"]=current->current.size.width();m_saved["height"]=current->current.size.height();m_saved["hz"]=current->current.milliHz/1000.0;}
-   if(!policyOwned)m_saved["policy"]=current->policy;
+   if(!modeOwned){m_saved[QStringLiteral("width")]=current->current.size.width();m_saved[QStringLiteral("height")]=current->current.size.height();m_saved[QStringLiteral("hz")]=current->current.milliHz/1000.0;}
+   if(!policyOwned)m_saved[QStringLiteral("policy")]=current->policy;
   }
  }
  if(current->current==*next&&current->policy==0){if(!m_saved.isEmpty())save();return;}
  const auto previous=m_saved;
- if(m_saved.isEmpty())m_saved={{"version",1},{"name",target},{"width",current->current.size.width()},{"height",current->current.size.height()},{"hz",current->current.milliHz/1000.0},{"policy",current->policy}};
- m_saved["appliedWidth"]=next->size.width();m_saved["appliedHeight"]=next->size.height();m_saved["appliedHz"]=next->milliHz/1000.0;m_saved["appliedPolicy"]=0;
+ if(m_saved.isEmpty())m_saved={{QStringLiteral("version"),1},{QStringLiteral("name"),target},{QStringLiteral("width"),current->current.size.width()},{QStringLiteral("height"),current->current.size.height()},{QStringLiteral("hz"),current->current.milliHz/1000.0},{QStringLiteral("policy"),current->policy}};
+ m_saved[QStringLiteral("appliedWidth")]=next->size.width();m_saved[QStringLiteral("appliedHeight")]=next->size.height();m_saved[QStringLiteral("appliedHz")]=next->milliHz/1000.0;m_saved[QStringLiteral("appliedPolicy")]=0;
  if(!save()){m_saved=previous;return;}
  if(!m_backend.apply(target,*next,0)){
   // Keep the last successfully owned setting when a subsequent 30/60 switch

@@ -2,7 +2,7 @@
 
 12 November 2026. Work in progress; no physical acceptance is claimed.
 The delivered checkpoint is 0.1.0-28 / COPR11315309, with 33 passing CTests on
-Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate30
+Fedora 44/45/Rawhide aarch64 and actual DNF upgrade/reinstallation. Candidate31
 changes fixed-refresh ownership and still requires its complete native gate.
 The chronological sections below retain earlier failures and superseded states.
 
@@ -13,7 +13,7 @@ The chronological sections below retain earlier failures and superseded states.
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
 | Touchpad gestures, buttons, typing guard | Initial implementation | QML construction passes; gestures pending | Pending |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
-| Fixed refresh profiles and restoration | Candidate30: scoped native requests and recovery correction | New native tests pending; no physical mode acceptance | Pending |
+| Fixed refresh profiles and restoration | Candidate31: scoped native requests and recovery correction | New native tests pending; no physical mode acceptance | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
 | Dynamic laptop mode | Initial movable/tray/optional focus implementation | Controller/QML tests pass; normal private-KWin attachment/visibility pass | Not tested |
 
@@ -655,3 +655,13 @@ published recipe matches (SHA256 f2a2e7b6aace1c179dce033ab3c3ea61ad0fa3c8686eef8
 No new C++ compile,35-test result or RPM is accepted. Candidate30 explicitly
 finds the same original KWin6.8 SDK in the test directory; no test or version
 gate is removed. Installed28 remains unchanged.
+
+## COPR11315543 /30 — strict Qt conversion failure
+
+CMake resolves the native SDK and C++ compilation begins. All three aarch64
+workers reject implicit ASCII keys in the recovery implementation when it is
+compiled for the new strict Qt test target. The reviewed source6959d08 and
+published speccc734621c2a23196382704cc407797a0cc289103c20feafce9670af6e031e4f4
+match. No35-test/RPM/device result is accepted. Candidate31 uses explicit
+QStringLiteral keys and keeps the conversion restrictions and all tests.
+Installed28 remains the last qualified delivery.
