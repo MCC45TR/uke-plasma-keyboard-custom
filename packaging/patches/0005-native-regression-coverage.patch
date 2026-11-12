@@ -1,5 +1,5 @@
 diff --git a/autotests/CMakeLists.txt b/autotests/CMakeLists.txt
-index e66076607305b4221c74600da7beab1bd1b95049..d0f4a20d0454585f295237cf5e4db377bbe477b1 100644
+index e66076607305b4221c74600da7beab1bd1b95049..461bfec1c47912778d37c5dc25fc53dab9b0b6ac 100644
 --- a/autotests/CMakeLists.txt
 +++ b/autotests/CMakeLists.txt
 @@ -2,17 +2,24 @@
@@ -347,7 +347,7 @@ index e66076607305b4221c74600da7beab1bd1b95049..d0f4a20d0454585f295237cf5e4db377
 +target_include_directories(tabletposturemonitortest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/laptop)
 +if(DBUS_RUN_SESSION)
 +    set_target_properties(tabletposturemonitortest PROPERTIES CROSSCOMPILING_EMULATOR "${DBUS_RUN_SESSION};${BASH_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/private-system-bus.sh")
-+    set_tests_properties(tabletposturemonitortest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1" TIMEOUT 30)
++    set_tests_properties(tabletposturemonitortest PROPERTIES ENVIRONMENT "PLASMA_KEYBOARD_TEST_ISOLATED_BUS=1;QT_LOGGING_RULES=uke.keyboard.posture.debug=true" TIMEOUT 30)
 +endif()
 diff --git a/autotests/asyncpredictortest.cpp b/autotests/asyncpredictortest.cpp
 new file mode 100644
@@ -1590,15 +1590,16 @@ index 0000000000000000000000000000000000000000..fd268aa0c09142c52a7edd27f9bef714
 +#include "kwinversiontest.moc"
 diff --git a/autotests/laptopcontrollertest.cpp b/autotests/laptopcontrollertest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..b6cc697efa130a6d05c0e38b5d45fb8b032932fe
+index 0000000000000000000000000000000000000000..934d2cbc3b61c25b63d68ea4282fdfd61cd509cf
 --- /dev/null
 +++ b/autotests/laptopcontrollertest.cpp
-@@ -0,0 +1,380 @@
+@@ -0,0 +1,403 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "laptopcontroller.h"
 +#include "protocol.h"
 +#include "tabletposturemonitor.h"
 +#include <QtTest>
++#include <QSignalSpy>
 +#include <QDBusContext>
 +#include <QDBusMessage>
 +#include <QDBusPendingCallWatcher>
@@ -1633,7 +1634,7 @@ index 0000000000000000000000000000000000000000..b6cc697efa130a6d05c0e38b5d45fb8b
 +    QList<bool> inputReplies;
 +    QList<QPointF> motions;
 +    QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
-+    void reply() { server.send(request.createReply(QVariantList{true})); }
++    void reply(bool accepted=true) { server.send(request.createReply(QVariantList{accepted})); }
 +public Q_SLOTS:
 +    QVariantMap Capabilities() {
 +        ++capabilityQueries;
@@ -1699,7 +1700,9 @@ index 0000000000000000000000000000000000000000..b6cc697efa130a6d05c0e38b5d45fb8b
 +        const int before=m_backend.staticBegins;
 +        controller.updateEligibility();QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
 +        controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+1);
++        controller.m_held.insert(30);controller.m_pointerButtons.insert(272);
 +        controller.postureObserved(false,0);QVERIFY(!controller.m_starting);
++        QVERIFY(controller.m_held.isEmpty());QVERIFY(controller.m_pointerButtons.isEmpty());
 +        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
 +        controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+2);
 +        m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
@@ -1735,6 +1738,26 @@ index 0000000000000000000000000000000000000000..b6cc697efa130a6d05c0e38b5d45fb8b
 +        controller.updateEligibility();QVERIFY(!controller.m_postureMonitor->requested());
 +        controller.postureObserved(false,0);QVERIFY(controller.available());
 +        controller.leave();
++    }
++    void toggleCancelsARequestWaitingForPosture() {
++        LaptopController controller;eligible(controller,false);controller.postureObserved(false,0);
++        QSignalSpy changes(&controller,&LaptopController::stateChanged);
++        const int before=m_backend.staticBegins;
++        controller.toggle();QVERIFY(controller.entryPending());
++        const int waiting=changes.size();
++        controller.toggle();QVERIFY(!controller.entryPending());QVERIFY(changes.size()>waiting);
++        controller.postureObserved(true,0);QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
++        controller.toggle();QVERIFY(controller.entryPending());QTRY_COMPARE(m_backend.staticBegins,before+1);
++        controller.toggle();QVERIFY(!controller.entryPending());
++        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
++    }
++    void refusedManualEntryReleasesPostureDemand() {
++        LaptopController controller;eligible(controller,false);
++        controller.m_postureMonitor=std::make_unique<TabletPostureMonitor>();
++        const int before=m_backend.staticBegins;
++        controller.enter();QVERIFY(controller.entryPending());QVERIFY(controller.m_postureMonitor->requested());
++        QTRY_COMPARE(m_backend.staticBegins,before+1);m_backend.reply(false);
++        QTRY_VERIFY(!controller.entryPending());QVERIFY(!controller.active());QVERIFY(!controller.m_postureMonitor->requested());
 +    }
 +    void dynamicModeRequiresManualActionEvenWithLegacyAutoPreference() {
 +        LaptopController controller;eligible(controller,true);
@@ -5354,10 +5377,10 @@ index 0000000000000000000000000000000000000000..38f25e33bc576f2ab8b55070d4df6d7b
 +#include "swipeenginetest.moc"
 diff --git a/autotests/tabletposturemonitortest.cpp b/autotests/tabletposturemonitortest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..1e5ad27f22043c1c21c3a8676dad1b91d71e7b4d
+index 0000000000000000000000000000000000000000..4ece405dbbf5d660e43bbc5eeb79eee12310e522
 --- /dev/null
 +++ b/autotests/tabletposturemonitortest.cpp
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,181 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "tabletposturemonitor.h"
 +#include <QDBusMessage>
@@ -5413,12 +5436,13 @@ index 0000000000000000000000000000000000000000..1e5ad27f22043c1c21c3a8676dad1b91
 +        return false;
 +    }
 +    void reply(int index,bool known,double angle,std::optional<qulonglong> timestamp={}) {
-+        bus.send(claims.at(index).createReply({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))}));
++        const QVariantList values{known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))};
++        if(!bus.send(claims.at(index).createReply(values)))qFatal("Cannot send private posture claim reply");
 +    }
 +    void change(const QString &destination,bool known,double angle,std::optional<qulonglong> timestamp={}) {
 +        auto message=QDBusMessage::createTargetedSignal(destination,QLatin1String(path),QLatin1String(interface),QStringLiteral("PostureChanged"));
 +        message.setArguments({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))});
-+        bus.send(message);
++        if(!bus.send(message))qFatal("Cannot send private posture signal");
 +    }
 +private:
 +    QDBusServiceWatcher *m_watcher=nullptr;
@@ -5507,13 +5531,14 @@ index 0000000000000000000000000000000000000000..1e5ad27f22043c1c21c3a8676dad1b91
 +        provider.change(caller,true,0);QTRY_COMPARE(observations.size(),7);
 +        provider.change(caller,true,0,nowUsec()+5000000);QTRY_COMPARE(observations.size(),8);QVERIFY(!observations.last().at(0).toBool());
 +    }
-+    void rejectedClaimDoesNotAcceptSignalsOrRetry() {
++    void rejectedClaimRetriesOnlyAfterExplicitRequest() {
 +        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
 +        monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
 +        const auto caller=provider.claims.first().service();
 +        provider.bus.send(provider.claims.first().createErrorReply(QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),QStringLiteral("Fixture refusal")));
 +        QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());
 +        provider.change(caller,true,0);QTest::qWait(30);QVERIFY(observations.isEmpty());QCOMPARE(provider.claims.size(),1);
++        monitor.retry();QTRY_COMPARE(provider.claims.size(),2);provider.reply(1,true,0);QTRY_COMPARE(observations.size(),1);
 +    }
 +    void sleepReleasesAndResumeRequiresANewSample() {
 +        Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);

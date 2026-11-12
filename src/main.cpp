@@ -1131,9 +1131,10 @@ int main(int argc, char **argv)
         QObject::connect(preferences,&QAction::triggered,laptop,&LaptopController::openPreferences);
         tray->setContextMenu(menu);
         auto update=[tray,toggle,laptop]{
-            tray->setStatus(laptop->available()||laptop->active()?KStatusNotifierItem::Active:KStatusNotifierItem::Passive);
-            toggle->setEnabled(laptop->available()||laptop->active());
-            toggle->setText(laptop->active()?i18nd("uke-plasma-keyboard-custom","Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom","Open laptop mode"));
+            tray->setStatus(laptop->canRequest()||laptop->active()||laptop->entryPending()?KStatusNotifierItem::Active:KStatusNotifierItem::Passive);
+            toggle->setEnabled(laptop->canRequest()||laptop->active()||laptop->entryPending());
+            toggle->setText(laptop->active()?i18nd("uke-plasma-keyboard-custom","Return to normal keyboard"):
+                laptop->entryPending()?i18nd("uke-plasma-keyboard-custom","Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom","Open laptop mode"));
         };
         QObject::connect(laptop,&LaptopController::stateChanged,tray,update);
         QObject::connect(tray,&KStatusNotifierItem::activateRequested,laptop,[laptop]{laptop->toggle();});

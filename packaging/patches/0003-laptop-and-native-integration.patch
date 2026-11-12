@@ -1207,10 +1207,10 @@ index 0000000000000000000000000000000000000000..416081f74c2059e6a49d49fcf0dde3be
 +};
 diff --git a/src/laptop/laptopcontroller.cpp b/src/laptop/laptopcontroller.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777dbe32bba
+index 0000000000000000000000000000000000000000..61e8de94feebfdac8b59f433ba927657242428c7
 --- /dev/null
 +++ b/src/laptop/laptopcontroller.cpp
-@@ -0,0 +1,518 @@
+@@ -0,0 +1,526 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "laptopcontroller.h"
 +#include "controladaptor.h"
@@ -1448,7 +1448,10 @@ index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777
 + else if(m_locked)m_reason=i18nd("uke-plasma-keyboard-custom", "Unlock the session before entering laptop mode.");
 + else if(m_ready&&staticMode&&!m_usbKeyboardKnown)m_reason=i18nd("uke-plasma-keyboard-custom", "Checking for a connected USB keyboard.");
 + else if(m_ready&&staticMode&&m_usbKeyboardPresent)m_reason=i18nd("uke-plasma-keyboard-custom", "Disconnect the USB keyboard before entering static laptop mode. Pogo keyboards are excluded.");
-+ else if(canRequest()&&staticMode&&!m_posture.known())m_reason=i18nd("uke-plasma-keyboard-custom", "Fresh tablet inclination data is unavailable.");
++ else if(canRequest()&&staticMode&&!m_posture.known()){
++  const bool manuallyIdle=!m_manualStaticRequest&&!m_active&&!m_starting&&(m_staticAutoSuppressed||!m_options.value(QStringLiteral("staticAutoShow")).toBool());
++  m_reason=manuallyIdle?i18nd("uke-plasma-keyboard-custom", "Use the laptop mode button to open static mode."):i18nd("uke-plasma-keyboard-custom", "Fresh tablet inclination data is unavailable.");
++ }
 + else if(canRequest()&&staticMode&&!m_posture.allowed())m_reason=i18nd("uke-plasma-keyboard-custom", "Lay the tablet face up below 40 degrees to reopen static mode.");
 + else if(m_available&&m_ready)m_reason.clear();
 + if((m_active||m_starting)&&!available())leave(false);
@@ -1482,10 +1485,10 @@ index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777
 + if(changed.contains("LidIsClosed")){++m_lidGeneration;m_lidClosed=changed.value("LidIsClosed").toBool();updateTopology();}
 + else if(changed.contains("LidIsPresent")||invalidated.contains(QStringLiteral("LidIsClosed"))||invalidated.contains(QStringLiteral("LidIsPresent"))){m_lidClosed=true;updateTopology();queryLid();}
 +}
-+void LaptopController::toggle(){if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("toggle")));return;}if(m_active)leave();else enter();}
++void LaptopController::toggle(){if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("toggle")));return;}if(m_active||entryPending())leave();else enter();}
 +void LaptopController::enter(){
 + if(m_preferencesOnly){m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("enter")));return;}
-+ if(canRequest()&&!available()&&!m_active&&!m_starting){m_staticAutoSuppressed=false;m_manualStaticRequest=true;updateEligibility();return;}
++ if(canRequest()&&!available()&&!m_active&&!m_starting){m_staticAutoSuppressed=false;m_manualStaticRequest=true;updateEligibility();if(m_postureMonitor)m_postureMonitor->retry();return;}
 + if(!available()||m_active||m_starting)return;
 + m_staticAutoSuppressed=false;
 + const bool dynamic=m_options.value("presentation")==QLatin1String("dynamic");
@@ -1496,16 +1499,21 @@ index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777
 +  QDBusPendingReply<bool>reply=*call;call->deleteLater();
 +  if(transition!=m_transition)return;
 +  m_starting=false;
-+  if(!reply.isError()&&reply.value()&&available()){m_dynamic=dynamic;m_active=true;if(!dynamic)refreshProfile();Q_EMIT stateChanged();}
-+  else{backendCall(dynamic?QStringLiteral("EndDynamic"):QStringLiteral("EndStatic"));m_reason=i18nd("uke-plasma-keyboard-custom", "KWin refused the current display layout.");Q_EMIT stateChanged();}
++  const bool accepted=!reply.isError()&&reply.value()&&available();
++  if(accepted){m_dynamic=dynamic;m_active=true;if(!dynamic)refreshProfile();}
++  else backendCall(dynamic?QStringLiteral("EndDynamic"):QStringLiteral("EndStatic"));
++  syncPostureRequest();
++  if(!accepted)m_reason=i18nd("uke-plasma-keyboard-custom", "KWin refused the current display layout.");
++  Q_EMIT stateChanged();
 + });
++ Q_EMIT stateChanged();
 +}
 +void LaptopController::leave(bool manual){
 + if(m_preferencesOnly)return;
 + if(manual){m_staticAutoSuppressed=true;m_manualStaticRequest=false;}
 + ++m_transition;
-+ if(m_starting){backendCall(QStringLiteral("EndDynamic"));backendCall(QStringLiteral("EndStatic"));m_starting=false;}
-+ if(!m_active){syncPostureRequest();return;}
++ if(m_starting){backendCall(QStringLiteral("EndDynamic"));backendCall(QStringLiteral("EndStatic"));m_starting=false;releaseAll();}
++ if(!m_active){syncPostureRequest();Q_EMIT stateChanged();return;}
 + const bool dynamic=m_dynamic;m_active=false;m_dynamic=false;
 + backendCall(dynamic?QStringLiteral("EndDynamic"):QStringLiteral("EndStatic"));releaseAll();syncPostureRequest();Q_EMIT stateChanged();
 +}
@@ -1704,10 +1712,10 @@ index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777
 + static const QHash<QString,QString> values{{"a","áàâäãåæā"},{"e","éèêëē"},{"i","ıíìîïī"},{"ı","iíìîï"},{"o","öóòôõøœō"},{"u","üúùûū"},{"c","çćč"},{"g","ğǧ"},{"s","şßśš"},{"n","ñń"},{"y","ýÿ"},{"z","źžż"}};
 + const QString variants=values.value(text.toLower());QStringList result;for(QChar c:variants)result.append(text==text.toUpper()?QString(c).toUpper():QString(c));return result;
 +}
-+QVariantMap LaptopController::status()const{return {{"active",active()},{"dynamic",dynamicActive()},{"available",available()},{"canRequest",canRequest()},{"postureKnown",m_posture.known()},{"postureAllowed",m_posture.allowed()},{"inclination",m_posture.angle().value_or(0.0)},{"postureRequested",m_postureMonitor&&m_postureMonitor->requested()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()},{"usbKeyboardKnown",m_usbKeyboardKnown},{"usbKeyboardPresent",m_usbKeyboardPresent},{"presentation",m_options.value(QStringLiteral("presentation"))},{"staticAutoShow",m_options.value(QStringLiteral("staticAutoShow"))},{"pointerAcceleration",m_options.value(QStringLiteral("pointerAcceleration"))},{"pixelShiftEnabled",m_pixelShift.active()},{"pixelShiftX",m_pixelShift.offset().x()},{"pixelShiftY",m_pixelShift.offset().y()}};}
++QVariantMap LaptopController::status()const{return {{"active",active()},{"dynamic",dynamicActive()},{"available",available()},{"canRequest",canRequest()},{"entryPending",entryPending()},{"postureKnown",m_posture.known()},{"postureAllowed",m_posture.allowed()},{"inclination",m_posture.angle().value_or(0.0)},{"postureRequested",m_postureMonitor&&m_postureMonitor->requested()},{"ready",m_ready},{"reason",m_reason},{"density",pixelsPerMm()},{"usbKeyboardKnown",m_usbKeyboardKnown},{"usbKeyboardPresent",m_usbKeyboardPresent},{"presentation",m_options.value(QStringLiteral("presentation"))},{"staticAutoShow",m_options.value(QStringLiteral("staticAutoShow"))},{"pointerAcceleration",m_options.value(QStringLiteral("pointerAcceleration"))},{"pixelShiftEnabled",m_pixelShift.active()},{"pixelShiftX",m_pixelShift.offset().x()},{"pixelShiftY",m_pixelShift.offset().y()}};}
 +void LaptopController::refreshRemote(){
 + auto*w=new QDBusPendingCallWatcher(m_bus.asyncCall(QDBusMessage::createMethodCall(QStringLiteral("org.uke.plasma.keyboard"),QStringLiteral("/Laptop"),QStringLiteral("org.uke.PlasmaKeyboard.Control1"),QStringLiteral("status"))),this);
-+ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_dynamic=p.value("dynamic").toBool();m_ready=p.value("ready").toBool();m_remoteAvailable=p.value("available").toBool();m_remoteCanRequest=p.value("canRequest",m_remoteAvailable).toBool();m_available=m_remoteCanRequest;m_usbKeyboardKnown=p.value("usbKeyboardKnown").toBool();m_usbKeyboardPresent=p.value("usbKeyboardPresent").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=i18nd("uke-plasma-keyboard-custom", "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});
++ connect(w,&QDBusPendingCallWatcher::finished,this,[this](auto*call){QDBusPendingReply<QVariantMap>r=*call;if(!r.isError()){const auto p=r.value();m_active=p.value("active").toBool();m_dynamic=p.value("dynamic").toBool();m_ready=p.value("ready").toBool();m_remoteAvailable=p.value("available").toBool();m_remotePending=p.value("entryPending").toBool();m_remoteCanRequest=p.value("canRequest",m_remoteAvailable).toBool();m_available=m_remoteCanRequest;m_usbKeyboardKnown=p.value("usbKeyboardKnown").toBool();m_usbKeyboardPresent=p.value("usbKeyboardPresent").toBool();m_locked=false;m_lidClosed=false;m_reason=p.value("reason").toString();m_remoteDensity=p.value("density").toDouble();}else m_reason=i18nd("uke-plasma-keyboard-custom", "Select and start Uke Plasma Keyboard to control laptop mode. Layout and appearance settings can be changed now.");Q_EMIT stateChanged();call->deleteLater();});
 +}
 +QVariantList LaptopController::emojiMatches(const QString&query)const{
 + struct Entry{QString emoji,name;};
@@ -1731,10 +1739,10 @@ index 0000000000000000000000000000000000000000..be82d071c5727a3a7b83c1838b90f777
 +}
 diff --git a/src/laptop/laptopcontroller.h b/src/laptop/laptopcontroller.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..198c2242b0852d1bfe9e65c5160eebbb3f52fe11
+index 0000000000000000000000000000000000000000..b9b1c57e06873c76748e0f37763aeb2df113ddb0
 --- /dev/null
 +++ b/src/laptop/laptopcontroller.h
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,196 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#pragma once
 +#include "pixelshift.h"
@@ -1768,6 +1776,7 @@ index 0000000000000000000000000000000000000000..198c2242b0852d1bfe9e65c5160eebbb
 +    Q_PROPERTY(bool dynamicActive READ dynamicActive NOTIFY stateChanged)
 +    Q_PROPERTY(bool available READ available NOTIFY stateChanged)
 +    Q_PROPERTY(bool canRequest READ canRequest NOTIFY stateChanged)
++    Q_PROPERTY(bool entryPending READ entryPending NOTIFY stateChanged)
 +    Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
 +    Q_PROPERTY(bool nativeInputAllowed READ nativeInputAllowed NOTIFY stateChanged)
 +    Q_PROPERTY(QString reason READ reason NOTIFY stateChanged)
@@ -1792,6 +1801,7 @@ index 0000000000000000000000000000000000000000..198c2242b0852d1bfe9e65c5160eebbb
 +    bool active() const { return m_active; }
 +    bool staticActive() const { return m_active && !m_dynamic; }
 +    bool dynamicActive() const { return m_active && m_dynamic; }
++    bool entryPending() const { return m_preferencesOnly?m_remotePending:(m_starting||m_manualStaticRequest); }
 +    bool canRequest() const { if(m_preferencesOnly)return m_remoteCanRequest;return m_ready && m_available && !m_locked && !m_lidClosed &&
 +        (m_options.value(QStringLiteral("presentation"))==QLatin1String("dynamic") || (m_usbKeyboardKnown && !m_usbKeyboardPresent)); }
 +    bool available() const { if(m_preferencesOnly)return m_remoteAvailable;return canRequest() &&
@@ -1911,7 +1921,7 @@ index 0000000000000000000000000000000000000000..198c2242b0852d1bfe9e65c5160eebbb
 +    std::unique_ptr<TabletPostureMonitor> m_postureMonitor;
 +    bool m_caps=false,m_num=false,m_scroll=false;
 +    bool m_preferencesOnly=false;
-+    bool m_remoteAvailable=false,m_remoteCanRequest=false;
++    bool m_remoteAvailable=false,m_remoteCanRequest=false,m_remotePending=false;
 +    double m_remoteDensity=0;
 +    QSet<uint> m_held,m_latched,m_lockedKeys;
 +    QSet<uint> m_modifierUsed,m_cancelLatch;
@@ -2203,22 +2213,24 @@ index 0000000000000000000000000000000000000000..34042a3566308205fdf2aa684f7ebdba
 +}
 diff --git a/src/laptop/tabletposturemonitor.cpp b/src/laptop/tabletposturemonitor.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e3565752f9aea8
+index 0000000000000000000000000000000000000000..363705b51f92d5ae52cfc369ab7a3e4894fcd87c
 --- /dev/null
 +++ b/src/laptop/tabletposturemonitor.cpp
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,223 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "tabletposturemonitor.h"
 +
 +#include <QDBusMessage>
 +#include <QDBusPendingCallWatcher>
 +#include <QDBusServiceWatcher>
++#include <QLoggingCategory>
 +#include <QUuid>
 +#include <algorithm>
 +#include <cmath>
 +#include <ctime>
 +
 +namespace {
++Q_LOGGING_CATEGORY(postureLog, "uke.keyboard.posture", QtWarningMsg)
 +constexpr auto service = "org.senemos.Uke.Motion1";
 +constexpr auto path = "/org/senemos/Uke/Motion1";
 +constexpr auto interface = "org.senemos.Uke.Motion1";
@@ -2262,6 +2274,7 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +                                           QDBusServiceWatcher::WatchForOwnerChange, this);
 +    connect(watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
 +            [this](const QString &, const QString &, const QString &owner) {
++        qCDebug(postureLog) << "Provider changed" << "requested" << m_requested << "owner present" << !owner.isEmpty();
 +        if (!m_requested) return;
 +        closeConnection();
 +        if (!owner.isEmpty()) openConnection(owner);
@@ -2280,6 +2293,10 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +    else closeConnection();
 +}
 +
++void TabletPostureMonitor::retry() {
++    if (m_requested && !m_claimBus) openConnection();
++}
++
 +void TabletPostureMonitor::preparingSleep(bool sleeping) {
 +    if (m_sleeping == sleeping) return;
 +    m_sleeping = sleeping;
@@ -2294,6 +2311,7 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +}
 +
 +void TabletPostureMonitor::closeConnection() {
++    qCDebug(postureLog) << "Closing lease" << "claimed" << m_claimed << "known" << m_known;
 +    ++m_generation;
 +    m_claimed = false;
 +    m_pendingSample.reset();
@@ -2333,6 +2351,7 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +        const auto reply = finished->reply();
 +        finished->deleteLater();
 +        if (generation != m_generation) return;
++        qCDebug(postureLog) << "Owner query" << reply.type() << reply.signature() << reply.errorName();
 +        if (reply.type() == QDBusMessage::ReplyMessage && reply.signature() == QLatin1String("s")) {
 +            claim(reply.arguments().first().toString(), generation);
 +        } else if (activate && reply.errorName() == QLatin1String("org.freedesktop.DBus.Error.NameHasNoOwner")) {
@@ -2381,6 +2400,8 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +    connect(call, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *finished) {
 +        const auto reply = finished->reply();
 +        finished->deleteLater();
++        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation)
++                            << "owner matched" << (reply.service() == m_owner) << reply.errorName();
 +        if (generation != m_generation) return;
 +        if (reply.type() != QDBusMessage::ReplyMessage || reply.service() != m_owner || reply.signature() != QLatin1String("bdt")) {
 +            closeConnection(); return;
@@ -2401,6 +2422,9 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +    const auto previousTimestamp = m_lastTimestamp;
 +    m_lastTimestamp = std::max(m_lastTimestamp, replayBarrier);
 +    const bool fresh = freshTimestamp(sample.timestamp);
++    qCDebug(postureLog) << "Observation" << sample.known << "fresh" << fresh
++                        << "valid angle" << (std::isfinite(sample.angle) && sample.angle >= 0 && sample.angle <= 180)
++                        << "new sample" << (sample.timestamp > previousTimestamp);
 +    if (!sample.known) {
 +        if (fresh) m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
 +        invalidate(); return;
@@ -2418,10 +2442,10 @@ index 0000000000000000000000000000000000000000..0e9981b30c1bf17f4e3a53b644e35657
 +#include "tabletposturemonitor.moc"
 diff --git a/src/laptop/tabletposturemonitor.h b/src/laptop/tabletposturemonitor.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..4d67e18a04afd5c7b537dd0ffcc63ab0a5d7a251
+index 0000000000000000000000000000000000000000..1f82f50894b496b83046d9ec69b5fa8938501f30
 --- /dev/null
 +++ b/src/laptop/tabletposturemonitor.h
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,45 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#pragma once
 +
@@ -2441,6 +2465,7 @@ index 0000000000000000000000000000000000000000..4d67e18a04afd5c7b537dd0ffcc63ab0
 +    explicit TabletPostureMonitor(QObject *parent = nullptr);
 +    ~TabletPostureMonitor() override;
 +    void setRequested(bool requested);
++    void retry(); // Explicit user action after refusal; never an idle retry loop.
 +    bool requested() const { return m_requested; }
 +
 +Q_SIGNALS:

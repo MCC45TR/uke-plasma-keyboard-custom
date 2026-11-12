@@ -33,7 +33,7 @@ Kirigami.ApplicationWindow {
             spacing: Kirigami.Units.largeSpacing
             Kirigami.InlineMessage {Layout.fillWidth:true;visible:Keyboard.Laptop.reason.length>0;text:Keyboard.Laptop.reason;type:Kirigami.MessageType.Information;}
             QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen, an extended external display and a face-up tablet within 45 degrees of horizontal. After tilting upright, lower it below 40 degrees to reopen. The movable panel opens by button only.");}
-            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
+            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):Keyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.entryPending||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
             Kirigami.FormLayout {
                 Layout.fillWidth:true
                 QQC2.ComboBox {

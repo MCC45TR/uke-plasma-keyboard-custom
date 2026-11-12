@@ -17,6 +17,7 @@ public:
     explicit TabletPostureMonitor(QObject *parent = nullptr);
     ~TabletPostureMonitor() override;
     void setRequested(bool requested);
+    void retry(); // Explicit user action after refusal; never an idle retry loop.
     bool requested() const { return m_requested; }
 
 Q_SIGNALS:

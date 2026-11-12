@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "tabletposturemonitor.h"
 #include <QtTest>
+#include <QSignalSpy>
 #include <QDBusContext>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -37,7 +38,7 @@ public:
     QList<bool> inputReplies;
     QList<QPointF> motions;
     QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
-    void reply() { server.send(request.createReply(QVariantList{true})); }
+    void reply(bool accepted=true) { server.send(request.createReply(QVariantList{accepted})); }
 public Q_SLOTS:
     QVariantMap Capabilities() {
         ++capabilityQueries;
@@ -103,7 +104,9 @@ private Q_SLOTS:
         const int before=m_backend.staticBegins;
         controller.updateEligibility();QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
         controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+1);
+        controller.m_held.insert(30);controller.m_pointerButtons.insert(272);
         controller.postureObserved(false,0);QVERIFY(!controller.m_starting);
+        QVERIFY(controller.m_held.isEmpty());QVERIFY(controller.m_pointerButtons.isEmpty());
         m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
         controller.postureObserved(true,0);QTRY_COMPARE(m_backend.staticBegins,before+2);
         m_backend.reply();QTRY_VERIFY(controller.staticActive());controller.leave();
@@ -139,6 +142,26 @@ private Q_SLOTS:
         controller.updateEligibility();QVERIFY(!controller.m_postureMonitor->requested());
         controller.postureObserved(false,0);QVERIFY(controller.available());
         controller.leave();
+    }
+    void toggleCancelsARequestWaitingForPosture() {
+        LaptopController controller;eligible(controller,false);controller.postureObserved(false,0);
+        QSignalSpy changes(&controller,&LaptopController::stateChanged);
+        const int before=m_backend.staticBegins;
+        controller.toggle();QVERIFY(controller.entryPending());
+        const int waiting=changes.size();
+        controller.toggle();QVERIFY(!controller.entryPending());QVERIFY(changes.size()>waiting);
+        controller.postureObserved(true,0);QCoreApplication::processEvents();QCOMPARE(m_backend.staticBegins,before);
+        controller.toggle();QVERIFY(controller.entryPending());QTRY_COMPARE(m_backend.staticBegins,before+1);
+        controller.toggle();QVERIFY(!controller.entryPending());
+        m_backend.reply();QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());QVERIFY(!controller.active());
+    }
+    void refusedManualEntryReleasesPostureDemand() {
+        LaptopController controller;eligible(controller,false);
+        controller.m_postureMonitor=std::make_unique<TabletPostureMonitor>();
+        const int before=m_backend.staticBegins;
+        controller.enter();QVERIFY(controller.entryPending());QVERIFY(controller.m_postureMonitor->requested());
+        QTRY_COMPARE(m_backend.staticBegins,before+1);m_backend.reply(false);
+        QTRY_VERIFY(!controller.entryPending());QVERIFY(!controller.active());QVERIFY(!controller.m_postureMonitor->requested());
     }
     void dynamicModeRequiresManualActionEvenWithLegacyAutoPreference() {
         LaptopController controller;eligible(controller,true);

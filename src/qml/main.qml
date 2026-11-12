@@ -1506,7 +1506,7 @@ InputPanelWindow {
             width: parent.width
             anchors.bottom: parent.bottom
             height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
-            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
+            QQC2.Button { text: PlasmaKeyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest||PlasmaKeyboard.Laptop.entryPending; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.toggle(); }
             QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
             QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
             Item { Layout.fillWidth: true; }

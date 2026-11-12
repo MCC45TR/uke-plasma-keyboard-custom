@@ -15919,7 +15919,7 @@ index 4f94ba67b131ee358198c37411f706922c7da44d..c089861661b9235364aa08096ea8de1c
                      key: Qt.Key_Period
                      weight: normalKeyWidth
 diff --git a/src/main.cpp b/src/main.cpp
-index 7f51c244023807892d9568931cafb2191c185bd1..9da446b474d6b4091435ad00abca52799ceeb170 100644
+index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d341559a2c28a4 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -6,45 +6,1086 @@
@@ -17013,7 +17013,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..9da446b474d6b4091435ad00abca5279
                           QStringLiteral(PLASMA_KEYBOARD_VERSION_STRING),
                           i18n("An on-screen keyboard for Plasma"),
                           KAboutLicense::GPL,
-@@ -52,13 +1093,54 @@ int main(int argc, char **argv)
+@@ -52,13 +1093,55 @@ int main(int argc, char **argv)
  
      aboutData.addAuthor(i18n("Aleix Pol Gonzalez"), i18n("Author"), QStringLiteral("aleixpol@kde.org"));
      aboutData.setOrganizationDomain("kde.org");
@@ -17057,9 +17057,10 @@ index 7f51c244023807892d9568931cafb2191c185bd1..9da446b474d6b4091435ad00abca5279
 +        QObject::connect(preferences,&QAction::triggered,laptop,&LaptopController::openPreferences);
 +        tray->setContextMenu(menu);
 +        auto update=[tray,toggle,laptop]{
-+            tray->setStatus(laptop->available()||laptop->active()?KStatusNotifierItem::Active:KStatusNotifierItem::Passive);
-+            toggle->setEnabled(laptop->available()||laptop->active());
-+            toggle->setText(laptop->active()?i18nd("uke-plasma-keyboard-custom","Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom","Open laptop mode"));
++            tray->setStatus(laptop->canRequest()||laptop->active()||laptop->entryPending()?KStatusNotifierItem::Active:KStatusNotifierItem::Passive);
++            toggle->setEnabled(laptop->canRequest()||laptop->active()||laptop->entryPending());
++            toggle->setText(laptop->active()?i18nd("uke-plasma-keyboard-custom","Return to normal keyboard"):
++                laptop->entryPending()?i18nd("uke-plasma-keyboard-custom","Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom","Open laptop mode"));
 +        };
 +        QObject::connect(laptop,&LaptopController::stateChanged,tray,update);
 +        QObject::connect(tray,&KStatusNotifierItem::activateRequested,laptop,[laptop]{laptop->toggle();});
@@ -17070,7 +17071,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..9da446b474d6b4091435ad00abca5279
  
      {
          QCommandLineParser parser;
-@@ -75,35 +1157,234 @@ int main(int argc, char **argv)
+@@ -75,35 +1158,234 @@ int main(int argc, char **argv)
          PlasmaKeyboardSettings::self()->setVibrationEnabled(false);
      }
  
@@ -17326,7 +17327,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..9da446b474d6b4091435ad00abca5279
  
  #ifdef Q_OS_UNIX
      /**
-@@ -121,5 +1402,25 @@ int main(int argc, char **argv)
+@@ -121,5 +1403,25 @@ int main(int argc, char **argv)
  
      qCDebug(PlasmaKeyboard) << "Starting Plasma Keyboard application";
  
@@ -18582,7 +18583,7 @@ index 0000000000000000000000000000000000000000..3f5aca82cd95ac86bc7227d0a9bd4b4b
 +}
 diff --git a/src/qml/LaptopSettings.qml b/src/qml/LaptopSettings.qml
 new file mode 100644
-index 0000000000000000000000000000000000000000..66b453b11d3f388c23119b7829b4a30eb343742c
+index 0000000000000000000000000000000000000000..82bb8b3d257fd3b7a6b733a2031178b246cc920d
 --- /dev/null
 +++ b/src/qml/LaptopSettings.qml
 @@ -0,0 +1,143 @@
@@ -18621,7 +18622,7 @@ index 0000000000000000000000000000000000000000..66b453b11d3f388c23119b7829b4a30e
 +            spacing: Kirigami.Units.largeSpacing
 +            Kirigami.InlineMessage {Layout.fillWidth:true;visible:Keyboard.Laptop.reason.length>0;text:Keyboard.Laptop.reason;type:Kirigami.MessageType.Information;}
 +            QQC2.Label {Layout.fillWidth:true;wrapMode:Text.Wrap;text:i18nd("uke-plasma-keyboard-custom", "Static laptop mode requires an enabled touchscreen, an extended external display and a face-up tablet within 45 degrees of horizontal. After tilting upright, lower it below 40 degrees to reopen. The movable panel opens by button only.");}
-+            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
++            QQC2.Button {text:Keyboard.Laptop.active?i18nd("uke-plasma-keyboard-custom", "Return to normal keyboard"):Keyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Enter laptop mode");enabled:Keyboard.Laptop.active||Keyboard.Laptop.entryPending||Keyboard.Laptop.canRequest;onClicked:Keyboard.Laptop.toggle();}
 +            Kirigami.FormLayout {
 +                Layout.fillWidth:true
 +                QQC2.ComboBox {
@@ -19585,7 +19586,7 @@ index 0000000000000000000000000000000000000000..fda9733cad641166ea88618655b4489e
 +    }
 +}
 diff --git a/src/qml/main.qml b/src/qml/main.qml
-index 703f6750e351411995a350b2f3b99a9d9199425c..6addbc0a54439e5c959a6d7a09ffc98f1867cbce 100644
+index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e715247f1e6454 100644
 --- a/src/qml/main.qml
 +++ b/src/qml/main.qml
 @@ -6,13 +6,16 @@
@@ -21097,7 +21098,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..6addbc0a54439e5c959a6d7a09ffc98f
 +            width: parent.width
 +            anchors.bottom: parent.bottom
 +            height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
-+            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.enter(); }
++            QQC2.Button { text: PlasmaKeyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest||PlasmaKeyboard.Laptop.entryPending; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.toggle(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
 +            Item { Layout.fillWidth: true; }

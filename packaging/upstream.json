@@ -48,11 +48,11 @@
     },
     {
       "name": "0002-keyboard-interface-and-input.patch",
-      "sha256": "d1f77dd315b03db2d8cbe164b0fcd9542e37e8f82ea945687a8f767131b364e2"
+      "sha256": "ab8ec9e9a881f0b74298b524b292c58dbb4a620d3218fafba1030b270c16d257"
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "3bd5a1d188b4093a73c0b4a38ce454814eecabb3cead93190e9002a2f1763a64"
+      "sha256": "d179f890d6f696183b15dffe988f799b982583d5e810df2f90268434055296d6"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "49f62667a72e274be9d9a0d7bfb3138f79460505419fd056107761076b7beac5"
+      "sha256": "0ede0f25aa66eaa2dc2957a7960c7d740e6028e39e1c0bf6c9027dcd84fd3dc3"
     }
   ],
   "production_files": [
@@ -146,7 +146,7 @@
     },
     {
       "path": "autotests/CMakeLists.txt",
-      "sha256": "2288ec702c0e94146be99f296df67e94de2a26e540c176c504433aff020f2343"
+      "sha256": "2b41f7a3b87b788ed9eed817775afec5fef1455b34ef931359d14a7d7e6ed47f"
     },
     {
       "path": "autotests/asyncpredictortest.cpp",
@@ -198,7 +198,7 @@
     },
     {
       "path": "autotests/laptopcontrollertest.cpp",
-      "sha256": "aa9d16a231f5c396843325f183a1a02dbf4e10c2c51409bb7ea194fa79ca330d"
+      "sha256": "798f2d2a81dd2a43ba4f572cd0a734c19f72b7cf7fa3351262e1288e3840c5fd"
     },
     {
       "path": "autotests/laptopinteractiontest.cpp",
@@ -314,7 +314,7 @@
     },
     {
       "path": "autotests/tabletposturemonitortest.cpp",
-      "sha256": "f0de8e09ef3c948746ab0d3085f31621bec76a816e54036a72d4bb0dcaf2c6e5"
+      "sha256": "8f2c1c194b953836f21903e0605036921e6f12f946861b5795ef1022dfab92bb"
     },
     {
       "path": "autotests/tabletposturetest.cpp",
@@ -1170,11 +1170,11 @@
     },
     {
       "path": "src/laptop/laptopcontroller.cpp",
-      "sha256": "b1e97ce9e6deb68bd3c37d9b5f7fbb5c67de6082f4ccda58c090b0b099af4c8e"
+      "sha256": "97fef4e0677ef7bf19f9be2b40e1265bbb6afb8d13b43e92a671cd7351368802"
     },
     {
       "path": "src/laptop/laptopcontroller.h",
-      "sha256": "b91a12f23cdc926018673c742bcc055f7a590001588445172af5623a09bb7a7a"
+      "sha256": "8fab5af88bc84b23b646e168842f08bf76ed1c31304c4c893ad45152202b3672"
     },
     {
       "path": "src/laptop/layoutregistry.cpp",
@@ -1206,11 +1206,11 @@
     },
     {
       "path": "src/laptop/tabletposturemonitor.cpp",
-      "sha256": "ade8843f1cc718cda4e8353c8974e352c8814589f71e3abdc11b742904040c51"
+      "sha256": "05bb7b2d38e90150453f327a6612ba3853a3aaf364c0fcf61bb96087ac642d9d"
     },
     {
       "path": "src/laptop/tabletposturemonitor.h",
-      "sha256": "2b1ec42a21d2d4e225a73cade1856fb6486a5e0a02b0b5b6099887e4bf6f6530"
+      "sha256": "e8d25df9875de1fb3651028733e7af60e118c921acac71874e1a55fd55e96a8b"
     },
     {
       "path": "src/laptop/touchpadmotion.h",
@@ -2338,7 +2338,7 @@
     },
     {
       "path": "src/main.cpp",
-      "sha256": "1f0744bdb71107e9e4e757817039a3fb8b10d77c32148de7d63e2c2523d0f392"
+      "sha256": "d2c7b498c92013478c9fede8ab5ca1cc36cffc9188e1d181f1373e0fe206b57d"
     },
     {
       "path": "src/org.kde.plasma.keyboard.desktop",
@@ -2598,7 +2598,7 @@
     },
     {
       "path": "src/qml/LaptopSettings.qml",
-      "sha256": "d320438788ebd880dcf811148a9207c4ba220036a8e146a0cfc0e75bc98a6fe9"
+      "sha256": "df9402753a25a52a011fa7c740c490c5c821ccb15064f964a6dbb8204221e5b2"
     },
     {
       "path": "src/qml/LocaleResolver.js",
@@ -2622,7 +2622,7 @@
     },
     {
       "path": "src/qml/main.qml",
-      "sha256": "a36dab5412ab9a3fc7c3be7582a4cbc30953d2fde1410863f0faccfbd0e8d36b"
+      "sha256": "607f8af929da5a6f249425c30bd16154e0cc42f8a0deaa5b79951d95d5108583"
     },
     {
       "path": "src/qmlplugin/BreezeConstants.qml",

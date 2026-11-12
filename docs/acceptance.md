@@ -48,8 +48,8 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
-| Dynamic laptop mode | Movable/tray implementation; candidate46 removes focus-driven entry/exit | Earlier native and simulated-cover entry pass; manual-only candidate qualification pending | Not tested |
-| Static posture | Candidate46 client and45/40 hysteresis prepared | Numeric provider/frame admission and client native qualification pending | Not tested |
+| Dynamic laptop mode | Movable/tray implementation; posture candidates remove focus-driven entry/exit | Earlier native and simulated-cover entry pass; manual-only candidate qualification pending | Not tested |
+| Static posture | Client and45/40 hysteresis prepared; candidate48 completes manual request cancellation | Numeric provider/frame admission and client native qualification pending | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
@@ -1053,3 +1053,26 @@ to a pending known snapshot.47 preserves that revocation and its replay barrier,
 with an actual bus race test. A second regression renews the lease inside an
 observation handler and verifies that old callback state cannot poison the new
 lease. Native results and real provider/frame admission remain pending.
+
+## Candidate48 — complete the manual request lifecycle
+
+The tray now uses the non-posture prerequisites so a manual static request is
+available before sensors are claimed. The button/tray can cancel a pending
+posture or compositor request; the settings process mirrors that state. Pending
+revocation releases held input, and a refused manual compositor entry releases
+its posture demand. A refused sensor claim can be retried explicitly without an
+idle retry loop. Native controller/client tests cover these transitions. The
+expected suite remains42 CTests; native48 and provider/frame admission are still
+pending.47 continues under its existing handle and is not delivered.
+
+## COPR11318424 /47 — client transport fixture remains unresolved
+
+All three targets compile and pass41/42 CTests. The new threshold and actual
+controller tests pass, together with the preceding40 gates. The private-bus
+posture test receives its first Claim but observes no accepted numeric reply,
+then reaches its30-second timeout.47 has no accepted RPM or device delivery.
+Candidate48 adds debug diagnostics for reply type/signature/owner match and
+validation booleans; debug output contains no measured angle, timestamp, caller
+identity or entered content. The fixture verifies its own sends. These diagnostics
+are enabled only by the native test environment; production logging remains off
+at debug level. The original reply/age/owner assertions and timeout remain.

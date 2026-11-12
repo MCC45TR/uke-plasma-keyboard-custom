@@ -3,7 +3,7 @@
 13 November 2026. The client contract below is provisional and agreed with the
 owning kernel/DT and Control workstream. No numeric provider is currently
 delivered. Native client qualification is independent of provider/frame and
-physical acceptance. Candidate46 must stay outside the default update repository
+physical acceptance. Posture candidates stay outside the default update repository
 until that dependency has been qualified and delivered.
 
 The existing Control package owns the system-bus service
@@ -34,6 +34,12 @@ carry timestamp zero when no valid sample exists. Rates, ownership and stale
 deadlines still require provider qualification; this document does not admit a
 hardware frame or promise a currently working API.
 
+That freshness guarantee includes a broker that freezes while retaining its bus
+name. An edge-only client cannot detect that failure by itself. Provider
+qualification must demonstrate bounded unknown/owner loss through its Control
+lifecycle/watchdog or an agreed lease mechanism, together with stable-angle
+buffer starvation. This requirement remains open with the provider.
+
 The unprivileged keyboard creates a dedicated connection per lease, subscribes
 before claiming and pins the unique provider owner. It rejects stale/future
 deliveries (maximum age two seconds), nonfinite/out-of-range angles and reordered
@@ -52,6 +58,14 @@ loss of a prerequisite and process exit release it. The settings-only process
 never claims. Normal dismissal persists until another display/cover/USB/lock
 eligibility cycle or explicit entry; stopping its sensor lease does not rearm
 automatic entry by itself.
+
+The button and tray permit a manual request before posture is known. While
+waiting for posture or compositor entry they offer Cancel; cancellation releases
+the lease and held input, and a delayed reply cannot reopen the surface. A
+refused manual compositor entry releases its sensor demand. A refused sensor
+claim is retried only by an explicit action or a provider ownership change,
+without idle retries. The settings process mirrors pending state over the
+existing keyboard control interface.
 
 Policy starts unknown. A first valid angle up to45 admits static mode. Above45
 revokes active/pending entry, releases held input and owned refresh/window/pointer

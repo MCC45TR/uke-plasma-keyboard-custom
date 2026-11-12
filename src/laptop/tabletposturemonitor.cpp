@@ -4,12 +4,14 @@
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
+#include <QLoggingCategory>
 #include <QUuid>
 #include <algorithm>
 #include <cmath>
 #include <ctime>
 
 namespace {
+Q_LOGGING_CATEGORY(postureLog, "uke.keyboard.posture", QtWarningMsg)
 constexpr auto service = "org.senemos.Uke.Motion1";
 constexpr auto path = "/org/senemos/Uke/Motion1";
 constexpr auto interface = "org.senemos.Uke.Motion1";
@@ -53,6 +55,7 @@ TabletPostureMonitor::TabletPostureMonitor(QObject *parent)
                                            QDBusServiceWatcher::WatchForOwnerChange, this);
     connect(watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
             [this](const QString &, const QString &, const QString &owner) {
+        qCDebug(postureLog) << "Provider changed" << "requested" << m_requested << "owner present" << !owner.isEmpty();
         if (!m_requested) return;
         closeConnection();
         if (!owner.isEmpty()) openConnection(owner);
@@ -71,6 +74,10 @@ void TabletPostureMonitor::setRequested(bool requested) {
     else closeConnection();
 }
 
+void TabletPostureMonitor::retry() {
+    if (m_requested && !m_claimBus) openConnection();
+}
+
 void TabletPostureMonitor::preparingSleep(bool sleeping) {
     if (m_sleeping == sleeping) return;
     m_sleeping = sleeping;
@@ -85,6 +92,7 @@ void TabletPostureMonitor::invalidate() {
 }
 
 void TabletPostureMonitor::closeConnection() {
+    qCDebug(postureLog) << "Closing lease" << "claimed" << m_claimed << "known" << m_known;
     ++m_generation;
     m_claimed = false;
     m_pendingSample.reset();
@@ -124,6 +132,7 @@ void TabletPostureMonitor::resolveOwner(quint64 generation, bool activate) {
         const auto reply = finished->reply();
         finished->deleteLater();
         if (generation != m_generation) return;
+        qCDebug(postureLog) << "Owner query" << reply.type() << reply.signature() << reply.errorName();
         if (reply.type() == QDBusMessage::ReplyMessage && reply.signature() == QLatin1String("s")) {
             claim(reply.arguments().first().toString(), generation);
         } else if (activate && reply.errorName() == QLatin1String("org.freedesktop.DBus.Error.NameHasNoOwner")) {
@@ -172,6 +181,8 @@ void TabletPostureMonitor::claim(const QString &owner, quint64 generation) {
     connect(call, &QDBusPendingCallWatcher::finished, this, [this, generation](auto *finished) {
         const auto reply = finished->reply();
         finished->deleteLater();
+        qCDebug(postureLog) << "Claim reply" << reply.type() << reply.signature() << "current generation" << (generation == m_generation)
+                            << "owner matched" << (reply.service() == m_owner) << reply.errorName();
         if (generation != m_generation) return;
         if (reply.type() != QDBusMessage::ReplyMessage || reply.service() != m_owner || reply.signature() != QLatin1String("bdt")) {
             closeConnection(); return;
@@ -192,6 +203,9 @@ void TabletPostureMonitor::accept(const Sample &sample, qulonglong replayBarrier
     const auto previousTimestamp = m_lastTimestamp;
     m_lastTimestamp = std::max(m_lastTimestamp, replayBarrier);
     const bool fresh = freshTimestamp(sample.timestamp);
+    qCDebug(postureLog) << "Observation" << sample.known << "fresh" << fresh
+                        << "valid angle" << (std::isfinite(sample.angle) && sample.angle >= 0 && sample.angle <= 180)
+                        << "new sample" << (sample.timestamp > previousTimestamp);
     if (!sample.known) {
         if (fresh) m_lastTimestamp = std::max(m_lastTimestamp, sample.timestamp);
         invalidate(); return;

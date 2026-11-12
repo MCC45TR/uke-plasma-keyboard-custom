@@ -53,12 +53,13 @@ public:
         return false;
     }
     void reply(int index,bool known,double angle,std::optional<qulonglong> timestamp={}) {
-        bus.send(claims.at(index).createReply({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))}));
+        const QVariantList values{known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))};
+        if(!bus.send(claims.at(index).createReply(values)))qFatal("Cannot send private posture claim reply");
     }
     void change(const QString &destination,bool known,double angle,std::optional<qulonglong> timestamp={}) {
         auto message=QDBusMessage::createTargetedSignal(destination,QLatin1String(path),QLatin1String(interface),QStringLiteral("PostureChanged"));
         message.setArguments({known,angle,QVariant::fromValue(timestamp.value_or(nowUsec()))});
-        bus.send(message);
+        if(!bus.send(message))qFatal("Cannot send private posture signal");
     }
 private:
     QDBusServiceWatcher *m_watcher=nullptr;
@@ -147,13 +148,14 @@ private Q_SLOTS:
         provider.change(caller,true,0);QTRY_COMPARE(observations.size(),7);
         provider.change(caller,true,0,nowUsec()+5000000);QTRY_COMPARE(observations.size(),8);QVERIFY(!observations.last().at(0).toBool());
     }
-    void rejectedClaimDoesNotAcceptSignalsOrRetry() {
+    void rejectedClaimRetriesOnlyAfterExplicitRequest() {
         Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
         monitor.setRequested(true);QTRY_COMPARE(provider.claims.size(),1);
         const auto caller=provider.claims.first().service();
         provider.bus.send(provider.claims.first().createErrorReply(QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),QStringLiteral("Fixture refusal")));
         QTRY_VERIFY(monitor.findChildren<QDBusPendingCallWatcher*>().isEmpty());
         provider.change(caller,true,0);QTest::qWait(30);QVERIFY(observations.isEmpty());QCOMPARE(provider.claims.size(),1);
+        monitor.retry();QTRY_COMPARE(provider.claims.size(),2);provider.reply(1,true,0);QTRY_COMPARE(observations.size(),1);
     }
     void sleepReleasesAndResumeRequiresANewSample() {
         Provider provider;TabletPostureMonitor monitor;QSignalSpy observations(&monitor,&TabletPostureMonitor::observation);
