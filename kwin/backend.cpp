@@ -174,6 +174,7 @@ public Q_SLOTS:
             (o->isInternal() ? internal : external).append(o->name());
         }
         return {{QStringLiteral("version"), UkeKeyboard::protocolVersion},
+                {QStringLiteral("build"), QStringLiteral(UKE_PLUGIN_BUILD_ID)},
                 {QStringLiteral("internal"), internal}, {QStringLiteral("external"), external},
                 {QStringLiteral("active"), m_active}, {QStringLiteral("tablet"), m_tabletName}};
     }

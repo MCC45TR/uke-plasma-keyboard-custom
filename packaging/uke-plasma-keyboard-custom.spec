@@ -3,7 +3,7 @@
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 23%{?dist}
+Release: 24%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -52,6 +52,7 @@ tar xf %{SOURCE2}
  -DBUILD_TESTING=ON \
  -DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
  -DKDE_INSTALL_LIBEXECDIR=%{_libexecdir} \
+ -DUKE_PLUGIN_BUILD_ID=%{version}-%{release} \
  -DWHISPER_CPP_SOURCE_DIR=$PWD/whisper.cpp-1.9.3 \
  -DTRANSCRIBE_CPP_SOURCE_DIR=$PWD/transcribe.cpp-5bb2deb2a4afb1fd50534ecb51cfcb521ef94944 \
  -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_BLAS=OFF
@@ -90,7 +91,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_libdir}/qt6/qml/QtQuick/VirtualKeyboard/Styles/UkeBreeze/
 %{_libdir}/qt6/qml/org/uke/plasma/keyboard/lib/
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_uke_plasma_keyboard_custom.so
-%{_libdir}/qt6/plugins/kwin/plugins/uke_keyboard_backend.so
+%{_libdir}/qt6/plugins/kwin/plugins/uke_keyboard_backend_*.so
 %{_libdir}/%{name}/
 %{_libexecdir}/uke-plasma-keyboard-lock-switcher
 %{_userunitdir}/uke-plasma-keyboard-lock-switcher.service
@@ -104,6 +105,10 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Thu Nov 12 2026 Uke Linux contributors - 0.1.0-24
+- Give each native module build its own filename for live package updates.
+- Reload only the owned integration before attaching a restarted keyboard.
+
 * Thu Nov 12 2026 Uke Linux contributors - 0.1.0-23
 - Read procfs parent identity correctly when authorizing the selected keyboard.
 - Verify real process relationships without relaxing native input restrictions.

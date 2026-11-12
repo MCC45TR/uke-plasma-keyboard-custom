@@ -36,11 +36,21 @@ public Q_SLOTS:
     bool Profile(const QString &) {++profiles;return true;}
     void ReleaseAll() {}
 };
+class PluginManager final : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.Plugins")
+public:
+    QStringList operations;
+public Q_SLOTS:
+    void UnloadPlugin(const QString &id) {operations.append(QStringLiteral("unload:")+id);}
+    bool LoadPlugin(const QString &id) {operations.append(QStringLiteral("load:")+id);return true;}
+};
 class LaptopControllerTest final : public QObject {
     Q_OBJECT
     QTemporaryDir m_directory;
     DeferredPower m_power;
     DeferredBackend m_backend;
+    PluginManager m_plugins;
     static void eligible(LaptopController &controller,bool dynamic) {
         controller.m_ready=true;controller.m_available=true;controller.m_locked=false;
         controller.m_lidClosed=false;controller.m_tabletName=QStringLiteral("synthetic-panel");
@@ -58,6 +68,8 @@ private Q_SLOTS:
         QVERIFY(m_backend.server.isConnected());
         QVERIFY(m_backend.server.registerService(QStringLiteral("org.uke.PlasmaKeyboard.Backend")));
         QVERIFY(m_backend.server.registerObject(QStringLiteral("/org/uke/PlasmaKeyboard/Backend"),&m_backend,QDBusConnection::ExportAllSlots));
+        QVERIFY(m_backend.server.registerService(QStringLiteral("org.kde.KWin")));
+        QVERIFY(m_backend.server.registerObject(QStringLiteral("/Plugins"),&m_plugins,QDBusConnection::ExportAllSlots));
     }
     void lateOpenReplyCannotUndoCoverClose() {
         LaptopController controller;
@@ -106,6 +118,15 @@ private Q_SLOTS:
         QTRY_VERIFY(controller.dynamicActive());
         QCOMPARE(m_backend.staticBegins,staticBegins);QCOMPARE(m_backend.profiles,profiles);
         controller.leave();QVERIFY(!controller.active());
+    }
+    void reloadsOnlyTheOwnedIntegrationBeforeLoading() {
+        m_plugins.operations.clear();
+        LaptopController controller;
+        controller.loadBackend();
+        QTRY_COMPARE(m_plugins.operations.size(),2);
+        const QStringList expected{QStringLiteral("unload:uke_keyboard_backend"),QStringLiteral("load:uke_keyboard_backend")};
+        QCOMPARE(m_plugins.operations,expected);
+        QTRY_VERIFY(controller.findChildren<QDBusPendingCallWatcher*>().isEmpty());
     }
 };
 QTEST_MAIN(LaptopControllerTest)

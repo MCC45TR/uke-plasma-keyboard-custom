@@ -114,6 +114,7 @@ private Q_SLOTS:
     void syncLocks(bool caps,bool num,bool scroll);
 private:
     friend class LaptopControllerTest;
+    void loadBackend();
     void connectBackend();
     void queryLid();
     void updateTopology();

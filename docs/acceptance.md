@@ -462,3 +462,21 @@ A new native test checks the real process/parent relationship and rejects wrong
 or invalid identities. Those native checks and a repeated original-KWin trial
 are required before accepting attachment; the earlier unrelated-client denial
 and successful plugin load alone did not establish it.
+
+## COPR11311573 and live module replacement
+
+The procfs fix passes all30 CTests and RPM assembly on Fedora44/45/Rawhide
+aarch64 in COPR11311573. Before delivery, the actual KWin process is observed
+holding a deleted older module mapping after the package reinstallation.
+Removing the plugin object does not unmap that code with Qt's default loader.
+The next recipe therefore gives the module a package-specific filename and
+loads it after removing only an existing owned integration. A native private-bus
+test checks that unload completes before load and targets only this plugin ID.
+The stable explicit metadata ID is retained so it does not vary with filenames.
+No KWin/session restart or copied binary is used to work around the problem.
+
+The real session's selected input method was independently observed changing
+to Uke at04:05UTC. No setter was executed by these installation checks, and the
+new selection is preserved. Earlier byte-for-byte preference checks apply to
+the installation/reinstallation checkpoint; the later changed kwinrc hash is
+recorded separately rather than overwritten or called unchanged.

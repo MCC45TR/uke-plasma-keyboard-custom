@@ -120,3 +120,11 @@ reviewed revision's [PluginManager](https://github.com/KDE/kwin/blob/cefd679e046
 checks EnabledByDefault only during startup and permits an
 explicit LoadPlugin request independently. This keeps the extra virtual device
 and input filter absent when the user continues using the stock keyboard.
+
+Native module filenames include the RPM build identity while their plugin ID
+stays stable. Qt's default [PreventUnloadHint](https://doc.qt.io/qt-6/qpluginloader.html#loadHints-prop)
+retains library code in the compositor after an object is removed. On keyboard
+startup, an existing owned backend is unloaded before the installed build is
+loaded. Its new filename avoids reusing a previous package's mapped code.
+The exact running KWin version is still checked before constructing the backend.
+No compositor restart, desktop-policy setter or root session service is added.
