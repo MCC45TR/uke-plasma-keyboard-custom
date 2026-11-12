@@ -1095,3 +1095,34 @@ Full48/11318526 independently reproduces the same cause on all three ARM64
 workers:41/42 pass, including the new manual cancellation/refusal controller
 cases. Debug output shows a typed/current-generation reply rejected only by
 the unsupported service comparison. No RPM or device acceptance is recorded.
+
+Focused49/11318566 verifies all seven source digests and passes both native
+source-worker tests in2.69 seconds, including the requested-reply/forgery
+fixture. The overall temporary diagnostic job fails afterward while collecting
+its receipt (no spec file available), so it is not recorded as a successful
+COPR package or ARM/hardware qualification. No extra package producer exists.
+Full49/11318576 uses the standard application recipe and exact sourcedd22b9c8;
+published recipe23458cf3 matches. Its three ARM results are pending.
+
+## COPR11318576 /49 — complete client matrix and signed RPM
+
+Exact sourcedd22b9c8 and recipe23458cf3 pass42/42 CTests and RPM assembly on
+Fedora44/45/Rawhide aarch64. This includes the production posture client on a
+private bus, forged return/error rejection,45/40 hysteresis and controller
+request/cancel/refusal cleanup, plus the previous keyboard/input tests. Worker
+elapsed times are619/613/624 seconds; CTest execution is55.36/54.70/55.16 seconds.
+
+The signed Rawhide RPM is17,740,507 bytes, SHA256
+`444ffcc688f6952440f68963cab0ff1c1086edbb7f3bf0113a2ab6c1023f4a57`.
+Two trusted signatures and header/payload digests pass.490 packaged paths include
+486 existing Uke-owned paths, no foreign owner and no Python/input grant.
+Requirements and scriptlets remain equal to the26 baseline. The extra document
+compared with45 is the posture contract; the native module has the49 identity.
+
+49 remains in the custom qualification directory and is not installed. Installed
+Control15 has no owned or activatable Motion1 service. The kernel/DT owner retains
+frame, timestamp/IIO admission and the cumulative kernel queue; this workstream
+may prepare the Motion1 integration inside existing Control from the signed15
+source, preserving its full payload, paired TUI and Core24 SELinux contract.
+No new bridge RPM is permitted. Numeric provider, admitted frame/freshness and
+actual45/40 behavior remain open, along with earlier physical/VRR/image gates.

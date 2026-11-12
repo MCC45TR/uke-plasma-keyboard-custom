@@ -94,14 +94,49 @@ Dynamic mode remains eligible with a USB keyboard. Software entry/exit on the
 tablet has been checked with a temporary open-cover simulation; the interaction
 checks below remain physical acceptance work.
 
-Select Dynamic in keyboard settings. With automatic opening disabled, focusing a
-text field must not open either the normal keyboard or the deck. Open/close the
-deck from its tray item and shortcut; drag the handle and resize through settings.
+Select Dynamic in keyboard settings. The movable surface opens and closes only
+through explicit actions, including when a legacy automatic-opening preference
+was enabled. Hide the normal keyboard before checking mouse focus: it must stay
+hidden. Touch focus may open the normal keyboard; the movable surface still
+requires its button or tray action. Open/close it explicitly, drag the handle
+and resize through settings. Focus changes must leave an opened surface visible.
 Touch outside its visible rectangle must reach desktop content. Check keyboard,
 pad, 3/4-finger gestures and modifier chords without duplicate touchscreen
 shortcuts. The pointer must remain able to enter the tablet and ordinary windows
 must remain where the user placed them. Refresh mode must remain unchanged.
-Enable focus auto-show separately and check field activation/deactivation, manual
-hide, fast focus changes, disconnect, cover close and lock during pending entry.
+Check fast focus changes, manual hide, disconnect, cover close and lock during
+pending entry.
 Repeat with a complex IME to verify that the language panel is visible above the
 pad and does not cover its buttons. These are pending physical checks.
+
+## Posture follow-up
+
+Use this section after the numeric provider and fitted sensor frame have passed
+their separate qualification. A successful keyboard build or private-bus test
+does not establish that readiness. Keep the original Fedora keyboard available.
+
+1. With the cover open, internal touchscreen enabled, extended external monitor
+   active and USB typing keyboards disconnected, lay the tablet face up.
+   Automatic static mode should open and remain visible across text-focus
+   changes. The physical inclination must be within45 degrees of horizontal.
+2. Raise the tablet clearly beyond45 degrees. The static surface must close and
+   release held keys/buttons and owned pointer/window/refresh state. Display
+   enablement, layout, scale and rotation-lock preferences must stay unchanged.
+   Face-down operation must remain ineligible.
+3. After closing, movement within the40–45-degree band must not reopen the
+   surface. Lower it below40: it should reopen automatically if the other
+   conditions still pass. Repeat in portrait and landscape. Rough position
+   checks do not establish physical angle calibration at the exact boundaries.
+4. Choose Normal keyboard. Focus changes must not reopen static mode. Its sensor
+   lease stops; explicit entry or a display/cover/USB/lock eligibility cycle
+   permits another request. A pose change alone does not cancel this deliberate
+   dismissal while sensing is stopped.
+5. Turn automatic static entry off and request laptop mode while the tablet is
+   upright. The action should offer Cancel while waiting for posture. Cancel,
+   then lay it flat: it must remain closed. A new explicit request may open it
+   after a fresh valid observation. Reenable automatic entry afterward if that
+   is the intended preference.
+6. Repeat USB hotplug, external-display disconnect, cover close and lock/unlock
+   while flat. Entry must require fresh posture again after prerequisites
+   return. Record optical/input behavior separately from software status; do
+   not substitute orientation strings or an injected pose for this trial.
