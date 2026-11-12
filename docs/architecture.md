@@ -44,8 +44,15 @@ configuration uses Source::System. Libkscreen6.8.2 commit
 and `waylandconfig.cpp` (LGPL-2.1-or-later), compares every supplied output field
 with its current state. This makes a copied asynchronous graph unsuitable for
 the keyboard's narrow temporary ownership. No distribution library is modified.
-Candidate29's native request and recovery tests still require COPR qualification;
-source structure alone does not prove physical mode or optical behavior.
+Candidate31 passes the complete35-test matrix on three Fedora aarch64 targets;
+source/native checks alone do not prove physical mode or optical behavior.
+KWin's same-revision `core/backendoutput.cpp` and `outputconfigurationstore.cpp`
+also show that VRR policy enters persistent output state. Candidate32 therefore
+keeps a0600 recovery record under GenericStateLocation in a0700 keyboard-owned
+directory, with file/directory synchronization. It migrates trusted older runtime
+records and maintains the version1 runtime shadow for in-session downgrades.
+This adds no service or runtime package. Cross-runtime recovery cases still
+require the full COPR gate and physical restoration remains unqualified.
 
 ## Data and dependencies
 

@@ -2,12 +2,15 @@
 #include "refreshguard.h"
 #include <QFile>
 #include <QFileInfo>
+#include <QDir>
+#include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringList>
 #include <cmath>
+#include <fcntl.h>
 #include <unistd.h>
 #include <utility>
 
@@ -35,6 +38,31 @@ bool ownsPolicy(const RefreshGuard::Snapshot &current,const QVariantMap &saved)
 {
  return current.policy==saved.value(QStringLiteral("appliedPolicy")).toInt();
 }
+QVariantMap readRecord(const QString &path)
+{
+ const QFileInfo info(path);
+ if(!info.exists()||info.isSymLink()||!info.isFile()||info.ownerId()!=getuid()||info.size()>4096||(info.permissions()&(QFile::ReadGroup|QFile::WriteGroup|QFile::ReadOther|QFile::WriteOther)))return {};
+ QFile file(path);if(!file.open(QIODevice::ReadOnly))return {};
+ const auto data=QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
+ if(data.value(QStringLiteral("version")).toInt()!=1||data.value(QStringLiteral("name")).toString().size()>128||data.value(QStringLiteral("name")).toString().isEmpty())return {};
+ for(const QString &key:{QStringLiteral("width"),QStringLiteral("height"),QStringLiteral("appliedWidth"),QStringLiteral("appliedHeight")})if(data.value(key).toInt()<100||data.value(key).toInt()>16000)return {};
+ for(const QString &key:{QStringLiteral("hz"),QStringLiteral("appliedHz")})if(!std::isfinite(data.value(key).toDouble())||data.value(key).toDouble()<1||data.value(key).toDouble()>1000)return {};
+ if(data.value(QStringLiteral("policy")).toInt()<0||data.value(QStringLiteral("policy")).toInt()>2||data.value(QStringLiteral("appliedPolicy")).toInt()<0||data.value(QStringLiteral("appliedPolicy")).toInt()>2)return {};
+ return data;
+}
+bool writeRecord(const QString &path,const QVariantMap &data)
+{
+ QSaveFile file(path);
+ if(!file.open(QIODevice::WriteOnly)||!file.setPermissions(QFile::ReadOwner|QFile::WriteOwner))return false;
+ const auto bytes=QJsonDocument(QJsonObject::fromVariantMap(data)).toJson(QJsonDocument::Compact);
+ if(file.write(bytes)!=bytes.size()||!file.flush()||::fsync(file.handle())!=0||!file.commit())return false;
+ const auto directory=QFile::encodeName(QFileInfo(path).absolutePath());
+ const int fd=::open(directory.constData(),O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
+ if(fd<0)return false;
+ const bool synced=::fsync(fd)==0;
+ ::close(fd);
+ return synced;
+}
 }
 
 RefreshGuard::RefreshGuard(QObject *parent,std::function<void(const QString&)> error,Backend backend)
@@ -45,36 +73,41 @@ RefreshGuard::RefreshGuard(QObject *parent,std::function<void(const QString&)> e
 }
 QString RefreshGuard::journal()const
 {
+ return QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation)+QStringLiteral("/uke-plasma-keyboard-custom/refresh.json");
+}
+QString RefreshGuard::legacyJournal()const
+{
  return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)+QStringLiteral("/uke-keyboard-refresh.json");
 }
 void RefreshGuard::load()
 {
- const QFileInfo info(journal());
- if(!info.exists()||info.isSymLink()||!info.isFile()||info.ownerId()!=getuid()||info.size()>4096||(info.permissions()&(QFile::ReadGroup|QFile::WriteGroup|QFile::ReadOther|QFile::WriteOther)))return;
- QFile file(journal());if(!file.open(QIODevice::ReadOnly))return;
- const auto data=QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
- if(data.value(QStringLiteral("version")).toInt()!=1||data.value(QStringLiteral("name")).toString().size()>128||data.value(QStringLiteral("name")).toString().isEmpty())return;
- for(const QString &key:{QStringLiteral("width"),QStringLiteral("height"),QStringLiteral("appliedWidth"),QStringLiteral("appliedHeight")})if(data.value(key).toInt()<100||data.value(key).toInt()>16000)return;
- for(const QString &key:{QStringLiteral("hz"),QStringLiteral("appliedHz")})if(!std::isfinite(data.value(key).toDouble())||data.value(key).toDouble()<1||data.value(key).toDouble()>1000)return;
- if(data.value(QStringLiteral("policy")).toInt()<0||data.value(QStringLiteral("policy")).toInt()>2||data.value(QStringLiteral("appliedPolicy")).toInt()<0||data.value(QStringLiteral("appliedPolicy")).toInt()>2)return;
- m_saved=data;
+ const auto durable=readRecord(journal()),legacy=readRecord(legacyJournal());
+ m_saved=durable;
+ if(!legacy.isEmpty()&&(durable.isEmpty()||QFileInfo(legacyJournal()).lastModified()>=QFileInfo(journal()).lastModified()))m_saved=legacy;
+ // An older installed provider may have the newest runtime record. Migrate it
+ // before waiting for a disabled panel, so a reboot does not lose that state.
+ if(!m_saved.isEmpty()&&m_saved!=durable)save();
 }
 bool RefreshGuard::save()
 {
- QSaveFile file(journal());
- if(!file.open(QIODevice::WriteOnly)||!file.setPermissions(QFile::ReadOwner|QFile::WriteOwner)){
-  m_error(QStringLiteral("Cannot create private refresh recovery state; no refresh setting was changed."));return false;
- }
- const auto bytes=QJsonDocument(QJsonObject::fromVariantMap(m_saved)).toJson(QJsonDocument::Compact);
- if(file.write(bytes)!=bytes.size()||!file.commit()){
-  m_error(QStringLiteral("Could not save temporary refresh recovery state."));return false;
+ const QString directory=QFileInfo(journal()).absolutePath();
+ const auto fail=[this]{m_error(QStringLiteral("Cannot save private refresh recovery state; no new refresh setting was changed."));return false;};
+ if(!QDir().mkpath(directory))return fail();
+ const QFileInfo info(directory);
+ if(info.isSymLink()||!info.isDir()||info.ownerId()!=getuid()||!QFile::setPermissions(directory,QFile::ReadOwner|QFile::WriteOwner|QFile::ExeOwner))return fail();
+ const auto previous=readRecord(journal());
+ if(!writeRecord(journal(),m_saved))return fail();
+ // Preserve version1 runtime recovery for supported in-session downgrades.
+ if(!writeRecord(legacyJournal(),m_saved)){
+  if(previous.isEmpty())QFile::remove(journal());else writeRecord(journal(),previous);
+  return fail();
  }
  return true;
 }
 void RefreshGuard::clear()
 {
  m_saved.clear();
- if(QFile::exists(journal())&&!QFile::remove(journal()))m_error(QStringLiteral("Could not remove restored refresh recovery state."));
+ for(const auto &path:{journal(),legacyJournal()})if(QFile::exists(path)&&!QFile::remove(path))m_error(QStringLiteral("Could not remove restored refresh recovery state."));
 }
 void RefreshGuard::begin(const QString &name){m_name=name;m_active=true;}
 bool RefreshGuard::set(const QString &profile)

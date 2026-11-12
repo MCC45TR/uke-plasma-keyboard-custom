@@ -6,8 +6,8 @@
 #include <QVariantMap>
 #include <functional>
 #include <optional>
-// Temporary KScreen mode ownership survives input-method crashes. The journal
-// permits recovery after a compositor restart without enabling an output.
+// Temporary output-mode ownership survives input-method crashes. Private user
+// state also outlives the runtime directory; recovery never enables an output.
 class RefreshGuard final : public QObject {
 public:
  struct Mode {
@@ -37,6 +37,7 @@ private:
  bool save();
  void clear();
  QString journal()const;
+ QString legacyJournal()const;
  std::function<void(const QString&)>m_error;
  Backend m_backend;
  QVariantMap m_saved;

@@ -41,19 +41,22 @@ class RefreshGuardTest:public QObject {
  Q_OBJECT
  std::unique_ptr<QTemporaryDir> runtime;
  QByteArray oldRuntime;
+ QByteArray oldState;
  FakeOutputs outputs;
- QString journal()const{return runtime->filePath(QStringLiteral("uke-keyboard-refresh.json"));}
+ QString journal()const{return runtime->filePath(QStringLiteral("state/uke-plasma-keyboard-custom/refresh.json"));}
+ QString legacyJournal()const{return runtime->filePath(QStringLiteral("uke-keyboard-refresh.json"));}
  QJsonObject record()const{QFile f(journal());if(!f.open(QIODevice::ReadOnly))return {};return QJsonDocument::fromJson(f.readAll()).object();}
 private Q_SLOTS:
  void init(){
-  oldRuntime=qgetenv("XDG_RUNTIME_DIR");runtime=std::make_unique<QTemporaryDir>();QVERIFY(runtime->isValid());
-  qputenv("XDG_RUNTIME_DIR",runtime->path().toUtf8());outputs=FakeOutputs{};
+  oldRuntime=qgetenv("XDG_RUNTIME_DIR");oldState=qgetenv("XDG_STATE_HOME");runtime=std::make_unique<QTemporaryDir>();QVERIFY(runtime->isValid());
+  qputenv("XDG_RUNTIME_DIR",runtime->path().toUtf8());qputenv("XDG_STATE_HOME",runtime->filePath(QStringLiteral("state")).toUtf8());outputs=FakeOutputs{};
  }
- void cleanup(){qputenv("XDG_RUNTIME_DIR",oldRuntime);runtime.reset();}
+ void cleanup(){qputenv("XDG_RUNTIME_DIR",oldRuntime);qputenv("XDG_STATE_HOME",oldState);runtime.reset();}
  void fixedModeRestoresItsOriginalPolicy(){
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);QVERIFY(guard.set(QStringLiteral("30")));
   QCOMPARE(outputs.states[panel].current.milliHz,30000);QCOMPARE(outputs.states[panel].policy,0);
   QCOMPARE(record().value(QStringLiteral("hz")).toDouble(),90.0);
+  QVERIFY(QFile::exists(legacyJournal()));
   QCOMPARE(QFileInfo(journal()).permissions()&(QFile::ReadGroup|QFile::WriteGroup|QFile::ReadOther|QFile::WriteOther),QFile::Permissions{});
   guard.end();QCOMPARE(outputs.states[panel].current.milliHz,90000);QCOMPARE(outputs.states[panel].policy,2);QVERIFY(!QFile::exists(journal()));
  }
@@ -112,12 +115,14 @@ private Q_SLOTS:
  void insecureCrashStateIsNotLoaded(){
   {RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));}
   QVERIFY(QFile::setPermissions(journal(),QFile::ReadOwner|QFile::WriteOwner|QFile::ReadOther));
+  QVERIFY(QFile::remove(legacyJournal()));
   RefreshGuard recovered(nullptr,outputs.error(),outputs.backend());
   QCOMPARE(outputs.states[panel].current.milliHz,30000);QCOMPARE(outputs.appliedRates.size(),1);
  }
  void aSymlinkIsNotLoadedForRecovery(){
   {RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));}
   const auto target=runtime->filePath(QStringLiteral("other.json"));QVERIFY(QFile::rename(journal(),target));QVERIFY(QFile::link(target,journal()));
+  QVERIFY(QFile::remove(legacyJournal()));
   RefreshGuard recovered(nullptr,outputs.error(),outputs.backend());
   QCOMPARE(outputs.states[panel].current.milliHz,30000);QCOMPARE(outputs.appliedRates.size(),1);
  }
@@ -141,9 +146,35 @@ private Q_SLOTS:
   QCOMPARE(outputs.appliedRates,QList<int>({30000,90000}));QVERIFY(!QFile::exists(journal()));
  }
  void aJournalWriteFailureDoesNotApplyAMode(){
-  QVERIFY(QDir().mkdir(journal()));
+  QVERIFY(QDir().mkpath(journal()));
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
   QVERIFY(outputs.appliedRates.isEmpty());QVERIFY(!outputs.errors.isEmpty());QCOMPARE(outputs.states[panel].current.milliHz,90000);
+ }
+ void recoverySurvivesANewRuntimeDirectory(){
+  {RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));}
+  QVERIFY(QFile::remove(legacyJournal()));
+  QTemporaryDir nextRuntime;QVERIFY(nextRuntime.isValid());qputenv("XDG_RUNTIME_DIR",nextRuntime.path().toUtf8());
+  // A compositor boot restores the persistent desired mode, while the VRR
+  // policy can still reflect the interrupted temporary setting.
+  outputs.states[panel].current=mode(90000);
+  RefreshGuard recovered(nullptr,outputs.error(),outputs.backend());
+  QCOMPARE(outputs.states[panel].current.milliHz,90000);QCOMPARE(outputs.states[panel].policy,2);QVERIFY(!QFile::exists(journal()));
+ }
+ void legacyRecoveryIsMigratedBeforeWaitingForAPanel(){
+  {RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));}
+  QVERIFY(QFile::remove(journal()));outputs.connected=false;
+  {
+   RefreshGuard migrated(nullptr,outputs.error(),outputs.backend());
+   QVERIFY(QFile::exists(journal()));QCOMPARE(outputs.appliedRates.size(),1);
+  }
+  QVERIFY(QFile::remove(legacyJournal()));outputs.connected=true;
+  RefreshGuard recovered(nullptr,outputs.error(),outputs.backend());
+  QCOMPARE(outputs.states[panel].current.milliHz,90000);QCOMPARE(outputs.states[panel].policy,2);
+ }
+ void aLegacyShadowWriteFailureDoesNotApplyAMode(){
+  QVERIFY(QDir().mkdir(legacyJournal()));
+  RefreshGuard guard(nullptr,outputs.error(),outputs.backend());guard.begin(panel);guard.set(QStringLiteral("30"));
+  QVERIFY(outputs.appliedRates.isEmpty());QVERIFY(!QFile::exists(journal()));QVERIFY(!outputs.errors.isEmpty());
  }
  void adaptiveAndInactiveRequestsCannotApply(){
   RefreshGuard guard(nullptr,outputs.error(),outputs.backend());QVERIFY(!guard.set(QStringLiteral("30")));
