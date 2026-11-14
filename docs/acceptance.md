@@ -1,6 +1,6 @@
 # Acceptance status
 
-13 November 2026. Work in progress. The user confirms tablet-only placement,
+15 November 2026. Work in progress. The user confirms tablet-only placement,
 persistent keyboard/touchpad visibility and basic pointer movement, clicks and
 typing at35. Release39 implements frame-independent small motion, optional
 acceleration, a borderless Kirigami surface and optional idle pixel shifting.
@@ -10,7 +10,25 @@ Fedora 44/45/Rawhide aarch64 and an actual DNF upgrade from35. Reinstallation an
 automatic provider renewal are separately verified at the earlier28 checkpoint.
 The chronological sections below retain earlier failures and superseded states.
 
-Current blocker found after33 delivery: a real static entry with the pointer
+Candidate 52 passes all 44 native tests on Fedora 44, Fedora 45 and Rawhide ARM,
+including continuous same-finger pad motion, fast rollover, momentary modifiers,
+touch-only opening and floating interaction. Control 19 passes full ARM, signed
+package, actual DNF upgrade/rollback and SELinux activation/auth/idle/watchdog
+qualification. Its numeric IIO acquisition remains intentionally unavailable.
+
+A fresh coupled DNF assumeno resolves release 52, Control/TUI 19 and original Fedora
+KWin and Plasma Keyboard 6.8.3 as nine upgrades, without removals or new runtime
+packages. It plans a 29 MiB download and 717 KiB additional installed storage. No
+transaction is applied; the package set, recorded settings, boot and actual
+compositor remain unchanged. The tablet still has release 39, Control/TUI 16 and KWin 6.8.2.
+
+The remaining delivery dependencies are the kernel's admitted gravity frame,
+acquisition clock and capability, and a matching running original KWin. Physical
+input, posture, hotplug, power and refresh acceptance remain separate. The
+current gravity endpoint has no own mount transform, uses realtime and has its
+buffer disabled; no acquisition or setting is changed for this observation.
+
+Resolved release 33 incident: a real static entry with the pointer
 on the tablet crashed the compositor through repeated pointer-motion recursion.
 The wrapper restarted KWin; the selected keyboard provider was restored. The
 earlier simulated-open trials did not qualify this pointer path. Candidate34
@@ -39,24 +57,24 @@ KWin35 fixture also passes owned-surface identity and unrelated-caller rejection
 
 | Area | Source | Build/package | Physical |
 |---|---|---|---|
-| Fork and independent identity | Implemented | Signed RPM, coexistence, upgrade/reinstall pass | Not applicable |
+| Fork and independent identity | Implemented | Signed RPM/coexistence/upgrade/reinstall at 39; 52 coupled DNF preview passes | Not applicable |
 | Static surface and KWin routing | Implemented | Native connection identity, controller and authentication pass at35 | User confirms tablet-only placement, persistence and basic typing/pointer/click; extended routing open |
 | USB keyboard exclusion | Physical USB typing keyboards/receivers block static mode; pogo excluded | Native classification/hotplug tests and actual open-cover software refusal pass | Physical hotplug/pogo pending |
 | Physical size, key groups and settings | Initial implementation | Native scale/portrait key geometry passes | Pending |
-| Touchpad gestures, buttons, typing guard | Implemented |39 passes actual QML quarter-pixel/no-frame, acceleration/precision/rate/reversal and input-order regressions | Basic movement/click at35;39 feel and extended gestures pending |
+| Touchpad gestures, buttons, typing guard | Implemented | 52 retains quarter-pixel/no-frame and acceleration tests; continuous same-finger resume and fast rollover pass | Basic movement/click at 35; current feel and extended gestures pending |
 | Static pixel shifting | Optional, active only in static provider; deferred during interaction |40-test matrix and actual runtime advance/exit reset pass | Long-term panel protection and optical acceptance unmeasured |
 | Language/variant selection, clipboard, emoji | Initial implementation | Registry, privacy and selected-layout tests pass | Pending |
 | Fixed refresh profiles and restoration | Scoped native requests and durable recovery | 33 passes36 CTests including recovery/failure cases; physical modes/restoration open | Pending |
 | Native 30–60 VRR | Operational profile incomplete; adaptive requests refused | Kernel/display/touch qualification and admission remain required | Pending |
-| Dynamic laptop mode | Movable/tray implementation; posture candidates remove focus-driven entry/exit | Earlier native and simulated-cover entry pass; manual-only candidate qualification pending | Not tested |
-| Static posture | Client and45/40 hysteresis prepared; candidate48 completes manual request cancellation | Numeric provider/frame admission and client native qualification pending | Not tested |
+| Dynamic laptop mode | Manual entry/exit, movable panel and explicit controls | 52 retains native manual-only and responsive floating interaction tests | Not tested |
+| Static posture | Leased client, 45/40 hysteresis and cancellation implemented | Client native regressions pass at 52; Control 19 actual unit passes; numeric frame/clock admission is missing | Not tested |
 
 Tests must separately cover Fedora 44/45/Rawhide aarch64, original-package file
 coexistence, install/reinstall/upgrade/removal/rollback, native plugin ABI failure,
 lock, closed cover, disabled panel, mirroring, hot unplug, process disappearance,
 pointer exclusion, window placement and focus. Check 1×/2×/2.65× and rotations
 with a physical ruler; TR Q/F, EN, RTL and CJK; Qt/GTK/browser/terminal/XWayland;
-multitouch, gestures, modifier latches and release cleanup; SELinux enforcing,
+multitouch, gestures, momentary modifiers and release cleanup; SELinux enforcing,
 password/unknown contexts, idle CPU/wakeups/PSS and sustained memory use.
 
 The earlier closed-cover/disabled-panel checkpoints below are historical.
