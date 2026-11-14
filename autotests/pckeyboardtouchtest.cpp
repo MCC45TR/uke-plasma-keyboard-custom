@@ -10,6 +10,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 #include <KLocalizedQmlContext>
+#include <qqml.h>
 #include <qpa/qwindowsysteminterface.h>
 #include <cmath>
 #include <tuple>

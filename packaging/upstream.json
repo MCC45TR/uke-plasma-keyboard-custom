@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "8e088018bde7d337dee1943d9e9c39efe3814e46aa571791274887f598457d89"
+      "sha256": "a6d4abf540205f51122be57bcc322806350bb47f7933905cadfaba961c931249"
     }
   ],
   "production_files": [
@@ -262,7 +262,7 @@
     },
     {
       "path": "autotests/pckeyboardtouchtest.cpp",
-      "sha256": "9cf3a98f44ca25589c93594eef8543ff4b23f4ffe8b26eba670720e117fd0443"
+      "sha256": "26dd3ed8ac7bdd2c0e350a202988535b6defef11ed9db31f279b281aba4146a5"
     },
     {
       "path": "autotests/physicalgeometrytest.cpp",

@@ -3643,10 +3643,10 @@ index 0000000000000000000000000000000000000000..e9222c65a39ab3892302053d3a4304de
 +#include "panelstubgeometrytest.moc"
 diff --git a/autotests/pckeyboardtouchtest.cpp b/autotests/pckeyboardtouchtest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..92d743d3edfbe006211d5277ee2e5cc33c075970
+index 0000000000000000000000000000000000000000..d1e24549460c6d7279502c994e444aeb0744cd28
 --- /dev/null
 +++ b/autotests/pckeyboardtouchtest.cpp
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,128 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "touchdeliverypolicy.h"
 +#include <QColor>
@@ -3659,6 +3659,7 @@ index 0000000000000000000000000000000000000000..92d743d3edfbe006211d5277ee2e5cc3
 +#include <QTemporaryDir>
 +#include <QtTest>
 +#include <KLocalizedQmlContext>
++#include <qqml.h>
 +#include <qpa/qwindowsysteminterface.h>
 +#include <cmath>
 +#include <tuple>
