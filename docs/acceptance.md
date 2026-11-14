@@ -1237,3 +1237,20 @@ matrix now covers those fixtures. The API no longer lists that producer and
 refreshed custom-input primary metadata contains no receipt package. The normal
 45 source producer remains unchanged; Motion source checks are retained until
 full Control integration replaces their role. No runtime provider was retired.
+
+52/11327677 at61252c64 passes44/44 CTests in all three native ARM chroots:
+Fedora44 in61.63s, Fedora45 in62.33s, Rawhide in60.05s. Each worker verifies
+CMake's KWin version against the native RPM version before compiling. The
+application input/UI sources are unchanged from51.
+
+The Rawhide52 RPM SHA256 is9bdabc9ffa70b3834b7430a0e8c24ccad017324531d1091a5849a4e4aadd2882.
+Both trusted359e signatures and digests pass. Actual Requires now contains
+`kwin = 6.8.3`; all other Requires, Provides and scriptlets equal51 after release
+normalization. The superseded, never-installed51 RPM copy was removed locally;
+source, signature, metadata and test evidence remain. This is native/package
+qualification, not DNF resolution or physical acceptance.
+
+Current delivery remains39 with default45 unmodified. Full signed16-derived
+Control17 recipe/scriptlets/ARM/unit qualification, the kernel's admitted gravity
+frame/acquisition clock, matching running KWin and actual tablet tests are still
+open. Do not install the new static client against a missing numeric provider.
