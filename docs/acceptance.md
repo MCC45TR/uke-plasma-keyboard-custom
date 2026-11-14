@@ -1202,3 +1202,13 @@ Tests clean up contacts and physical masks even after a failure. The same six
 normal modifier cases plus the new float/resize/move/type/dock test remain to
 be qualified. Long-touch opening now uses current touch authorization, with no
 unknown-field automatic fallback after an unrelated mouse focus.
+
+Full51/11327648 at ae0ecf2 passes all44 CTests on Rawhide ARM64/Qt6.12.0 in
+60.84s. The actual compositor test passes in23.59s, including all six normal
+modifier cases, physical tap/double-tap/repeated chords/early releases and
+float/resize/move/type/dock. Existing touch-only opening, stale-reply rejection,
+PC/touchpad/controller/privacy/UI/posture regressions pass. The earlier50
+failure is retained.51 Fedora44/45 cohort11327664 uses the same immutable source
+and only those two ARM chroots; it is pending. Signed RPM/upgrade closure and
+all physical/device acceptance remain separate. Default45 and installed39 stay
+unchanged; do not infer numeric provider admission from keyboard native tests.
