@@ -36,6 +36,7 @@ ColumnLayout {
             property bool blocked: false
             property bool dragged: false
             property bool moved: false
+            property bool canTap: true
             property int fingers: 0
             property int maxFingers: 0
             property string gesture: ""
@@ -64,19 +65,28 @@ ColumnLayout {
                     if(!sequence)return;
                     Keyboard.Laptop.resetPadMotion();
                     if(dragged)Keyboard.Laptop.button(272,false);
-                    else if(!blocked&&!moved&&Date.now()-started<300&&maxFingers<=2){const button=maxFingers===2?273:272;Keyboard.Laptop.button(button,true);Keyboard.Laptop.button(button,false);lastTap=maxFingers===1?Date.now():0;}
+                    else if(canTap&&!blocked&&!moved&&Date.now()-started<300&&maxFingers<=2){const button=maxFingers===2?273:272;Keyboard.Laptop.button(button,true);Keyboard.Laptop.button(button,false);lastTap=maxFingers===1?Date.now():0;}
                     stopGesture(false);sequence=false;fingers=0;return;
                 }
                 if(!sequence) {
                     Keyboard.Laptop.resetPadMotion();
                     sequence=true;started=Date.now();maxFingers=p.n;moved=false;gesture="";dragged=false;
                     blocked=Keyboard.Laptop.options.palmGuard&&Keyboard.Laptop.typing&&!Keyboard.Laptop.modifierActive;
+                    canTap=!blocked;
+                    if(blocked)lastTap=0;
                     if(!blocked&&p.n===1&&Date.now()-lastTap<300){Keyboard.Laptop.button(272,true);dragged=true;}
                     fingers=p.n;origin=p;previous=p;return;
                 }
                 maxFingers=Math.max(maxFingers,p.n);
+                const guarded=Keyboard.Laptop.options.palmGuard&&Keyboard.Laptop.typing&&!Keyboard.Laptop.modifierActive;
+                if(guarded||blocked) {
+                    if(guarded&&!blocked){stopGesture(true);if(dragged){Keyboard.Laptop.button(272,false);dragged=false;}}
+                    // Guard only the typing interval. Rebase before resuming so
+                    // the same finger can continue without a jump or a tap.
+                    blocked=guarded;canTap=false;lastTap=0;
+                    Keyboard.Laptop.resetPadMotion();fingers=p.n;origin=p;previous=p;return;
+                }
                 if(p.n!==fingers){stopGesture(true);Keyboard.Laptop.resetPadMotion();fingers=p.n;origin=p;previous=p;return;}
-                if(blocked)return;
                 const dx=p.x-previous.x,dy=p.y-previous.y;
                 if(Math.hypot(p.x-origin.x,p.y-origin.y)>1.5*root.perMm)moved=true;
                 if(p.n===1)Keyboard.Laptop.padMotion(dx/root.perMm,dy/root.perMm);

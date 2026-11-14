@@ -39,6 +39,7 @@ class LaptopController final : public QObject {
     Q_PROPERTY(double pixelsPerMm READ pixelsPerMm NOTIFY stateChanged)
     Q_PROPERTY(QVariantMap options READ options NOTIFY optionsChanged)
     Q_PROPERTY(QVariantList rows READ rows NOTIFY layoutChanged)
+    Q_PROPERTY(QVariantList navigationRows READ navigationRows NOTIFY layoutChanged)
     Q_PROPERTY(QVariantList layouts READ layouts NOTIFY layoutChanged)
     Q_PROPERTY(QString layoutName READ layoutName NOTIFY layoutChanged)
     Q_PROPERTY(QString locale READ locale NOTIFY layoutChanged)
@@ -68,6 +69,7 @@ public:
     double pixelsPerMm() const;
     QVariantMap options() const;
     QVariantList rows() const;
+    QVariantList navigationRows() const;
     QVariantList layouts() const { return m_layouts; }
     QString layoutName() const;
     QString locale() const;
@@ -152,7 +154,6 @@ private:
     void updateModifiers();
     void applyLocks();
     void markTyping();
-    bool consumeLatched();
     static QVariantMap defaults();
     static LaptopController *s_instance;
     QDBusConnection m_bus;
@@ -178,9 +179,7 @@ private:
     bool m_preferencesOnly=false;
     bool m_remoteAvailable=false,m_remoteCanRequest=false,m_remotePending=false;
     double m_remoteDensity=0;
-    QSet<uint> m_held,m_latched,m_lockedKeys;
-    QSet<uint> m_modifierUsed,m_cancelLatch;
-    QHash<uint,qint64> m_pressTimes,m_tapTimes;
+    QSet<uint> m_held;
     QElapsedTimer m_clock;
     QTimer m_typingTimer,m_pixelShiftTimer;
     UkeKeyboard::TouchpadMotion m_padMotion;

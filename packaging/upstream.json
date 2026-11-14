@@ -48,11 +48,11 @@
     },
     {
       "name": "0002-keyboard-interface-and-input.patch",
-      "sha256": "ab8ec9e9a881f0b74298b524b292c58dbb4a620d3218fafba1030b270c16d257"
+      "sha256": "f11d5a33f8cd8ffbe0d0bd7a03bb5ed6ff24f3d7e7faebade0f45d2ba49d6432"
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "af3108bfd11e893325e45c6d0661cc6b37f3f062e7e5db86275c1b0ee62cd6dd"
+      "sha256": "bb1ff5642a1d5cee5d4bb84d280705d1ce3bc57eb9a7973f368425f127ba12aa"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "8d70420ad4ad68c757ebf4422400c771e6910339542fe83292db0f4ff4a827b1"
+      "sha256": "8e088018bde7d337dee1943d9e9c39efe3814e46aa571791274887f598457d89"
     }
   ],
   "production_files": [
@@ -146,7 +146,7 @@
     },
     {
       "path": "autotests/CMakeLists.txt",
-      "sha256": "6cdc0da70826e4ef40e0d76ae475fb6f668077493527b7f0e4d589cb3fc2626d"
+      "sha256": "1f20003a559f81edb2fe3abe6f473786df78b4e9aac01f5d2bb6112c268b230a"
     },
     {
       "path": "autotests/asyncpredictortest.cpp",
@@ -198,7 +198,7 @@
     },
     {
       "path": "autotests/laptopcontrollertest.cpp",
-      "sha256": "798f2d2a81dd2a43ba4f572cd0a734c19f72b7cf7fa3351262e1288e3840c5fd"
+      "sha256": "4571eb893220c510a0549f3ba5faf7a80cfb8dfead43fc824f18ba94e570cfec"
     },
     {
       "path": "autotests/laptopinteractiontest.cpp",
@@ -259,6 +259,10 @@
     {
       "path": "autotests/panelstubgeometrytest.cpp",
       "sha256": "77408fcb287604ef0b551386d89bcaa1b6d6f627f2d9f54c2cc326d62ce7ef64"
+    },
+    {
+      "path": "autotests/pckeyboardtouchtest.cpp",
+      "sha256": "9cf3a98f44ca25589c93594eef8543ff4b23f4ffe8b26eba670720e117fd0443"
     },
     {
       "path": "autotests/physicalgeometrytest.cpp",
@@ -330,7 +334,7 @@
     },
     {
       "path": "autotests/touchdeliverytest.cpp",
-      "sha256": "b6b75340b69ce81007cb94619ee2563db4097e01de1a3a5d5796dc772697d260"
+      "sha256": "6197ea27b57006f01a44768e7ddb7ea3f58f2c153acb2219b7d9baa0de079c2e"
     },
     {
       "path": "autotests/usbkeyboardpolicytest.cpp",
@@ -1174,11 +1178,11 @@
     },
     {
       "path": "src/laptop/laptopcontroller.cpp",
-      "sha256": "97fef4e0677ef7bf19f9be2b40e1265bbb6afb8d13b43e92a671cd7351368802"
+      "sha256": "15c1b441bcf656f2f5e8ae46ce63ab80c29a5ee977e496d09b37b116475b1b24"
     },
     {
       "path": "src/laptop/laptopcontroller.h",
-      "sha256": "8fab5af88bc84b23b646e168842f08bf76ed1c31304c4c893ad45152202b3672"
+      "sha256": "cac03a69c7a860b9d45ec615223a045e7aadd0964599a31d300e80acc13a2751"
     },
     {
       "path": "src/laptop/layoutregistry.cpp",
@@ -2614,11 +2618,11 @@
     },
     {
       "path": "src/qml/PcKeyboard.qml",
-      "sha256": "921f25bc90da513e662298e4ad99486819024857b315bd48ecd96d8690c6707a"
+      "sha256": "ea1ab43b4b63a37cdcf6c6540cfcecab5f74aabbe55b635d6b4f00dc0609f457"
     },
     {
       "path": "src/qml/Touchpad.qml",
-      "sha256": "ab857fb9f510ce95eed5413e0bd8e050cfd5237730e30df573622c889650e39b"
+      "sha256": "2bad1815923589d9b0949e3f2a08827091d415d18499dfa542b7834fdd10e5bc"
     },
     {
       "path": "src/qml/VoicePanel.qml",

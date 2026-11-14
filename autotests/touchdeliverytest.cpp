@@ -17,21 +17,28 @@
 class RecordingLaptop final : public QObject {
     Q_OBJECT
     Q_PROPERTY(double pixelsPerMm READ pixelsPerMm CONSTANT)
-    Q_PROPERTY(QVariantMap options READ options CONSTANT)
-    Q_PROPERTY(bool typing READ typing CONSTANT)
-    Q_PROPERTY(bool modifierActive READ typing CONSTANT)
+    Q_PROPERTY(QVariantMap options READ options NOTIFY stateChanged)
+    Q_PROPERTY(bool typing READ typing NOTIFY stateChanged)
+    Q_PROPERTY(bool modifierActive READ modifierActive CONSTANT)
 public:
     QList<QPointF> motions;
     QList<QPair<int,double>> pinches;
+    QList<QPair<uint,bool>> buttons;
+    bool guard=false,isTyping=false;
     double pixelsPerMm()const{return 3.0;}
-    bool typing()const{return false;}
-    QVariantMap options()const{return {{QStringLiteral("palmGuard"),false},{QStringLiteral("leftButton"),false},{QStringLiteral("middleButton"),false},{QStringLiteral("rightButton"),false}};}
+    bool typing()const{return isTyping;}
+    bool modifierActive()const{return false;}
+    void setTyping(bool value){isTyping=value;Q_EMIT stateChanged();}
+    void enableGuard(){guard=true;Q_EMIT stateChanged();}
+    QVariantMap options()const{return {{QStringLiteral("palmGuard"),guard},{QStringLiteral("leftButton"),false},{QStringLiteral("middleButton"),false},{QStringLiteral("rightButton"),false}};}
     Q_INVOKABLE void padMotion(double x,double y){motions.append(QPointF(x,y));}
     Q_INVOKABLE void resetPadMotion(){}
-    Q_INVOKABLE void button(uint,bool){}
+    Q_INVOKABLE void button(uint code,bool pressed){buttons.append({code,pressed});}
     Q_INVOKABLE void scroll(double,double){}
     Q_INVOKABLE void swipe(int,int,double,double){}
     Q_INVOKABLE void pinch(int phase,double,double angle,double,double){pinches.append({phase,angle});}
+Q_SIGNALS:
+    void stateChanged();
 };
 class TouchDeliveryTest final : public QObject {
     Q_OBJECT
@@ -102,6 +109,31 @@ private Q_SLOTS:
         for(const auto &event:laptop.pinches)if(event.first==1){updated=true;QVERIFY(std::abs(event.second)<30);}
         QVERIFY(updated);
         pair(QEventPoint::State::Released,QPointF(300,150),QEventPoint::State::Released,QPointF(200,148));
+        laptop.motions.clear();
+        deliver(QEventPoint::State::Pressed,QPointF(60,60));
+        for(int i=1;i<=600;++i){
+            if(i==200)QTest::qWait(40);
+            deliver(QEventPoint::State::Updated,QPointF(60+i*0.35,60));
+        }
+        QCOMPARE(laptop.motions.size(),600);
+        total={};for(const auto& delta:laptop.motions)total+=delta;
+        QVERIFY(std::abs(total.x()-70.0)<0.0001);QCOMPARE(total.y(),0.0);
+        deliver(QEventPoint::State::Released,QPointF(270,60));
+        const auto clicks=laptop.buttons.size();
+        laptop.enableGuard();laptop.setTyping(true);laptop.motions.clear();
+        deliver(QEventPoint::State::Pressed,QPointF(40,60));
+        deliver(QEventPoint::State::Updated,QPointF(50,60));QVERIFY(laptop.motions.isEmpty());
+        laptop.setTyping(false);
+        deliver(QEventPoint::State::Updated,QPointF(60,60));QVERIFY(laptop.motions.isEmpty());
+        deliver(QEventPoint::State::Updated,QPointF(60.25,60));QCOMPARE(laptop.motions.size(),1);
+        QVERIFY(std::abs(laptop.motions.last().x()-0.25/3.0)<0.00001);
+        laptop.setTyping(true);
+        deliver(QEventPoint::State::Updated,QPointF(70,60));QCOMPARE(laptop.motions.size(),1);
+        laptop.setTyping(false);
+        deliver(QEventPoint::State::Updated,QPointF(80,60));QCOMPARE(laptop.motions.size(),1);
+        deliver(QEventPoint::State::Updated,QPointF(80.25,60));QCOMPARE(laptop.motions.size(),2);
+        deliver(QEventPoint::State::Released,QPointF(80.25,60));
+        QCOMPARE(laptop.buttons.size(),clicks);
     }
 };
 int main(int argc,char **argv) {

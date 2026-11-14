@@ -37,6 +37,7 @@ public:
     QStringList inputs;
     QList<bool> inputReplies;
     QList<QPointF> motions;
+    QList<QPair<uint,bool>> keys;
     QDBusConnection server{QDBusConnection::connectToBus(QDBusConnection::SessionBus,QStringLiteral("fixture-backend"))};
     void reply(bool accepted=true) { server.send(request.createReply(QVariantList{accepted})); }
 public Q_SLOTS:
@@ -54,6 +55,7 @@ public Q_SLOTS:
     void ReleaseAll() {inputs.append(QStringLiteral("release"));inputReplies.append(message().isReplyRequired());}
     void Motion(double x,double y) {inputs.append(QStringLiteral("motion"));inputReplies.append(message().isReplyRequired());motions.append(QPointF(x,y));}
     void Button(uint,bool pressed) {inputs.append(pressed?QStringLiteral("press"):QStringLiteral("release-button"));inputReplies.append(message().isReplyRequired());}
+    void Key(uint code,bool pressed) {keys.append({code,pressed});}
 };
 class PluginManager final : public QObject {
     Q_OBJECT
@@ -82,6 +84,44 @@ class LaptopControllerTest final : public QObject {
         controller.m_options[QStringLiteral("staticAutoShow")]=false;
     }
 private Q_SLOTS:
+    void modifiersFollowPhysicalPressAndRelease() {
+        LaptopController controller;eligible(controller,false);
+        for(uint modifier:{29U,42U,54U,56U,97U,100U,125U,126U}){
+            m_backend.keys.clear();
+            for(int tap=0;tap<2;++tap){
+                controller.key(modifier,true);controller.key(modifier,true);
+                QVERIFY(controller.modifierActive());
+                controller.key(modifier,false);controller.key(modifier,false);
+                QVERIFY(!controller.modifierActive());QVERIFY(!controller.latched(modifier));
+            }
+            const QList<QPair<uint,bool>> expected{{modifier,true},{modifier,false},{modifier,true},{modifier,false}};
+            QTRY_COMPARE(m_backend.keys,expected);
+            m_backend.keys.clear();
+            controller.key(modifier,true);controller.key(30,true);controller.key(30,false);
+            QVERIFY(controller.modifierActive());controller.key(modifier,false);
+            QVERIFY(!controller.modifierActive());QVERIFY(controller.m_held.isEmpty());
+            const QList<QPair<uint,bool>> chord{{modifier,true},{30,true},{30,false},{modifier,false}};
+            QTRY_COMPARE(m_backend.keys,chord);
+        }
+        m_backend.keys.clear();controller.key(125,true);controller.m_locked=true;controller.key(125,false);
+        QVERIFY(controller.m_held.isEmpty());QVERIFY(!controller.modifierActive());
+        const QList<QPair<uint,bool>> released{{125,true},{125,false}};QTRY_COMPARE(m_backend.keys,released);
+    }
+    void navigationClusterIsSeparateAndUsesInvertedTArrows() {
+        LaptopController controller;
+        controller.m_options[QStringLiteral("arrowRow")]=true;
+        controller.m_options[QStringLiteral("navigationRow")]=false;
+        controller.m_options[QStringLiteral("systemRow")]=false;
+        const auto navigation=controller.navigationRows();QCOMPARE(navigation.size(),4);
+        const auto codes=[](const QVariant& row){QList<uint> result;for(const auto& key:row.toList())result.append(key.toMap().value(QStringLiteral("code")).toUInt());return result;};
+        QCOMPARE(codes(navigation.at(0)),QList<uint>({110,102,104}));
+        QCOMPARE(codes(navigation.at(1)),QList<uint>({111,107,109}));
+        QCOMPARE(codes(navigation.at(2)),QList<uint>({0,103,0}));
+        QCOMPARE(codes(navigation.at(3)),QList<uint>({105,108,106}));
+        for(const auto& row:controller.rows())for(uint code:codes(row))QVERIFY(!QList<uint>({102,103,104,105,106,107,108,109,110,111}).contains(code));
+        controller.m_options[QStringLiteral("arrowRow")]=false;QVERIFY(controller.navigationRows().isEmpty());
+        controller.m_options[QStringLiteral("navigationRow")]=true;QCOMPARE(controller.navigationRows().size(),2);
+    }
     void tiltRevokesInputAndReopensOnlyBelowForty() {
         LaptopController controller;eligible(controller,false);
         controller.m_options[QStringLiteral("staticAutoShow")]=true;

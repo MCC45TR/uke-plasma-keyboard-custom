@@ -1126,3 +1126,26 @@ may prepare the Motion1 integration inside existing Control from the signed15
 source, preserving its full payload, paired TUI and Core24 SELinux contract.
 No new bridge RPM is permitted. Numeric provider, admitted frame/freshness and
 actual45/40 behavior remain open, along with earlier physical/VRR/image gates.
+
+## 14 November: physical touch behavior and mode transitions
+
+Source preparation for50 changes Ctrl/Alt/Shift/Meta to physical press/release
+semantics. Short taps and double taps do not leave them latched. Two fingers
+can hold a modifier and another key. Caps/Num/Scroll lock synchronization remains.
+Overlapping deferred touches flush the preceding key in press order; long-press
+alternates and swipe paths remain available. Letter movement uses displacement
+from the press position, not the absolute position inside a tall key.
+
+Navigation moves to the right: Insert/Home/PgUp and Delete/End/PgDn above an
+inverted-T arrow cluster. The physical key delegates survive geometry changes.
+Typing protection now resumes the same touchpad finger after the guard ends,
+rebasing without a jump or accidental tap. Native tests are still pending for
+these changes; no device or physical acceptance is claimed.
+
+Remaining user requirements include returning from static mode to the normal
+bottom-docked keyboard, touch-only automatic text activation, an explicit float
+button and comfortable responsive resizing. They remain part of the full plan.
+Current Control16 preserves the qualified closed-cover health fix; Motion1 must
+derive17 from its signed source. No frame/time capability is inferred from
+kernel26. The numeric provider, its admitted data and final signed DNF delivery
+remain separate gates;50 has not been installed or published as a normal update.

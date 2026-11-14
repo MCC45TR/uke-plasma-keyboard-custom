@@ -366,7 +366,7 @@ void LaptopController::rebuildKeymap(){
  const xkb_rule_names names{"evdev","pc105",code.constData(),variant.constData(),options.constData()};
  m_state.reset();m_keymap.reset(xkb_keymap_new_from_names(m_xkb.get(),&names,XKB_KEYMAP_COMPILE_NO_FLAGS));if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));updateModifiers();Q_EMIT layoutChanged();
 }
-void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held|m_latched;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);applyLocks();Q_EMIT layoutChanged();}
+void LaptopController::updateModifiers(){if(!m_state)return;const auto pressed=m_held;for(uint k:pressed)xkb_state_update_key(m_state.get(),k+8,XKB_KEY_DOWN);applyLocks();Q_EMIT layoutChanged();}
 void LaptopController::applyLocks(){
  if(!m_state||!m_keymap)return;
  auto locked=xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LOCKED);
@@ -376,8 +376,8 @@ void LaptopController::applyLocks(){
  xkb_state_update_mask(m_state.get(),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_DEPRESSED),xkb_state_serialize_mods(m_state.get(),XKB_STATE_MODS_LATCHED),locked,0,0,0);
 }
 void LaptopController::syncLocks(bool caps,bool num,bool scroll){m_caps=caps;m_num=num;m_scroll=scroll;applyLocks();++m_revision;Q_EMIT keyStateChanged();}
-bool LaptopController::latched(uint code)const{return code==KEY_CAPSLOCK?m_caps:code==KEY_SCROLLLOCK?m_scroll:m_latched.contains(code)||m_lockedKeys.contains(code);}
-bool LaptopController::modifierActive()const{const auto keys=m_held|m_latched;return std::any_of(keys.begin(),keys.end(),modifier);}
+bool LaptopController::latched(uint code)const{return code==KEY_CAPSLOCK?m_caps:code==KEY_SCROLLLOCK?m_scroll:m_held.contains(code);}
+bool LaptopController::modifierActive()const{const auto keys=m_held;return std::any_of(keys.begin(),keys.end(),modifier);}
 QString LaptopController::layoutName()const{return m_layouts.value(m_layoutIndex).toMap().value("label").toString();}
 QString LaptopController::locale()const{return UkeKeyboard::LayoutRegistry::system().locale(m_layoutCodes.value(m_layoutIndex,QStringLiteral("us")),m_variants.value(m_layoutIndex));}
 bool LaptopController::complexLayout()const{const auto language=QLocale(locale()).language();return language==QLocale::Japanese||language==QLocale::Korean||language==QLocale::Chinese||language==QLocale::Thai;}
@@ -404,50 +404,49 @@ void LaptopController::addLayout(const QString&layout,const QString&variant){
  auto signal=QDBusMessage::createSignal(QStringLiteral("/Layouts"),QStringLiteral("org.kde.keyboard"),QStringLiteral("reloadConfig"));m_bus.send(signal);loadLayouts();
 }
 QVariantList LaptopController::rows()const{
- QVariantList rows;auto row=[&](const std::initializer_list<std::tuple<uint,const char*,double>>&keys){QVariantList r;for(const auto&[code,title,units]:keys){QString text;char buffer[128]{};if(m_state&&code&&xkb_state_key_get_utf8(m_state.get(),code+8,buffer,sizeof(buffer))>0)text=QString::fromUtf8(buffer);QString label=QString::fromUtf8(title);if(label.isEmpty())label=text;if(label.isEmpty())label=QStringLiteral("·");r.append(QVariantMap{{"code",code},{"label",label},{"text",text},{"units",units},{"modifier",modifier(code)},{"dynamic",title[0]==0},{"latched",m_latched.contains(code)||m_lockedKeys.contains(code)}});}rows.append(QVariant(r));};
+ QVariantList rows;auto row=[&](const std::initializer_list<std::tuple<uint,const char*,double>>&keys){QVariantList r;for(const auto&[code,title,units]:keys){QString text;char buffer[128]{};if(m_state&&code&&xkb_state_key_get_utf8(m_state.get(),code+8,buffer,sizeof(buffer))>0)text=QString::fromUtf8(buffer);QString label=QString::fromUtf8(title);if(label.isEmpty())label=text;if(label.isEmpty())label=QStringLiteral("·");r.append(QVariantMap{{"code",code},{"label",label},{"text",text},{"units",units},{"modifier",modifier(code)},{"dynamic",title[0]==0},{"latched",m_held.contains(code)}});}rows.append(QVariant(r));};
  if(m_options.value("functionRow").toBool())row({{KEY_ESC,"Esc",1},{KEY_F1,"F1",1},{KEY_F2,"F2",1},{KEY_F3,"F3",1},{KEY_F4,"F4",1},{KEY_F5,"F5",1},{KEY_F6,"F6",1},{KEY_F7,"F7",1},{KEY_F8,"F8",1},{KEY_F9,"F9",1},{KEY_F10,"F10",1},{KEY_F11,"F11",1},{KEY_F12,"F12",1}});
  row({{KEY_GRAVE,"",1},{KEY_1,"",1},{KEY_2,"",1},{KEY_3,"",1},{KEY_4,"",1},{KEY_5,"",1},{KEY_6,"",1},{KEY_7,"",1},{KEY_8,"",1},{KEY_9,"",1},{KEY_0,"",1},{KEY_MINUS,"",1},{KEY_EQUAL,"",1},{KEY_BACKSPACE,"⌫",1.6}});
  row({{KEY_TAB,"Tab",1.4},{KEY_Q,"",1},{KEY_W,"",1},{KEY_E,"",1},{KEY_R,"",1},{KEY_T,"",1},{KEY_Y,"",1},{KEY_U,"",1},{KEY_I,"",1},{KEY_O,"",1},{KEY_P,"",1},{KEY_LEFTBRACE,"",1},{KEY_RIGHTBRACE,"",1},{KEY_BACKSLASH,"",1.2}});
  row({{KEY_CAPSLOCK,"Caps",1.6},{KEY_A,"",1},{KEY_S,"",1},{KEY_D,"",1},{KEY_F,"",1},{KEY_G,"",1},{KEY_H,"",1},{KEY_J,"",1},{KEY_K,"",1},{KEY_L,"",1},{KEY_SEMICOLON,"",1},{KEY_APOSTROPHE,"",1},{KEY_ENTER,"Enter",2}});
  row({{KEY_LEFTSHIFT,"Shift",1.5},{KEY_102ND,"",1},{KEY_Z,"",1},{KEY_X,"",1},{KEY_C,"",1},{KEY_V,"",1},{KEY_B,"",1},{KEY_N,"",1},{KEY_M,"",1},{KEY_COMMA,"",1},{KEY_DOT,"",1},{KEY_SLASH,"",1},{KEY_RIGHTSHIFT,"Shift",2.1}});
  if(m_options.value("modifierRow").toBool())row({{KEY_LEFTCTRL,"Ctrl",1.2},{KEY_LEFTMETA,"Meta",1.2},{KEY_LEFTALT,"Alt",1.2},{KEY_SPACE,"",6.2},{KEY_RIGHTALT,"AltGr",1.2},{KEY_RIGHTCTRL,"Ctrl",1.2},{KEY_COMPOSE,"Menu",1.2}});else row({{KEY_SPACE,"",14.4}});
- if(m_options.value("arrowRow").toBool()||m_options.value("navigationRow").toBool()||m_options.value("systemRow").toBool()){
-  QVariantList r;auto add=[&](uint code,const QString&label){r.append(QVariantMap{{"code",code},{"label",label},{"text",QString()},{"units",1},{"modifier",false},{"dynamic",false},{"latched",false}});};
-  if(m_options.value("arrowRow").toBool()){add(KEY_LEFT,QStringLiteral("←"));add(KEY_UP,QStringLiteral("↑"));add(KEY_DOWN,QStringLiteral("↓"));add(KEY_RIGHT,QStringLiteral("→"));}
-  if(m_options.value("navigationRow").toBool()){add(KEY_INSERT,QStringLiteral("Ins"));add(KEY_DELETE,QStringLiteral("Del"));add(KEY_HOME,QStringLiteral("Home"));add(KEY_END,QStringLiteral("End"));add(KEY_PAGEUP,QStringLiteral("PgUp"));add(KEY_PAGEDOWN,QStringLiteral("PgDn"));}
-  if(m_options.value("systemRow").toBool()){add(KEY_SYSRQ,QStringLiteral("PrtSc"));add(KEY_SCROLLLOCK,QStringLiteral("ScrLk"));add(KEY_PAUSE,QStringLiteral("Pause"));}
-  rows.append(QVariant(r));
+ return rows;
+}
+QVariantList LaptopController::navigationRows()const{
+ QVariantList rows;
+ auto row=[&](std::initializer_list<std::pair<uint,const char*>> keys){
+  QVariantList values;
+  for(const auto& [code,label]:keys)values.append(QVariantMap{{"code",code},{"label",QString::fromUtf8(label)},{"text",QString()},{"units",1},{"modifier",false},{"dynamic",false}});
+  rows.append(QVariant(values));
+ };
+ if(m_options.value("systemRow").toBool())row({{KEY_SYSRQ,"PrtSc"},{KEY_SCROLLLOCK,"ScrLk"},{KEY_PAUSE,"Pause"}});
+ const bool arrows=m_options.value("arrowRow").toBool();
+ if(arrows||m_options.value("navigationRow").toBool()){
+  row({{KEY_INSERT,"Ins"},{KEY_HOME,"Home"},{KEY_PAGEUP,"PgUp"}});
+  row({{KEY_DELETE,"Del"},{KEY_END,"End"},{KEY_PAGEDOWN,"PgDn"}});
  }
+ if(arrows){row({{0,""},{KEY_UP,"↑"},{0,""}});row({{KEY_LEFT,"←"},{KEY_DOWN,"↓"},{KEY_RIGHT,"→"}});}
  return rows;
 }
 void LaptopController::setRawKey(uint code,bool pressed){backendInput(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}
 void LaptopController::key(uint code,bool pressed){
- if(!m_ready||m_locked)return;
- const auto time=m_clock.elapsed();
+ if(!code||(pressed&&(!m_ready||m_locked)))return;
  if(pressed){
-  if(m_held.contains(code))return;m_held.insert(code);m_pressTimes[code]=time;
-  if(modifier(code)){
-   if(m_lockedKeys.remove(code)){m_latched.remove(code);m_cancelLatch.insert(code);setRawKey(code,false);}
-   else if(!m_latched.contains(code))setRawKey(code,true);
-  }else{for(uint k:m_held)if(modifier(k))m_modifierUsed.insert(k);setRawKey(code,true);markTyping();}
+  if(m_held.contains(code))return;
+  m_held.insert(code);setRawKey(code,true);
+  if(!modifier(code))markTyping();
  }else{
   if(!m_held.remove(code))return;
-  if(modifier(code)){
-   if(m_cancelLatch.remove(code)){}
-   else if(m_modifierUsed.remove(code)||time-m_pressTimes.value(code)>250){m_latched.remove(code);m_lockedKeys.remove(code);setRawKey(code,false);}
-   else if(m_latched.contains(code)&&time-m_tapTimes.value(code)<400){m_lockedKeys.insert(code);}
-   else if(m_latched.remove(code)){setRawKey(code,false);}
-   else{m_latched.insert(code);m_tapTimes[code]=time;}
-  }else{setRawKey(code,false);consumeLatched();}
+  setRawKey(code,false);
  }
  ++m_revision;Q_EMIT keyStateChanged();
 }
 void LaptopController::tap(uint code){key(code,true);key(code,false);}
 void LaptopController::markTyping(){if(!m_typing){m_typing=true;Q_EMIT typingChanged();}m_typingTimer.start();}
 void LaptopController::moveCursor(int steps){for(int n=0;n<std::min(64,std::abs(steps));n++)tap(steps<0?KEY_LEFT:KEY_RIGHT);}
-bool LaptopController::consumeLatched(){bool changed=false;const auto latched=m_latched;for(uint k:latched)if(!m_lockedKeys.contains(k)&&!m_held.contains(k)){setRawKey(k,false);m_latched.remove(k);changed=true;}return changed;}
-void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_latched.contains(KEY_LEFTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);consumeLatched();markTyping();++m_revision;Q_EMIT keyStateChanged();}
-void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_pointerButtons.clear();resetPadMotion();m_held.clear();m_latched.clear();m_lockedKeys.clear();m_modifierUsed.clear();m_cancelLatch.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
+void LaptopController::deleteWords(int count){if(!nativeInputAllowed()||count<=0)return;const bool temporary=!m_held.contains(KEY_LEFTCTRL)&&!m_held.contains(KEY_RIGHTCTRL);if(temporary)setRawKey(KEY_LEFTCTRL,true);for(int n=0;n<std::min(32,count);n++){setRawKey(KEY_BACKSPACE,true);setRawKey(KEY_BACKSPACE,false);}if(temporary)setRawKey(KEY_LEFTCTRL,false);markTyping();++m_revision;Q_EMIT keyStateChanged();}
+void LaptopController::releaseAll(){backendInput(QStringLiteral("ReleaseAll"));m_pointerButtons.clear();resetPadMotion();m_held.clear();if(m_keymap)m_state.reset(xkb_state_new(m_keymap.get()));applyLocks();++m_revision;Q_EMIT keyStateChanged();Q_EMIT layoutChanged();}
 void LaptopController::motion(double x,double y){const double speed=m_options.value("pointerSpeed").toDouble();backendInput(QStringLiteral("Motion"),{x*speed,y*speed});}
 void LaptopController::resetPadMotion(){m_padMotion.reset(m_clock.nsecsElapsed()/1000);}
 void LaptopController::padMotion(double x,double y){
@@ -473,7 +472,7 @@ void LaptopController::advancePixelShift(){
  if(m_pixelShift.step())Q_EMIT pixelShiftChanged();
  if(m_pixelShift.active()&&!m_pixelShift.pending())m_pixelShiftTimer.start();
 }
-void LaptopController::button(uint code,bool pressed){if(code<BTN_LEFT||code>BTN_MIDDLE||(pressed&&!nativeInputAllowed()))return;if(pressed)m_pointerButtons.insert(code);else m_pointerButtons.remove(code);updatePixelShiftBusy();backendInput(QStringLiteral("Button"),{code,pressed});if(!pressed&&consumeLatched()){++m_revision;Q_EMIT keyStateChanged();}}
+void LaptopController::button(uint code,bool pressed){if(code<BTN_LEFT||code>BTN_MIDDLE||(pressed&&!nativeInputAllowed()))return;if(pressed)m_pointerButtons.insert(code);else m_pointerButtons.remove(code);updatePixelShiftBusy();backendInput(QStringLiteral("Button"),{code,pressed});}
 void LaptopController::scroll(double x,double y){const double sign=m_options.value("naturalScroll").toBool()?-1:1;backendInput(QStringLiteral("Scroll"),{x*sign,y*sign});}
 void LaptopController::swipe(int fingers,int phase,double x,double y){backendInput(QStringLiteral("Swipe"),{fingers,phase,x,y});}
 void LaptopController::pinch(int phase,double scale,double angle,double x,double y){backendInput(QStringLiteral("Pinch"),{phase,scale,angle,x,y});}
