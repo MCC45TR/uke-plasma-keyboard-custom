@@ -2,9 +2,12 @@
 %global __provides_exclude_from ^%{_libdir}/%{name}/.*$
 %global __requires_exclude ^lib(ggml[^()]*|transcribe[^()]*)[.]so.*$
 %global upstream_version 6.8.3
+# The SRPM worker may lack native dependencies. Binary builds must pin the
+# original KWin version because the private plugin deliberately rejects drift.
+%global uke_kwin_rpm_version %(rpm -q --qf '%%{VERSION}' kwin-devel 2>/dev/null | sed -nE '/^[0-9]+([.][0-9]+)+$/p')
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 51%{?dist}
+Release: 52%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -34,7 +37,12 @@ BuildRequires: wayland-protocols-devel dbus-daemon jq systemd-rpm-macros
 BuildRequires: gdb-headless
 BuildRequires: desktop-file-utils appstream
 BuildRequires: kf6-kirigami kf6-kirigami-addons kf6-kitemmodels
-Requires: plasma-keyboard kwin >= 6.8
+Requires: plasma-keyboard
+%if "%{uke_kwin_rpm_version}" == ""
+Requires: kwin >= 6.8
+%else
+Requires: kwin = %{uke_kwin_rpm_version}
+%endif
 Requires: kf6-kirigami kf6-kirigami-addons kf6-kitemmodels
 Requires: qt6-qtvirtualkeyboard qt6-qtquickcontrols2
 Requires: xkeyboard-config
@@ -61,6 +69,7 @@ tar xf %{SOURCE1}
 tar xf %{SOURCE2}
 
 %build
+test -n "%{uke_kwin_rpm_version}"
 %cmake -G Ninja \
  -DBUILD_TESTING=ON \
  -DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
@@ -69,6 +78,7 @@ tar xf %{SOURCE2}
  -DWHISPER_CPP_SOURCE_DIR=$PWD/whisper.cpp-1.9.3 \
  -DTRANSCRIBE_CPP_SOURCE_DIR=$PWD/transcribe.cpp-5bb2deb2a4afb1fd50534ecb51cfcb521ef94944 \
  -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_BLAS=OFF
+test "$(cat %{_vpath_builddir}/kwin/kwin-version.txt)" = "%{uke_kwin_rpm_version}"
 %cmake_build
 
 %install
@@ -119,6 +129,10 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Sat Nov 14 2026 Uke Linux contributors - 0.1.0-52
+- Require the original KWin package version used to build the private plugin.
+- Check the CMake version against RPM metadata before compiling binaries.
+
 * Sat Nov 14 2026 Uke Linux contributors - 0.1.0-51
 - Deliver normal modifier chords on physical touch without a deferred IME duplicate.
 - Exercise floating resize, movement and docking through compositor touch input.

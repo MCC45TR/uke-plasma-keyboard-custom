@@ -1219,3 +1219,13 @@ Requires, Provides and scriptlets equal the qualified49 baseline after normalizi
 only release identity. Fresh device RPM queries show Qt base/VirtualKeyboard6.12.0,
 KWin6.8.2, stock Plasma Keyboard6.8.2 and unchanged Uke39. This does not establish
 DNF resolution, runtime plugin/session behavior or physical acceptance. No install.
+
+52 prepares one package-compatibility correction. The qualified51 build used
+original KWin6.8.3, while the fresh device query reports6.8.2. The private module
+already refuses any different running KWin version; a loose RPM lower bound
+could therefore allow an update whose module refuses to load. Binary RPMs now
+require the original kwin version obtained from kwin-devel. A generated CMake
+version is compared with that RPM version before compilation. SRPM-only parsing
+may lack development dependencies, but a binary build with no pin fails. No KWin
+fork/rebuild, compositor restart, device update or behavior change is introduced
+by this source preparation. Native52 packaging/cohort verification is pending.

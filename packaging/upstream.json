@@ -52,7 +52,7 @@
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
-      "sha256": "fe23295a7f4fecfa480b93f377060b76f5f36ca50299b382b775ab2b075ee6fe"
+      "sha256": "7e6a92b09268670cdd95e9b2e680d3f5394a329d95d81220836f68c55eb9881c"
     },
     {
       "name": "0004-optional-tools-and-data.patch",
@@ -446,7 +446,7 @@
     },
     {
       "path": "kwin/CMakeLists.txt",
-      "sha256": "396c33a7761e4ef3e724279b040b13c392d6ea219a535bcfb286e2b46eac8ae2"
+      "sha256": "a499d3af2f66b959a38a06d910ef9a5e690d1d8929f170146be839093a812ad8"
     },
     {
       "path": "kwin/backend.cpp",
