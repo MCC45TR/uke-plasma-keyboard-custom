@@ -1212,3 +1212,10 @@ failure is retained.51 Fedora44/45 cohort11327664 uses the same immutable source
 and only those two ARM chroots; it is pending. Signed RPM/upgrade closure and
 all physical/device acceptance remain separate. Default45 and installed39 stay
 unchanged; do not infer numeric provider admission from keyboard native tests.
+
+The Rawhide51 RPM SHA256 is236fa964d5b7bb394237772ddc6796b060da1b7f0345468934e31220e2fc57a3.
+Both trusted359e586fa7bff815105a41b9ee9b13208dfa961c signatures and digests pass.
+Requires, Provides and scriptlets equal the qualified49 baseline after normalizing
+only release identity. Fresh device RPM queries show Qt base/VirtualKeyboard6.12.0,
+KWin6.8.2, stock Plasma Keyboard6.8.2 and unchanged Uke39. This does not establish
+DNF resolution, runtime plugin/session behavior or physical acceptance. No install.
