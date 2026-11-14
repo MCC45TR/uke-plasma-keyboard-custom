@@ -7,9 +7,11 @@ optional tools from [mops1k/plasma-keyboard-custom](https://github.com/mops1k/pl
 are retained with attribution and licenses. The Uke RPM stays separate from
 Fedora's original Plasma Keyboard, KWin, Plasma and Qt packages.
 
-The source-baseline transition is candidate45; its native/package/device
-qualification is pending.44 passed the new functional input scenarios but
-failed fixture shutdown. The last delivered release is39, described below.
+Candidate52 passes all44 native tests on Fedora44, Fedora45 and Rawhide ARM,
+including touch-only opening, continuous pad motion, fast key rollover,
+momentary modifiers and floating-panel interaction. It is not installed on the
+tablet: matching running KWin and the admitted numeric posture provider remain
+delivery requirements. The last delivered release is39, described below.
 
 The first target is the POCO Pad X1 (Uke), aarch64. The source discovers display,
 touch and language capabilities rather than hardcoding a connector name.
@@ -89,8 +91,10 @@ This helper preserves a different provider selection made during the reload.
 It does nothing when an unrelated keyboard is selected.
 
 The KWin plugin is part of this RPM and must be rebuilt for each KWin ABI.
-An incompatible plugin disables static mode with an explanation; it does not
-force a KWin downgrade. Native code and native tests are built only in COPR.
+Candidate52 requires the original KWin version used to compile the plugin and
+also checks the running compositor version before loading it. An incompatible
+plugin disables static mode with an explanation. Native code and native tests
+are built only in COPR.
 There is no project Python runtime or build generator.
 
 COPR [11317837](https://copr.fedorainfracloud.org/coprs/mcc45tr/uke-plasma-keyboard-custom/build/11317837/)

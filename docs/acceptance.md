@@ -1271,3 +1271,42 @@ without changing production code; no19 build is submitted. The source/native
 result does not admit the gravity frame or acquisition-clock mapping. Keyboard52
 remains uninstalled, with the original Fedora provider and installed Uke39
 preserved; matching running KWin and physical acceptance are still required.
+
+The actual Control/TUI16 to18 signed DNF update and supported downgrade back
+to16 now pass. Only those two RPMs change; preferences, existing services,
+PowerDevil, original policy preferences, warm cache and kernel/boot policy are
+retained. Actual18 bus activation fails at203/EXEC: Enforcing denies init_t
+execute on the correctly labeled new entry point, before sensor acquisition.
+The tablet is restored to16. This execution failure remains distinct from the
+successful18 native tests and package transition.
+
+Control19 adds the standard original sensor-domain daemon entry binding and
+preserves activation grace when an unrelated bus peer disappears. Source check12
+/11328157 at83064655 passes both six-group compiler suites, exact old-broker
+negative, linked original-policy permissions and a compiled missing-entry
+negative. Its signed7bab2566 noarch artifact contains text evidence only. Full
+ARM build11328227 has the reviewed67 source inputs; native runtime, signed RPM
+and actual unit/watchdog qualification remain pending. Keyboard52 stays
+uninstalled; neither source acceptance nor a working service admits the numeric
+gravity frame/acquisition clock or establishes physical input acceptance.
+
+Full Control19/11328227 succeeds in1,557 seconds with all new and inherited
+tests. Signed main52da9d8e/TUI7a19efcb/devel02e8bc15/source18471e5b pass both
+trusted2204 signatures and the retained16 payload, source and scriptlet audits.
+An actual signed DNF16 to19 update changes only Control/TUI and preserves the
+recorded settings, services, cache and kernel/boot policy.
+
+Actual19 now starts in the mandatory original sensor domain. Root is refused;
+the real user-manager caller receives `bdt false 0 0`, then the service exits
+when unused. A frozen event loop is stopped by the real systemd watchdog
+in2,220ms; the packaged recovery command succeeds. The initial UID-only test
+context is correctly denied by Polkit; the fixture now uses the real user
+manager without changing authorization policy. No numeric IIO acquisition or
+frame/clock admission is established. Keyboard52 remains uninstalled and its
+physical touch, typing, mode and posture acceptance remain open.
+
+The supported DNF19 to16 rollback now passes with the exact initial package
+set, signed16 headers and recorded state retained. The owned Motion module is
+removed; its unit is not-found/inactive and the empty runtime directory is
+cleaned. The tablet ends on Control/TUI16 and Uke39. Normal producers and the
+kernel/boot/display/session choices are unchanged; this trial does not deliver52.
