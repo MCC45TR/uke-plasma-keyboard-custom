@@ -1254,3 +1254,20 @@ Current delivery remains39 with default45 unmodified. Full signed16-derived
 Control17 recipe/scriptlets/ARM/unit qualification, the kernel's admitted gravity
 frame/acquisition clock, matching running KWin and actual tablet tests are still
 open. Do not install the new static client against a missing numeric provider.
+
+Control18 / 11327890 at 39f862f2 now passes complete Rawhide ARM qualification
+in 1,408 seconds, including the new Motion tests and all inherited Control
+checks. All four signed outputs have two trusted 2204 signatures. Its 38 old
+ELF programs/libraries, 251 data files and eight links are retained; eight Motion
+paths are added within the existing RPM. The signed source retains all 64
+Control16 inputs and the complete parent recipe. A DNF assumeno preview resolves
+only the Control/TUI16 to18 update; no package was installed.
+
+Actual unit activation, mandatory SELinux execution, DNF upgrade/rollback and
+real frozen-loop watchdog acceptance remain open. The SensorProxy runtime is
+the retained uke-iio-sensor-proxy3.9-24 adaptation; the reused base policy/domain
+is original Fedora. Prepared Control19 corrects that ownership documentation
+without changing production code; no19 build is submitted. The source/native
+result does not admit the gravity frame or acquisition-clock mapping. Keyboard52
+remains uninstalled, with the original Fedora provider and installed Uke39
+preserved; matching running KWin and physical acceptance are still required.
