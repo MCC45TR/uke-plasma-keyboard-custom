@@ -230,6 +230,7 @@ InputListenerItem::InputListenerItem()
     , m_uinput(std::make_unique<UinputKeyboard>(this))
 {
     s_inputListener = this;
+    connect(this, &QQuickItem::activeFocusChanged, this, [this] { if (!hasActiveFocus()) releaseNormalKeys(); });
     // Grab and listen to physical keyboard input
     m_input.setGrabbing(true);
 
@@ -451,12 +452,9 @@ InputListenerItem::InputListenerItem()
         }
         if (m_longPressNeedsHitTest) {
             if (!m_focusedEditable.hasFocusedEditable()) {
-                // The focused widget's rectangle is unknown: no accessibility
-                // bus, an application that does not expose its objects, or a
-                // query that has not answered yet. A touch cannot be proven to
-                // belong to another widget then, so the hold still opens the
-                // keyboard instead of being silently swallowed.
-                qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: focused widget rectangle unknown, showing keyboard";
+                // A previously mouse-focused field does not authorize an
+                // unrelated touch when its bounds are unknown.
+                return;
             } else if (!m_focusedEditable.containsNormalizedTouch(m_touchHold.normalizedPosition())) {
                 qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: hold was outside the focused editable widget";
                 return;
@@ -465,8 +463,7 @@ InputListenerItem::InputListenerItem()
         qCDebug(PlasmaKeyboard) << "TouchHoldWatcher: long press detected, showing keyboard";
         m_touchHold.disarm();
         m_longPressNeedsHitTest = false;
-        m_hiddenByUser = false;
-        showInputPanel(window());
+        requestAutomaticShow(false, true);
     });
     connect(&m_input, &InputPlugin::resetRequested, this, [this] {
         QGuiApplication::inputMethod()->reset();
@@ -715,6 +712,18 @@ void InputListenerItem::replaceSwipeWord(const QString &word)
 
 void InputListenerItem::setEngine(QVirtualKeyboardInputEngine *engine)
 {
+    if (m_engine != engine) {
+        if (m_engine) disconnect(m_engine, nullptr, this, nullptr);
+        m_engine = engine;
+        if (m_engine) connect(m_engine, &QVirtualKeyboardInputEngine::activeKeyChanged, this, [this](Qt::Key key) {
+            if (!m_engine || (!m_touchOwnedKeys.contains(key) && !m_touchOwnedModifiers.contains(key))) return;
+            // Qt's engine commits on release, too late for physical chords.
+            // Cancel only the keys already forwarded by our own touch path.
+            m_engine->virtualKeyCancel();
+            Q_EMIT physicalChordCaptured();
+            for (const auto &item : std::as_const(m_heldItems)) if (item) item->setProperty("active", true);
+        });
+    }
     // The overlay controller inserts a picked alternate character as a key
     // click through the engine, the way the on-screen alternate-keys popup
     // does; a bare commit_string makes clients end the input session instead.
@@ -869,6 +878,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
 
 InputListenerItem::~InputListenerItem()
 {
+    blockSignals(true);
     releaseNormalKeys();
 }
 
@@ -884,47 +894,79 @@ bool InputListenerItem::touchHoldsModifier(int key) const
     return std::any_of(m_modifierTouches.cbegin(), m_modifierTouches.cend(), [key](int held) { return held == key; });
 }
 
-int InputListenerItem::modifierAt(const QPointF &position) const
+QQuickItem *InputListenerItem::keyAt(const QPointF &position) const
 {
-    if (!window()) return 0;
-    std::function<int(QQuickItem *)> find = [&](QQuickItem *item) -> int {
-        if (!item->isVisible() || !item->isEnabled() || item->opacity() <= 0) return 0;
+    if (!window()) return nullptr;
+    std::function<QQuickItem *(QQuickItem *)> find = [&](QQuickItem *item) -> QQuickItem * {
+        if (!item->isVisible() || !item->isEnabled() || item->opacity() <= 0) return nullptr;
         const auto local = item->mapFromScene(position);
-        if (item->clip() && !item->contains(local)) return 0;
+        if (item->clip() && !item->contains(local)) return nullptr;
         const auto children = item->childItems();
         for (auto it = children.crbegin(); it != children.crend(); ++it) {
-            if (const int key = find(*it)) return key;
+            if (auto *key = find(*it)) return key;
         }
         const int key = item->property("key").toInt();
-        return (key == Qt::Key_Control || key == Qt::Key_Alt || key == Qt::Key_Meta) && item->contains(local) ? key : 0;
+        return key && key != Qt::Key_unknown && item->contains(local) ? item : nullptr;
     };
     return find(window()->contentItem());
 }
 
 bool InputListenerItem::eventFilter(QObject *watched, QEvent *event)
 {
-    if (m_nativePcInput || watched != window()) return false;
+    if (m_nativePcInput || watched != window() || !hasActiveFocus()) return false;
     if (event->type() == QEvent::TouchCancel) {
         releaseNormalKeys();
     } else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd) {
         const auto *touch = static_cast<QTouchEvent *>(event);
+        // Admit modifiers first, including simultaneous two-finger presses.
         for (const auto &point : touch->points()) {
-            if (point.state() == QEventPoint::State::Pressed) {
-                if (const int key = modifierAt(point.position())) {
-                    m_modifierTouches.insert(point.id(), key);
-                    m_touchOwnedModifiers.insert(key);
-                    setModifierHeld(static_cast<Qt::Key>(key), true);
-                }
-            } else if (point.state() == QEventPoint::State::Released && m_modifierTouches.contains(point.id())) {
+            if (point.state() != QEventPoint::State::Pressed) continue;
+            auto *item = keyAt(point.position());
+            const int key = item ? item->property("key").toInt() : 0;
+            if (key != Qt::Key_Control && key != Qt::Key_Alt && key != Qt::Key_Meta) continue;
+            m_modifierTouches.insert(point.id(), key);
+            m_touchOwnedModifiers.insert(key);
+            m_heldItems.insert(key, item);
+            setModifierHeld(static_cast<Qt::Key>(key), true);
+        }
+        for (const auto &point : touch->points()) {
+            if (point.state() != QEventPoint::State::Released) continue;
+            if (m_modifierTouches.contains(point.id())) {
                 const int key = m_modifierTouches.take(point.id());
                 if (!touchHoldsModifier(key)) {
                     setModifierHeld(static_cast<Qt::Key>(key), false);
-                    if (!m_engineModifiers.contains(key)) m_touchOwnedModifiers.remove(key);
+                    m_touchOwnedModifiers.remove(key);
+                    if (auto item = m_heldItems.take(key)) item->setProperty("active", false);
+                }
+            }
+            if (m_shortcutTouches.contains(point.id())) {
+                const int key = m_shortcutTouches.take(point.id());
+                if (!m_shortcutTouches.values().contains(key)) {
+                    QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
+                    handleModifiedKey(&release, false);
+                    m_touchOwnedKeys.remove(key);
+                    if (auto item = m_heldItems.take(key)) item->setProperty("active", false);
                 }
             }
         }
+        const auto *held = KeyboardModifiers::instance();
+        if (held->ctrl() || held->alt() || held->meta()) {
+            for (const auto &point : touch->points()) {
+                if (point.state() != QEventPoint::State::Pressed || m_modifierTouches.contains(point.id())) continue;
+                auto *item = keyAt(point.position());
+                if (!item) continue;
+                const int key = item->property("key").toInt();
+                const bool uppercase = item->property("uppercased").toBool();
+                const auto text = item->property("text").toString();
+                QKeyEvent press(QEvent::KeyPress, key, uppercase ? Qt::ShiftModifier : Qt::NoModifier, uppercase ? text.toUpper() : text);
+                if (!handleModifiedKey(&press, true)) continue;
+                m_shortcutTouches.insert(point.id(), key);
+                m_touchOwnedKeys.insert(key);
+                m_heldItems.insert(key, item);
+            }
+        }
     }
-    return false; // Observe ownership; Qt still delivers every touch normally.
+    return false; // Qt retains layout, visual touch and ordinary IME handling.
 }
 
 void InputListenerItem::syncModifiers(Qt::KeyboardModifiers extra)
@@ -959,6 +1001,14 @@ void InputListenerItem::releaseNormalKeys()
         else m_input.key(InputPlugin::Released, key.code);
     }
     m_modifiedKeys.clear();
+    if (m_engine && (!m_modifierTouches.isEmpty() || !m_shortcutTouches.isEmpty())) {
+        m_engine->virtualKeyCancel();
+        Q_EMIT physicalChordCaptured();
+    }
+    for (const auto &item : std::as_const(m_heldItems)) if (item) item->setProperty("active", false);
+    m_heldItems.clear();
+    m_shortcutTouches.clear();
+    m_touchOwnedKeys.clear();
     m_modifierTouches.clear();
     m_touchOwnedModifiers.clear();
     m_engineModifiers.clear();
@@ -1087,6 +1137,7 @@ QStringList InputListenerItem::alternatesFor(const QVariantList &alternatives, b
 
 void InputListenerItem::keyPressEvent(QKeyEvent *event)
 {
+    if (m_touchOwnedKeys.contains(event->key())) { event->accept(); return; }
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }
@@ -1114,6 +1165,7 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
 
 void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
 {
+    if (m_touchOwnedKeys.contains(event->key())) { event->accept(); return; }
     if (IGNORED_KEYS->find(event->key()) != IGNORED_KEYS->end()) {
         return;
     }

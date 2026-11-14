@@ -4,7 +4,7 @@
 %global upstream_version 6.8.3
 Name: uke-plasma-keyboard-custom
 Version: 0.1.0
-Release: 50%{?dist}
+Release: 51%{?dist}
 Summary: Tablet virtual keyboard and laptop control surface for Plasma Wayland
 License: GPL-2.0-or-later AND GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND BSD-2-Clause AND BSD-3-Clause AND MIT AND CC0-1.0 AND LicenseRef-CC-BY-2.0-FR AND Unicode-3.0
 URL: https://github.com/MCC45TR/uke-plasma-keyboard-custom
@@ -119,6 +119,12 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 
 %changelog
+* Sat Nov 14 2026 Uke Linux contributors - 0.1.0-51
+- Deliver normal modifier chords on physical touch without a deferred IME duplicate.
+- Exercise floating resize, movement and docking through compositor touch input.
+- Remove the obsolete modifier latch delay from preferences.
+- Authorize optional hold-to-show requests through the same touch-only gate.
+
 * Sat Nov 14 2026 Uke Linux contributors - 0.1.0-50
 - Use momentary physical modifiers and preserve overlapping touch press order.
 - Resume guarded touchpad motion without lifting and expose a right navigation cluster.

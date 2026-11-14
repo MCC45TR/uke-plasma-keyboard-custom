@@ -238,6 +238,7 @@ public:
     ClipboardHistory *clipboardHistory() const;
 
 Q_SIGNALS:
+    void physicalChordCaptured();
     void keyNavigationPressed(int key);
     void keyNavigationReleased(int key);
     void predictionPrefixChanged();
@@ -258,7 +259,7 @@ private:
     void syncModifiers(Qt::KeyboardModifiers extra = Qt::NoModifier);
     void releaseNormalKeys();
     bool touchHoldsModifier(int key) const;
-    int modifierAt(const QPointF &position) const;
+    QQuickItem *keyAt(const QPointF &position) const;
 
     //! Re-reads the word being typed and the word before it, and tells QML
     //! when either of them changed.
@@ -303,8 +304,12 @@ private:
     // Qt Virtual Keyboard may release its active key when a second finger
     // presses a letter. Physical touch ownership keeps the modifier held.
     QHash<int, int> m_modifierTouches;
+    QHash<int, int> m_shortcutTouches;
+    QHash<int, QPointer<QQuickItem>> m_heldItems;
+    QSet<int> m_touchOwnedKeys;
     QSet<int> m_touchOwnedModifiers;
     QSet<int> m_engineModifiers;
+    QPointer<QVirtualKeyboardInputEngine> m_engine;
     struct ModifiedKey { uint32_t code; bool uinput; };
     QHash<int, ModifiedKey> m_modifiedKeys;
 

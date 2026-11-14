@@ -489,11 +489,16 @@ InputPanelWindow {
 
     InputListenerItem {
         id: thing
+        objectName: "ukeInputListener"
         focus: true
         engine: inputPanel.InputContext.inputEngine
 
         keyboardNavigationActive: inputPanel.keyboard.navigationModeActive
         nativePcInput: root.useNativePc
+        onPhysicalChordCaptured: {
+            if(inputPanel.keyboard)inputPanel.keyboard.keyboardInputArea.reset();
+            swipeInput.cancel();editingTouch.end();
+        }
 
         onKeyNavigationPressed: (key) => {
             // HACK: invoke the Qt VirtualKeyboard keyboard navigation feature ourselves
@@ -801,6 +806,7 @@ InputPanelWindow {
 
     Kirigami.ShadowedRectangle {
         id: panelWrapper
+        objectName: "ukeNormalPanel"
         z: 2
         visible: !PlasmaKeyboard.Laptop.active || !root.useNativePc
 
@@ -1843,6 +1849,7 @@ InputPanelWindow {
         //! Whether a gesture can become a swipe at all: the language has a word
         //! list, swipe typing is on, and the keys are not covered by voice mode.
         readonly property bool available: root.auxiliaryUiAllowed && !root.voiceMode && !root.useNativePc
+            && !PlasmaKeyboard.Modifiers.ctrl && !PlasmaKeyboard.Modifiers.alt && !PlasmaKeyboard.Modifiers.meta
             && PlasmaKeyboardSettings.swipeTypingEnabled
             && swipeController.supports(inputPanel.InputContext.locale)
 
@@ -1997,7 +2004,7 @@ InputPanelWindow {
             code=0;previousStep=0;moved=false;
             editor=PlasmaKeyboard.Laptop.active?laptopDeck.localEditor:normalTools.localEditor;
             editorWasLocal=!!editor;
-            if(!point||root.useNativePc||root.voiceMode)return;
+            if(!point||root.useNativePc||root.voiceMode||PlasmaKeyboard.Modifiers.ctrl||PlasmaKeyboard.Modifiers.alt||PlasmaKeyboard.Modifiers.meta)return;
             const area=inputPanel.keyboard.keyboardInputArea;
             for(const candidate of [Qt.Key_Space,Qt.Key_Backspace]){
                 if(candidate===Qt.Key_Space&&!PlasmaKeyboard.Laptop.options.spaceGesture)continue;

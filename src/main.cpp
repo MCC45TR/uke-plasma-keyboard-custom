@@ -54,6 +54,7 @@
 #include <QProcess>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QQuickItem>
 #include <QRegion>
 #include <QScreen>
 #include <QStandardPaths>
@@ -1372,6 +1373,22 @@ int main(int argc, char **argv)
                     QVariant value;
                     QMetaObject::invokeMethod(root,"editingKeyPosition",Q_RETURN_ARG(QVariant,value),Q_ARG(QVariant,QVariant(entry.second)));
                     const auto position=value.toPointF();geometry.insert(entry.first+QStringLiteral("X"),position.x());geometry.insert(entry.first+QStringLiteral("Y"),position.y());
+                }
+                if(auto *window=qobject_cast<QQuickWindow *>(root.data())) {
+                    const auto find=[window](const QString &name)->QQuickItem* {
+                        QList<QQuickItem*> pending{window->contentItem()};
+                        while(!pending.isEmpty()){auto *item=pending.takeLast();if(item->objectName()==name)return item;pending.append(item->childItems());}
+                        return nullptr;
+                    };
+                    if(auto *listener=find(QStringLiteral("ukeInputListener")))geometry.insert(QStringLiteral("remoteFocus"),listener->hasActiveFocus());
+                    for(const auto &entry:{std::pair{QStringLiteral("panel"),QStringLiteral("ukeNormalPanel")},std::pair{QStringLiteral("toggle"),QStringLiteral("ukeFloatingToggle")},std::pair{QStringLiteral("resize"),QStringLiteral("ukeFloatingResize")},std::pair{QStringLiteral("move"),QStringLiteral("ukeFloatingMove")}}){
+                        if(auto *item=find(entry.second)){
+                            const auto point=item->mapToScene(QPointF(item->width()/2,item->height()/2));
+                            geometry.insert(entry.first+QStringLiteral("X"),point.x());geometry.insert(entry.first+QStringLiteral("Y"),point.y());
+                            geometry.insert(entry.first+QStringLiteral("Width"),item->width());geometry.insert(entry.first+QStringLiteral("Height"),item->height());
+                            if(entry.first==QLatin1String("panel"))geometry.insert(QStringLiteral("floating"),item->property("floating").toBool());
+                        }
+                    }
                 }
                 QSaveFile file(path);if(!file.open(QIODevice::WriteOnly))return;
                 file.write(QJsonDocument(geometry).toJson());

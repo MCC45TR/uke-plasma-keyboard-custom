@@ -17,12 +17,14 @@
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QSignalSpy>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QWindow>
 #include <QtTest/QTest>
 
 #include <memory>
+#include <cmath>
 
 #include <QtWaylandCompositor/QWaylandCompositor>
 #include <QtWaylandCompositor/QWaylandCompositorExtension>
@@ -1009,6 +1011,7 @@ private Q_SLOTS:
         QVERIFY2(modifier.x()>0 && modifier.y()>0, qPrintable(QStringLiteral("Missing normal modifier: ")+name));
         QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));QVERIFY(file.open(QIODevice::ReadOnly));
         const auto geometry=QJsonDocument::fromJson(file.readAll()).object();
+        QVERIFY(geometry.value(QStringLiteral("remoteFocus")).toBool());
         const QPointF letter(geometry.value(QStringLiteral("x")).toDouble(-1),geometry.value(QStringLiteral("y")).toDouble(-1));
         QVERIFY(letter.x()>0 && letter.y()>0);
         auto *context=m_inputMethod->context();auto *surface=m_inputPanel->surface();QVERIFY(surface);
@@ -1018,11 +1021,17 @@ private Q_SLOTS:
         wl_display_flush_clients(m_compositor->display());QTest::qWait(80);
         QSignalSpy modifiers(context,&InputMethodContext::modifiersReceived);
         QSignalSpy keys(context,&InputMethodContext::keyReceived);
+        QHash<int,QPointF> down;
         auto contact=[&](int id,const QPointF &point,bool pressed){
-            if(pressed)m_seat->sendTouchPointPressed(surface,id,point);
-            else m_seat->sendTouchPointReleased(surface,id,point);
+            if(pressed){down.insert(id,point);m_seat->sendTouchPointPressed(surface,id,point);}
+            else {down.remove(id);m_seat->sendTouchPointReleased(surface,id,point);}
             m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());QTest::qWait(35);
         };
+        const auto cleanup=qScopeGuard([&]{
+            for(auto it=down.cbegin();it!=down.cend();++it)m_seat->sendTouchPointReleased(surface,it.key(),it.value());
+            m_seat->sendTouchFrameEvent(surface->client());
+            context->keyboard()->sendModifierState(0,0,0,0);wl_display_flush_clients(m_compositor->display());QTest::qWait(50);
+        });
         for(int tap=0;tap<2;++tap){
             modifiers.clear();contact(0,modifier,true);
             QTRY_VERIFY(!modifiers.isEmpty());QCOMPARE(modifiers.last()[0].toUInt(),1u|mask);
@@ -1042,6 +1051,36 @@ private Q_SLOTS:
         QTRY_COMPARE(modifiers.last()[0].toUInt(),1u);
         QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
         context->keyboard()->sendModifierState(0,0,0,0);wl_display_flush_clients(m_compositor->display());QTest::qWait(50);
+    }
+
+    void testNormalFloatingControls()
+    {
+        auto metrics=[this]{QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));if(!file.open(QIODevice::ReadOnly))return QJsonObject();return QJsonDocument::fromJson(file.readAll()).object();};
+        QTRY_VERIFY(metrics().contains(QStringLiteral("floating")));
+        QVERIFY(!metrics().value(QStringLiteral("floating")).toBool());
+        const auto toggle=editingPosition(QStringLiteral("toggle"));QVERIFY(toggle.x()>0&&toggle.y()>0);
+        tapInputPanel(toggle);QTRY_VERIFY(metrics().value(QStringLiteral("floating")).toBool());
+        const double originalWidth=metrics().value(QStringLiteral("panelWidth")).toDouble();
+        QVERIFY(originalWidth>0&&originalWidth<inputPanelSurfaceSize().width());
+        const auto resize=editingPosition(QStringLiteral("resize"));QVERIFY(resize.x()>0&&resize.y()>0);
+        dragInputPanel(resize,-160);
+        QTRY_VERIFY(metrics().value(QStringLiteral("panelWidth")).toDouble()<originalWidth-20);
+        const auto fitted=metrics();
+        const double width=fitted.value(QStringLiteral("panelWidth")).toDouble(),height=fitted.value(QStringLiteral("panelHeight")).toDouble();
+        const double x=fitted.value(QStringLiteral("panelX")).toDouble(),y=fitted.value(QStringLiteral("panelY")).toDouble();
+        QVERIFY(width>300&&height>100);
+        QVERIFY(x-width/2>=0&&y-height/2>=0);
+        QVERIFY(x+width/2<=inputPanelSurfaceSize().width()&&y+height/2<=inputPanelSurfaceSize().height());
+        const auto move=editingPosition(QStringLiteral("move"));QVERIFY(move.x()>0&&move.y()>0);
+        dragInputPanel(move,60);QTRY_VERIFY(metrics().value(QStringLiteral("panelX")).toDouble()>x+20);
+        const auto moved=metrics();
+        QSignalSpy commits(m_inputMethod->context(),&InputMethodContext::commitStringChanged);
+        tapInputPanel(QPointF(moved.value(QStringLiteral("x")).toDouble(),moved.value(QStringLiteral("y")).toDouble()));
+        QTRY_COMPARE(commits.size(),1);QCOMPARE(commits.first().first().toString(),QStringLiteral("q"));
+        // Typing must leave the floating panel at the chosen position.
+        QTest::qWait(150);QCOMPARE(metrics().value(QStringLiteral("panelX")).toDouble(),moved.value(QStringLiteral("panelX")).toDouble());
+        tapInputPanel(editingPosition(QStringLiteral("toggle")));QTRY_VERIFY(!metrics().value(QStringLiteral("floating")).toBool());
+        QTRY_VERIFY(std::abs(metrics().value(QStringLiteral("panelY")).toDouble()+metrics().value(QStringLiteral("panelHeight")).toDouble()/2-inputPanelSurfaceSize().height())<1);
     }
 
     void testKeyboardNavigationCommitsCharacter()

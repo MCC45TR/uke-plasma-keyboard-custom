@@ -1175,3 +1175,30 @@ The inspected Qt6.10.0 components/Keyboard.qml explicitly releases its prior
 active key on a second touch (upstream tag v6.10.0); this ownership observation
 does not replace or rebuild Qt. Normal-mode automatic show still requires the
 existing current touch authorization; stale mode/context replies are invalidated.
+
+Focused input3/11327624 at db1fec3 passes both actual-QML tests,0.12s for
+continuous touchpad delivery and0.09s for PC keyboard touch delivery. Five source
+hashes and the submitted worker match. This establishes the focused x86 fixture
+scope, including fast rollover and early Meta release, not physical acceptance.
+Full50/11327627 on Rawhide ARM remains pending. Follow-up51 prepares an actual
+compositor float/resize/move/type/dock case and removes the obsolete hold-delay
+control; its stored preference remains readable for rollback compatibility.
+No update producer or installed package has changed.
+
+Full50/11327627 compiles on Rawhide ARM64 with Qt6.12.0.43/44 CTests pass,
+including physical controller semantics, actual PC/touchpad QML, privacy, posture
+and UI smoke. The normal compositor test times out: six new modifier cases
+receive no completing letter and failed cleanup affects later navigation. No50
+runtime RPM is admitted. The original test assertions remain.
+
+51 now forwards a held-modifier key directly from the keyboard's own physical
+touch, with release tied to the same touch and route. Qt Virtual Keyboard defers
+its input-method click until release, so the owned key is canceled through its
+public engine API before IME processing; its touch state resets and held-key
+visual feedback is restored. Ordinary unmodified text continues through Qt.
+Touch ownership applies only while the remote input listener has active focus;
+local editors, hidden panels and replaced contexts cannot retain remote chords.
+Tests clean up contacts and physical masks even after a failure. The same six
+normal modifier cases plus the new float/resize/move/type/dock test remain to
+be qualified. Long-touch opening now uses current touch authorization, with no
+unknown-field automatic fallback after an unrelated mouse focus.

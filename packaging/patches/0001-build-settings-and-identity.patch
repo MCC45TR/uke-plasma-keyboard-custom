@@ -3155,10 +3155,10 @@ index 0000000000000000000000000000000000000000..a0b2af95de745b50d04f764795900dc6
 +    return String.fromCodePoint(regionalIndicatorA + country.charCodeAt(0) - 65, regionalIndicatorA + country.charCodeAt(1) - 65);
 +}
 diff --git a/kcm/ui/main.qml b/kcm/ui/main.qml
-index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e951e04c76 100644
+index 00ae6de616cf776a0b1ea797f7a3609a89323441..a9fccc7156fe30bd05e2fc6524c386a9c63b0f7d 100644
 --- a/kcm/ui/main.qml
 +++ b/kcm/ui/main.qml
-@@ -8,111 +8,705 @@
+@@ -8,111 +8,677 @@
  import QtQuick
  import QtQuick.Layouts
  import QtQuick.Controls as QQC2
@@ -3329,7 +3329,11 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                label: i18n("Keyboard height:")
 +                description: i18n("Percentage of the screen height")
 +                controlFillWidth: true
-+
+ 
+-            checked: kcm.diacriticsPopupEnabled
+-            onCheckedChanged: {
+-                kcm.diacriticsPopupEnabled = checked;
+-                checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
 +                trailing: QQC2.Label {
 +                    Layout.preferredWidth: Kirigami.Units.gridUnit * 3
 +                    horizontalAlignment: Text.AlignRight
@@ -3501,11 +3505,7 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +            SettingsRow {
 +                label: i18n("Function keys:")
 +                description: i18n("Show an F1–F12 row above the keyboard")
- 
--            checked: kcm.diacriticsPopupEnabled
--            onCheckedChanged: {
--                kcm.diacriticsPopupEnabled = checked;
--                checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
++
 +                QQC2.Switch {
 +                    id: showFunctionKeyRowSwitch
 +                    checked: kcm.showFunctionKeyRow
@@ -3541,9 +3541,7 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +            SettingsRow {
 +                label: i18n("Automatic capitalization:")
 +                description: i18n("Capitalize the first letter of a sentence")
- 
--            enabled: diacriticsCheckbox.checked
--            value: kcm.diacriticsHoldThresholdMs
++
 +                QQC2.Switch {
 +                    id: autoCapitalizationSwitch
 +                    checked: kcm.autoCapitalizationEnabled
@@ -3553,11 +3551,16 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                    }
 +                }
 +            }
-+
+ 
+-            enabled: diacriticsCheckbox.checked
+-            value: kcm.diacriticsHoldThresholdMs
 +            SettingsRow {
 +                label: i18n("Alternate characters:")
 +                description: i18n("Show a popup when holding a key")
-+
+ 
+-            // Include the `milliseconds` suffix in the spinbox instead of the label
+-            textFromValue: function (value) {
+-                return value + " " + i18n("milliseconds");
 +                QQC2.Switch {
 +                    id: diacriticsSwitch
 +                    checked: kcm.diacriticsPopupEnabled
@@ -3566,11 +3569,13 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                        checked = Qt.binding(() => kcm.diacriticsPopupEnabled);
 +                    }
 +                }
-+            }
+             }
  
--            // Include the `milliseconds` suffix in the spinbox instead of the label
--            textFromValue: function (value) {
--                return value + " " + i18n("milliseconds");
+-            // Parse the integer value from the spinbox text, ignoring the suffix
+-            valueFromText: function (text) {
+-                let number = parseInt(text);
+-                if (isNaN(number)) {
+-                    return kcm.diacriticsHoldThresholdMs; // Fallback to current value if parsing fails
 +            SettingsRow {
 +                label: i18n("Hold delay:")
 +                description: i18n("Time to hold a key before the popup appears")
@@ -3597,14 +3602,13 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                        kcm.diacriticsHoldThresholdMs = value;
 +                        value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
 +                    }
-+                }
+                 }
+-                return number;
              }
  
--            // Parse the integer value from the spinbox text, ignoring the suffix
--            valueFromText: function (text) {
--                let number = parseInt(text);
--                if (isNaN(number)) {
--                    return kcm.diacriticsHoldThresholdMs; // Fallback to current value if parsing fails
+-            onValueChanged: {
+-                kcm.diacriticsHoldThresholdMs = value;
+-                value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
 +            SettingsRow {
 +                label: i18n("Gamepad:")
 +                description: i18n("Hold the A button to pick an alternate character")
@@ -3616,13 +3620,9 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                        kcm.gamepadAlternatesEnabled = checked;
 +                        checked = Qt.binding(() => kcm.gamepadAlternatesEnabled);
 +                    }
-                 }
--                return number;
-             }
- 
--            onValueChanged: {
--                kcm.diacriticsHoldThresholdMs = value;
--                value = Qt.binding(() => kcm.diacriticsHoldThresholdMs);
++                }
++            }
++
 +            SettingsRow {
 +                label: i18n("Gamepad hold delay:")
 +                description: i18n("Time to hold the A button before the popup appears")
@@ -3648,34 +3648,6 @@ index 00ae6de616cf776a0b1ea797f7a3609a89323441..1bf54623f6747172bc1612057bf119e9
 +                    onValueChanged: {
 +                        kcm.gamepadAlternatesThresholdMs = value;
 +                        value = Qt.binding(() => kcm.gamepadAlternatesThresholdMs);
-+                    }
-+                }
-+            }
-+
-+            SettingsRow {
-+                label: i18n("Modifier hold delay:")
-+                description: i18n("How long Ctrl, Alt or Win must be held to act as a held key instead of latching for the next key")
-+                controlFillWidth: true
-+
-+                QQC2.SpinBox {
-+                    id: modifierHoldDelaySpinBox
-+                    Layout.fillWidth: true
-+                    from: 100
-+                    to: 1500
-+                    stepSize: 50
-+                    value: kcm.modifierHoldThresholdMs
-+
-+                    textFromValue: function (value) {
-+                        return i18nc("duration in milliseconds", "%1 ms", value);
-+                    }
-+                    valueFromText: function (text) {
-+                        const number = parseInt(text);
-+                        return isNaN(number) ? kcm.modifierHoldThresholdMs : number;
-+                    }
-+
-+                    onValueChanged: {
-+                        kcm.modifierHoldThresholdMs = value;
-+                        value = Qt.binding(() => kcm.modifierHoldThresholdMs);
 +                    }
 +                }
 +            }

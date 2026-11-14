@@ -44,11 +44,11 @@
   "patches": [
     {
       "name": "0001-build-settings-and-identity.patch",
-      "sha256": "f454b850f8802c42cf2fa1bca2b6fcec9841561bc472ab854147fee0950c0b14"
+      "sha256": "3c1cc93cfcd0aec6e140ddb29eb242426b3d4383babccc1a1f7f56189f68aa5e"
     },
     {
       "name": "0002-keyboard-interface-and-input.patch",
-      "sha256": "b066a2635e8126f70a5ba80ad4e8df21db66d17cd655fa870bb749799b07740a"
+      "sha256": "cf602c92d5f33e11381b3b8fe18357ba7409670d84566a0d146c9a1535808506"
     },
     {
       "name": "0003-laptop-and-native-integration.patch",
@@ -60,7 +60,7 @@
     },
     {
       "name": "0005-native-regression-coverage.patch",
-      "sha256": "828402eeff658d4fc662c20ffb1b0365f84fd121175a4719d9d53358b9cb0ec7"
+      "sha256": "ebc5cd1e379c372bce41f5a1324a50e3294e0ca1eaaec6497d60a7578815da19"
     }
   ],
   "production_files": [
@@ -242,7 +242,7 @@
     },
     {
       "path": "autotests/mockinputmethodcompositor.cpp",
-      "sha256": "3d4eb0664bc9d787c7412ec496bd1c4e673a48da320df17a17ac32ec109114d9"
+      "sha256": "a5617c90a5aeb49ea0ea00c1e1cd8d09af5f90f0de4d0e5fafa58aba91654e2c"
     },
     {
       "path": "autotests/nativerefreshrequesttest.cpp",
@@ -434,7 +434,7 @@
     },
     {
       "path": "kcm/ui/main.qml",
-      "sha256": "6d17f7b97152f4add6cadbcbabc8228a1d4c7df7ad9929f509a11dadf2c29d39"
+      "sha256": "620a62616c7739ea5d70006cc561d591ac643d4e5f2e7516308e96d3207911f4"
     },
     {
       "path": "kcm/ui/main_handset.qml",
@@ -1018,7 +1018,7 @@
     },
     {
       "path": "src/focusededitabletracker.h",
-      "sha256": "98dddffd7e4709c6bbeeb6fb68fbc550849f98967cfea23d1e6de5e652508105"
+      "sha256": "52acef434a737ddbb03c62a33788eb7e6605ace3d8bb2696fa80a86da701e992"
     },
     {
       "path": "src/gamepadhandler.cpp",
@@ -1118,11 +1118,11 @@
     },
     {
       "path": "src/inputlisteneritem.cpp",
-      "sha256": "005b65481bb2aa42e3e23949e49407e607abbe056383aa16cbe73132566ece0b"
+      "sha256": "278d58e713cf384a8ed66e6482ba5d2a600a2458b12ce2160b18e07f43724aa6"
     },
     {
       "path": "src/inputlisteneritem.h",
-      "sha256": "61cd594c7010281a4c20815ce63a8658169dc6043e959e16c4f008f627183d44"
+      "sha256": "f2642ee2f6b92d947cf1a329e3b6ab957945f9017652eb2c842b63cbadc04696"
     },
     {
       "path": "src/inputmethod.cpp",
@@ -2350,7 +2350,7 @@
     },
     {
       "path": "src/main.cpp",
-      "sha256": "f2999acbcec9f7e3b751ab54cca96d5c449018b34b2da3e5da43315ff68fd022"
+      "sha256": "5ba60120572fe2ce6f42563ba38f02c8ffb703ab430bb8af9ba24e00a6ed19cd"
     },
     {
       "path": "src/org.kde.plasma.keyboard.desktop",
@@ -2638,7 +2638,7 @@
     },
     {
       "path": "src/qml/main.qml",
-      "sha256": "e64750bfbfeba4661fca5735a0bfbd84d8b4eed0a8fb62d406ab4f2e5cac341c"
+      "sha256": "4d55cbf1314e96a6023fb72b3fb3cd486fc3343f9129fc160b3d17075c9e256c"
     },
     {
       "path": "src/qmlplugin/BreezeConstants.qml",

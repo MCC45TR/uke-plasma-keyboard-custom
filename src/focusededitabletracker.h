@@ -40,8 +40,8 @@ public:
      *
      * When it is unknown (no accessibility bus, an application that does not
      * expose its objects, or a query that has not answered yet) a touch cannot
-     * be proven to belong to another widget, so callers must not use the hit
-     * test to veto showing the keyboard.
+     * authorize an automatic hold-to-show request. Explicit show actions do
+     * not depend on accessibility geometry.
      */
     bool hasFocusedEditable() const;
 
