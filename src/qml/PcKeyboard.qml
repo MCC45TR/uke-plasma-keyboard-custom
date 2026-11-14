@@ -22,6 +22,12 @@ Item {
     property real keyHeight: Math.max(1,Math.min(Keyboard.Laptop.options.keyHeightMm * perMm, (height - gap * Math.max(0,rowCount-1)) / Math.max(1,rowCount)))
     readonly property real navigationWidth: navigationRows.length ? Math.min(width*0.24,3*Keyboard.Laptop.options.keyWidthMm*perMm+2*gap) : 0
     readonly property real mainWidth: Math.max(1,width-navigationWidth-(navigationWidth>0?2*gap:0))
+    readonly property real minimumComfortWidth: {
+        const key=Math.min(9,Keyboard.Laptop.options.keyWidthMm)*perMm;
+        let main=0;
+        for(const row of mainRows)main=Math.max(main,row.reduce((sum,k)=>sum+k.units,0)*key+Math.max(0,row.length-1)*gap);
+        return main+(navigationRows.length?3*key+4*gap:0);
+    }
     readonly property var layoutKeys: arrangeKeys()
     implicitHeight: rowCount*Keyboard.Laptop.options.keyHeightMm*perMm + Math.max(0,rowCount-1)*gap
     signal swipeAccepted(var words)

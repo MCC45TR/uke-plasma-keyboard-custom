@@ -1207,7 +1207,7 @@ index 0000000000000000000000000000000000000000..416081f74c2059e6a49d49fcf0dde3be
 +};
 diff --git a/src/laptop/laptopcontroller.cpp b/src/laptop/laptopcontroller.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..12d2d8f57e045f16f815acb0b543766ce2245005
+index 0000000000000000000000000000000000000000..d92c5afe27ecc3c0c45e889f9794b7298f50b8cd
 --- /dev/null
 +++ b/src/laptop/laptopcontroller.cpp
 @@ -0,0 +1,525 @@
@@ -1639,7 +1639,7 @@ index 0000000000000000000000000000000000000000..12d2d8f57e045f16f815acb0b543766c
 +  row({{KEY_INSERT,"Ins"},{KEY_HOME,"Home"},{KEY_PAGEUP,"PgUp"}});
 +  row({{KEY_DELETE,"Del"},{KEY_END,"End"},{KEY_PAGEDOWN,"PgDn"}});
 + }
-+ if(arrows){row({{0,""},{KEY_UP,"↑"},{0,""}});row({{KEY_LEFT,"←"},{KEY_DOWN,"↓"},{KEY_RIGHT,"→"}});}
++ if(arrows){row({{0,""},{0,""},{0,""}});row({{0,""},{KEY_UP,"↑"},{0,""}});row({{KEY_LEFT,"←"},{KEY_DOWN,"↓"},{KEY_RIGHT,"→"}});}
 + return rows;
 +}
 +void LaptopController::setRawKey(uint code,bool pressed){backendInput(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}

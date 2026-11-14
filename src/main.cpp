@@ -837,12 +837,6 @@ public Q_SLOTS:
     {
         if (LaptopController::instance() && LaptopController::instance()->active()) { restorePanels(); return; }
         const bool compositorVisible = kwinVisible();
-        if(auto *laptop=LaptopController::instance();laptop && laptop->available() &&
-           laptop->options().value("presentation")==QLatin1String("dynamic")) {
-            // Manual dynamic mode must not map the normal panel on text focus.
-            m_bridge->setKwinVisible(compositorVisible);
-            QGuiApplication::inputMethod()->hide();restorePanels();return;
-        }
         const auto *lock = SessionLockState::instance();
         const auto visibilityChange = m_visibility.update(compositorVisible,
                                                           lock->isKnown(),
@@ -1374,7 +1368,7 @@ int main(int argc, char **argv)
                 const auto point=position.toPointF();if(point.x()<=0||point.y()<=0)return;
                 QVariant label;QMetaObject::invokeMethod(root,"navigationLabel",Q_RETURN_ARG(QVariant,label));
                 QJsonObject geometry{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()},{QStringLiteral("navigation"),label.toString()}};
-                for(const auto &entry:{std::pair{QStringLiteral("space"),int(Qt::Key_Space)},std::pair{QStringLiteral("backspace"),int(Qt::Key_Backspace)}}){
+                for(const auto &entry:{std::pair{QStringLiteral("space"),int(Qt::Key_Space)},std::pair{QStringLiteral("backspace"),int(Qt::Key_Backspace)},std::pair{QStringLiteral("ctrl"),int(Qt::Key_Control)},std::pair{QStringLiteral("alt"),int(Qt::Key_Alt)},std::pair{QStringLiteral("meta"),int(Qt::Key_Meta)}}){
                     QVariant value;
                     QMetaObject::invokeMethod(root,"editingKeyPosition",Q_RETURN_ARG(QVariant,value),Q_ARG(QVariant,QVariant(entry.second)));
                     const auto position=value.toPointF();geometry.insert(entry.first+QStringLiteral("X"),position.x());geometry.insert(entry.first+QStringLiteral("Y"),position.y());

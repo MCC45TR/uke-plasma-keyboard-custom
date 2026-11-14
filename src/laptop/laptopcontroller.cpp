@@ -426,7 +426,7 @@ QVariantList LaptopController::navigationRows()const{
   row({{KEY_INSERT,"Ins"},{KEY_HOME,"Home"},{KEY_PAGEUP,"PgUp"}});
   row({{KEY_DELETE,"Del"},{KEY_END,"End"},{KEY_PAGEDOWN,"PgDn"}});
  }
- if(arrows){row({{0,""},{KEY_UP,"↑"},{0,""}});row({{KEY_LEFT,"←"},{KEY_DOWN,"↓"},{KEY_RIGHT,"→"}});}
+ if(arrows){row({{0,""},{0,""},{0,""}});row({{0,""},{KEY_UP,"↑"},{0,""}});row({{KEY_LEFT,"←"},{KEY_DOWN,"↓"},{KEY_RIGHT,"→"}});}
  return rows;
 }
 void LaptopController::setRawKey(uint code,bool pressed){backendInput(QStringLiteral("Key"),{code,pressed});if(m_state)xkb_state_update_key(m_state.get(),code+8,pressed?XKB_KEY_DOWN:XKB_KEY_UP);}

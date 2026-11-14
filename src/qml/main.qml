@@ -16,12 +16,14 @@ import org.uke.plasma.keyboard.lib as PlasmaKeyboard
 
 import org.kde.kirigami as Kirigami
 import "LocaleResolver.js" as LocaleResolver
+import "FloatingPanelMetrics.js" as PanelMetrics
 
 InputPanelWindow {
     id: root
     height: Screen.height
     width: Screen.width
     color: 'transparent'
+    property bool wasLaptopActive: false
 
     readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && (PlasmaKeyboard.Laptop.active || PlasmaKeyboard.Laptop.options.normalPcLayout) && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
     readonly property var localEditor: PlasmaKeyboard.Laptop.active?(laptopDeck?laptopDeck.localEditor:null):(normalTools?normalTools.localEditor:null)
@@ -42,6 +44,13 @@ InputPanelWindow {
     Connections {
         target: PlasmaKeyboard.Laptop
         function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }
+        function onStateChanged() {
+            const active=PlasmaKeyboard.Laptop.active;
+            if(root.wasLaptopActive&&!active&&PlasmaKeyboardSettings.floatingKeyboard){
+                PlasmaKeyboardSettings.floatingKeyboard=false;PlasmaKeyboardSettings.save();
+            }
+            root.wasLaptopActive=active;
+        }
     }
     // The style sizes the panel from the screen size, but as a QtObject its own
     // Screen attached property does not follow this window (see style.qml).
@@ -733,6 +742,7 @@ InputPanelWindow {
 
     // Play the key click at full volume: the bundled sound is mastered quiet.
     Component.onCompleted: {
+        root.wasLaptopActive=PlasmaKeyboard.Laptop.active;
         VirtualKeyboardSettings.keySoundVolume = 100;
         root.updatePredictions();
 
@@ -811,6 +821,21 @@ InputPanelWindow {
         // panel is always detached from the edges, so it never fills the width.
         readonly property bool floating: PlasmaKeyboardSettings.floatingKeyboard && !PlasmaKeyboard.Laptop.active
         readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth && !floating
+        function flowMetrics(flow,fixedWidth) {
+            const result=[];
+            if(!flow)return result;
+            for(const child of flow.children)if(child.visible){
+                const w=fixedWidth?child.width:child.implicitWidth;
+                if(w>0&&child.height>0)result.push({width:w,height:child.height});
+            }
+            return result;
+        }
+        readonly property var floatingSize: PanelMetrics.fit(root.width,root.height,padding,
+            root.width*PlasmaKeyboardSettings.floatingKeyboardWidthPercent/100-2*padding,
+            root.useNativePc?normalPc.minimumComfortWidth:90*PlasmaKeyboard.Laptop.pixelsPerMm,
+            inputPanel.keyboard&&inputPanel.keyboard.style?inputPanel.keyboard.style.aspectRatio:2.6,
+            flowMetrics(normalTools,true),flowMetrics(normalActions,false),PlasmaKeyboard.Laptop.pixelsPerMm,
+            (functionKeyRow.visible?functionKeyRow.height:0)+(suggestionsRow.visible?suggestionsRow.height:0))
 
         //! Position of the floating panel, in window coordinates. A negative
         //! value means it was never moved: the panel then starts at the bottom
@@ -882,10 +907,12 @@ InputPanelWindow {
         onYChanged: updatePanelStub()
         onWidthChanged: {
             placeFloatingPanel();
+            if(floating&&floatingX>=0)floatingX=clampFloatingX(floatingX);
             updatePanelStub();
         }
         onHeightChanged: {
             placeFloatingPanel();
+            if(floating&&floatingBottom>=0)floatingBottom=clampFloatingBottom(floatingBottom);
             updatePanelStub();
         }
         // The space reserved for the panel and the window anchors depend on the
@@ -955,45 +982,6 @@ InputPanelWindow {
                 if (panelWrapper.floating && panelWrapper.floatingBottom >= 0) {
                     panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(panelWrapper.floatingBottom);
                 }
-            }
-        }
-
-        // Dragging the free background of the panel moves it. The keys are
-        // handled by Qt Virtual Keyboard itself, so the handler only sees the
-        // parts of the panel that are not a key.
-        DragHandler {
-            id: panelDrag
-
-            target: null
-            enabled: panelWrapper.floating
-
-            //! How far the pointer has to move before the panel follows: a plain
-            //! tap must not move (or remember) anything.
-            readonly property real moveThreshold: 12
-
-            property real startX: 0
-            property real startBottom: 0
-            property bool moved: false
-
-            onActiveChanged: {
-                if (active) {
-                    startX = panelWrapper.x;
-                    startBottom = panelWrapper.y + panelWrapper.height;
-                    moved = false;
-                } else if (moved) {
-                    panelWrapper.saveFloatingPosition();
-                }
-            }
-            onTranslationChanged: {
-                if (!active) {
-                    return;
-                }
-                if (!moved && Math.hypot(translation.x, translation.y) < moveThreshold) {
-                    return;
-                }
-                moved = true;
-                panelWrapper.floatingX = panelWrapper.clampFloatingX(startX + translation.x);
-                panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(startBottom + translation.y);
             }
         }
 
@@ -1500,20 +1488,96 @@ InputPanelWindow {
             width: parent.width
             anchors.bottom: normalActions.top
         }
-        RowLayout {
+        Flow {
             id: normalActions
             visible: !PlasmaKeyboard.Laptop.active
             width: parent.width
             anchors.bottom: parent.bottom
-            height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
+            spacing: PlasmaKeyboard.Laptop.pixelsPerMm
+            height: implicitHeight
             QQC2.Button { text: PlasmaKeyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest||PlasmaKeyboard.Laptop.entryPending; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.toggle(); }
             QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
             QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
-            Item { Layout.fillWidth: true; }
+            QQC2.Button {
+                objectName: "ukeFloatingToggle"
+                text: panelWrapper.floating?i18nd("uke-plasma-keyboard-custom","Dock keyboard"):i18nd("uke-plasma-keyboard-custom","Float keyboard")
+                icon.name: panelWrapper.floating?"view-split-top-bottom":"window-new"
+                focusPolicy: Qt.NoFocus
+                onClicked: {const floating=!PlasmaKeyboardSettings.floatingKeyboard;if(floating)PlasmaKeyboard.Laptop.leave();PlasmaKeyboardSettings.floatingKeyboard=floating;PlasmaKeyboardSettings.save();}
+            }
+            QQC2.ToolButton {
+                id: panelMoveHandle
+                objectName: "ukeFloatingMove"
+                visible: panelWrapper.floating
+                icon.name: "transform-move"
+                focusPolicy: Qt.NoFocus
+                Accessible.name: i18nd("uke-plasma-keyboard-custom","Move keyboard")
+                QQC2.ToolTip.text: Accessible.name
+                QQC2.ToolTip.visible: hovered
+                DragHandler {
+                    id: panelDrag
+
+                    target: null
+                    enabled: panelWrapper.floating
+
+                    //! How far the pointer has to move before the panel follows: a plain
+                    //! tap must not move (or remember) anything.
+                    readonly property real moveThreshold: 12
+
+                    property real startX: 0
+                    property real startBottom: 0
+                    property bool moved: false
+
+                    onActiveChanged: {
+                        if (active) {
+                            startX = panelWrapper.x;
+                            startBottom = panelWrapper.y + panelWrapper.height;
+                            moved = false;
+                        } else if (moved) {
+                            panelWrapper.saveFloatingPosition();
+                        }
+                    }
+                    onTranslationChanged: {
+                        if (!active) {
+                            return;
+                        }
+                        if (!moved && Math.hypot(translation.x, translation.y) < moveThreshold) {
+                            return;
+                        }
+                        moved = true;
+                        panelWrapper.floatingX = panelWrapper.clampFloatingX(startX + translation.x);
+                        panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(startBottom + translation.y);
+                    }
+                }
+            }
+            QQC2.ToolButton {
+                objectName: "ukeFloatingResize"
+                visible: panelWrapper.floating
+                icon.name: "transform-scale"
+                focusPolicy: Qt.NoFocus
+                Accessible.name: i18nd("uke-plasma-keyboard-custom","Resize keyboard")
+                QQC2.ToolTip.text: Accessible.name
+                QQC2.ToolTip.visible: hovered
+                DragHandler {
+                    target: null
+                    property real startingWidth: 0
+                    onActiveChanged: {
+                        if(active)startingWidth=panelWrapper.width;
+                        else {panelWrapper.saveFloatingPosition();PlasmaKeyboardSettings.save();}
+                    }
+                    onTranslationChanged: if(active){
+                        const vertical=translation.y*(inputPanel.keyboard&&inputPanel.keyboard.style?inputPanel.keyboard.style.aspectRatio:2.6);
+                        const delta=Math.abs(translation.x)>=Math.abs(vertical)?translation.x:vertical;
+                        const body=Math.max(panelWrapper.floatingSize.minimum,Math.min(panelWrapper.floatingSize.maximum,startingWidth+delta-2*panelWrapper.padding));
+                        PlasmaKeyboardSettings.floatingKeyboardWidthPercent=Math.max(20,Math.min(100,Math.round((body+2*panelWrapper.padding)/root.width*100)));
+                    }
+                }
+            }
             QQC2.ToolButton { icon.name: "configure"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Keyboard settings"); visible: root.auxiliaryUiAllowed; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
             QQC2.ToolButton { icon.name: "go-down"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
         }
         PcKeyboard {
+            id: normalPc
             anchors.fill: inputPanel
             visible: root.useNativePc
             target: thing
@@ -1552,8 +1616,7 @@ InputPanelWindow {
                 if (!PlasmaKeyboardSettings.floatingKeyboard) {
                     return full;
                 }
-                const share = root.width * PlasmaKeyboardSettings.floatingKeyboardWidthPercent / 100;
-                return Math.min(full, share - panelWrapper.padding * 2);
+                return panelWrapper.floatingSize.width;
             }
 
             focusPolicy: Qt.NoFocus
@@ -1966,12 +2029,7 @@ InputPanelWindow {
         function onPressed(touchPoints) {
             swipeInput.begin(touchPoints.length > 0 ? touchPoints[0] : null);
             editingTouch.begin(touchPoints.length>0?touchPoints[0]:null);
-            // In the floating mode the whole panel can be dragged around. A
-            // gesture that starts on a letter is a swipe, not a drag: without
-            // this the window follows the finger and the swipe never happens.
-            if (swipeInput.startKey !== null || editingTouch.code!==0) {
-                panelDrag.enabled = false;
-            }
+
         }
         function onUpdated(touchPoints) {
             if (touchPoints.length > 0) {
@@ -1982,12 +2040,10 @@ InputPanelWindow {
         function onReleased(touchPoints) {
             swipeInput.end();
             editingTouch.end();
-            panelDrag.enabled = panelWrapper.floating;
         }
         function onCanceled(touchPoints) {
             swipeInput.cancel();
             editingTouch.end();
-            panelDrag.enabled = panelWrapper.floating;
         }
     }
 

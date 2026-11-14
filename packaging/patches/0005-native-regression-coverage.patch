@@ -1,5 +1,5 @@
 diff --git a/autotests/CMakeLists.txt b/autotests/CMakeLists.txt
-index e66076607305b4221c74600da7beab1bd1b95049..7fc072eef79dd609f7c319139d3a672b52e74a83 100644
+index e66076607305b4221c74600da7beab1bd1b95049..58095602319ea63c422c1a7faba1e87ce94b2fa8 100644
 --- a/autotests/CMakeLists.txt
 +++ b/autotests/CMakeLists.txt
 @@ -2,17 +2,24 @@
@@ -28,7 +28,7 @@ index e66076607305b4221c74600da7beab1bd1b95049..7fc072eef79dd609f7c319139d3a672b
      Qt::Gui
      Qt::GuiPrivate
      Qt::Test
-@@ -24,4 +31,324 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
+@@ -24,4 +31,325 @@ qt6_generate_wayland_protocol_server_sources(mockinputmethodcompositor
      FILES
          ${WaylandProtocols_DATADIR}/unstable/input-method/input-method-unstable-v1.xml
          ${Wayland_DATADIR}/wayland.xml
@@ -79,6 +79,7 @@ index e66076607305b4221c74600da7beab1bd1b95049..7fc072eef79dd609f7c319139d3a672b
 +# These tests evaluate the actual layout JS bindings without desktop input.
 +find_program(NODE_EXECUTABLE NAMES node nodejs)
 +if(NODE_EXECUTABLE)
++    add_test(NAME floatingpanelmetricstest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/floatingpanelmetricstest.mjs)
 +    add_test(NAME layoutshifttest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/layoutshifttest.mjs)
 +    add_test(NAME localeresolvertest COMMAND ${NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/localeresolvertest.mjs)
 +endif()
@@ -999,6 +1000,37 @@ index 0000000000000000000000000000000000000000..a4b0ff885d301f49da702554fd07a7e3
 +
 +QTEST_GUILESS_MAIN(FileIdentityTest)
 +#include "fileidentitytest.moc"
+diff --git a/autotests/floatingpanelmetricstest.mjs b/autotests/floatingpanelmetricstest.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f6260dd35f27458a0004af335ff3d1b4118fea13
+--- /dev/null
++++ b/autotests/floatingpanelmetricstest.mjs
+@@ -0,0 +1,25 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++import fs from 'node:fs';
++import vm from 'node:vm';
++import assert from 'node:assert/strict';
++const source=fs.readFileSync(new URL('../src/qml/FloatingPanelMetrics.js',import.meta.url),'utf8');
++const context=vm.createContext({});vm.runInContext(source.replace('.pragma library',''),context);
++assert.equal(context.packedHeight([{width:90,height:20},{width:90,height:20},{width:90,height:20}],200,5),45);
++assert.equal(context.packedHeight([{width:500,height:20}],100,5),20);
++assert.equal(context.packedHeight([],100,5),0);
++const tools=Array.from({length:7},()=>({width:60,height:34}));
++const actions=Array.from({length:6},()=>({width:75,height:34}));
++for(const [width,height] of [[800,600],[600,400],[1920,1080],[800,1280]]){
++    for(const requested of [1,200,width*0.8,10000]){
++        const result=context.fit(width,height,12,requested,340,2.6,tools,actions,4,42);
++        assert(result.width>=result.minimum&&result.width<=result.maximum);
++        assert(result.width+48<=width);
++        assert(result.width/2.6+result.chrome+48<=height+0.001);
++        assert.equal(context.fit(width,height,12,1,340,2.6,tools,actions,4,42).width,result.minimum);
++    }
++}
++const wide=context.fit(1920,1080,12,1,800,2.6,tools,actions,4,42);
++assert.equal(wide.minimum,800,'PC keys retain the requested comfortable minimum');
++const invalid=context.fit(NaN,Infinity,-5,NaN,NaN,NaN,[],[],NaN,NaN);
++assert(Number.isFinite(invalid.width)&&invalid.width>0);
++console.log('Floating panel production metrics: wrapping, comfortable bounds, screen fit and invalid data passed');
 diff --git a/autotests/focusededitabletrackertest.cpp b/autotests/focusededitabletrackertest.cpp
 new file mode 100644
 index 0000000000000000000000000000000000000000..e863aae5d705969a16964451ed3ded7e37391a52
@@ -1594,10 +1626,10 @@ index 0000000000000000000000000000000000000000..fd268aa0c09142c52a7edd27f9bef714
 +#include "kwinversiontest.moc"
 diff --git a/autotests/laptopcontrollertest.cpp b/autotests/laptopcontrollertest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..6469dd3e5be8f90b21d0e2edeaa46222ce74ef5f
+index 0000000000000000000000000000000000000000..57560b585e765eb0a346c2af6c381bf0a7bb79d3
 --- /dev/null
 +++ b/autotests/laptopcontrollertest.cpp
-@@ -0,0 +1,443 @@
+@@ -0,0 +1,444 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "laptopcontroller.h"
 +#include "protocol.h"
@@ -1712,12 +1744,13 @@ index 0000000000000000000000000000000000000000..6469dd3e5be8f90b21d0e2edeaa46222
 +        controller.m_options[QStringLiteral("arrowRow")]=true;
 +        controller.m_options[QStringLiteral("navigationRow")]=false;
 +        controller.m_options[QStringLiteral("systemRow")]=false;
-+        const auto navigation=controller.navigationRows();QCOMPARE(navigation.size(),4);
++        const auto navigation=controller.navigationRows();QCOMPARE(navigation.size(),5);
 +        const auto codes=[](const QVariant& row){QList<uint> result;for(const auto& key:row.toList())result.append(key.toMap().value(QStringLiteral("code")).toUInt());return result;};
 +        QCOMPARE(codes(navigation.at(0)),QList<uint>({110,102,104}));
 +        QCOMPARE(codes(navigation.at(1)),QList<uint>({111,107,109}));
-+        QCOMPARE(codes(navigation.at(2)),QList<uint>({0,103,0}));
-+        QCOMPARE(codes(navigation.at(3)),QList<uint>({105,108,106}));
++        QCOMPARE(codes(navigation.at(2)),QList<uint>({0,0,0}));
++        QCOMPARE(codes(navigation.at(3)),QList<uint>({0,103,0}));
++        QCOMPARE(codes(navigation.at(4)),QList<uint>({105,108,106}));
 +        for(const auto& row:controller.rows())for(uint code:codes(row))QVERIFY(!QList<uint>({102,103,104,105,106,107,108,109,110,111}).contains(code));
 +        controller.m_options[QStringLiteral("arrowRow")]=false;QVERIFY(controller.navigationRows().isEmpty());
 +        controller.m_options[QStringLiteral("navigationRow")]=true;QCOMPARE(controller.navigationRows().size(),2);
@@ -2754,7 +2787,7 @@ index 0000000000000000000000000000000000000000..3396b6a37ca2157d176821991f697861
 +grep -q 'LaptopController::instance()->active()' src/main.cpp
 +! grep -q 'setEnabled(true)' src/laptop/laptopcontroller.cpp
 diff --git a/autotests/mockinputmethodcompositor.cpp b/autotests/mockinputmethodcompositor.cpp
-index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d0c2964cb 100644
+index 09177e70bb2d03fc2e882c04564237795991181b..479aa71c22657155ae3cd32ff5a316f96a70cf2d 100644
 --- a/autotests/mockinputmethodcompositor.cpp
 +++ b/autotests/mockinputmethodcompositor.cpp
 @@ -5,6 +5,13 @@
@@ -3129,7 +3162,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d
  
          QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
          tapInputPanel(qKeyCenter);
-@@ -746,6 +945,51 @@ private Q_SLOTS:
+@@ -746,6 +945,105 @@ private Q_SLOTS:
          QCOMPARE(commitStringSpy.first().first().toString(), QStringLiteral("q"));
      }
  
@@ -3178,10 +3211,64 @@ index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d
 +        QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
 +    }
 +
++    void testNormalModifiersAreMomentary_data()
++    {
++        QTest::addColumn<QString>("name");
++        QTest::addColumn<uint>("mask");
++        QTest::addColumn<bool>("modifierReleasedFirst");
++        for (const auto &entry : {std::pair{QStringLiteral("ctrl"), 4u}, std::pair{QStringLiteral("alt"), 8u}, std::pair{QStringLiteral("meta"), 64u}}) {
++            for (bool first : {false, true}) {
++                const auto label = (entry.first + (first ? QStringLiteral("-modifier-first") : QStringLiteral("-letter-first"))).toLatin1();
++                QTest::newRow(label.constData()) << entry.first << entry.second << first;
++            }
++        }
++    }
++    void testNormalModifiersAreMomentary()
++    {
++        QFETCH(QString, name); QFETCH(uint, mask); QFETCH(bool, modifierReleasedFirst);
++        const auto modifier = editingPosition(name);
++        QVERIFY2(modifier.x()>0 && modifier.y()>0, qPrintable(QStringLiteral("Missing normal modifier: ")+name));
++        QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));QVERIFY(file.open(QIODevice::ReadOnly));
++        const auto geometry=QJsonDocument::fromJson(file.readAll()).object();
++        const QPointF letter(geometry.value(QStringLiteral("x")).toDouble(-1),geometry.value(QStringLiteral("y")).toDouble(-1));
++        QVERIFY(letter.x()>0 && letter.y()>0);
++        auto *context=m_inputMethod->context();auto *surface=m_inputPanel->surface();QVERIFY(surface);
++        // Preserve an independent physical Shift and Caps lock, including when
++        // the modifier finger is released before the completing letter.
++        context->keyboard()->sendModifierState(1,0,2,0);
++        wl_display_flush_clients(m_compositor->display());QTest::qWait(80);
++        QSignalSpy modifiers(context,&InputMethodContext::modifiersReceived);
++        QSignalSpy keys(context,&InputMethodContext::keyReceived);
++        auto contact=[&](int id,const QPointF &point,bool pressed){
++            if(pressed)m_seat->sendTouchPointPressed(surface,id,point);
++            else m_seat->sendTouchPointReleased(surface,id,point);
++            m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());QTest::qWait(35);
++        };
++        for(int tap=0;tap<2;++tap){
++            modifiers.clear();contact(0,modifier,true);
++            QTRY_VERIFY(!modifiers.isEmpty());QCOMPARE(modifiers.last()[0].toUInt(),1u|mask);
++            contact(0,modifier,false);QTRY_COMPARE(modifiers.last()[0].toUInt(),1u);
++            QCOMPARE(modifiers.last()[2].toUInt(),2u); // Neither tap latches.
++        }
++        keys.clear();modifiers.clear();contact(0,modifier,true);contact(1,letter,true);
++        if(modifierReleasedFirst){contact(0,modifier,false);contact(1,letter,false);}
++        else {
++            contact(1,letter,false);
++            QTRY_VERIFY(!keys.isEmpty());QCOMPARE(modifiers.last()[0].toUInt(),1u|mask);
++            // A second letter with the same held modifier must remain a chord.
++            contact(1,letter,true);contact(1,letter,false);contact(0,modifier,false);
++        }
++        QTRY_COMPARE(keys.size(),modifierReleasedFirst?2:4);
++        for(int i=0;i<keys.size();++i){QCOMPARE(keys[i][0].toUInt(),uint(KEY_Q));QCOMPARE(keys[i][1].toUInt(),uint(i%2==0?WL_KEYBOARD_KEY_STATE_PRESSED:WL_KEYBOARD_KEY_STATE_RELEASED));}
++        QTRY_COMPARE(modifiers.last()[0].toUInt(),1u);
++        QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
++        context->keyboard()->sendModifierState(0,0,0,0);wl_display_flush_clients(m_compositor->display());QTest::qWait(50);
++    }
++
      void testKeyboardNavigationCommitsCharacter()
      {
          if (!m_inputPanel->surface()) {
-@@ -760,9 +1004,15 @@ private Q_SLOTS:
+@@ -760,9 +1058,15 @@ private Q_SLOTS:
          QSignalSpy commitStringSpy(m_inputMethod->context(), &InputMethodContext::commitStringChanged);
          QSignalSpy keysymSpy(m_inputMethod->context(), &InputMethodContext::keysymReceived);
  
@@ -3200,7 +3287,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d
          sendKey(KEY_ENTER, 100);
  
          QVERIFY(commitStringSpy.count() || commitStringSpy.wait());
-@@ -996,14 +1246,57 @@ private Q_SLOTS:
+@@ -996,14 +1300,57 @@ private Q_SLOTS:
          QCOMPARE(keySpy.at(last).at(1).toUInt(), static_cast<uint32_t>(WL_KEYBOARD_KEY_STATE_RELEASED));
      }
  
@@ -3259,7 +3346,7 @@ index 09177e70bb2d03fc2e882c04564237795991181b..2fe3f6313102d02ad6bf8b4d5250200d
          }
      }
  
-@@ -1060,6 +1353,10 @@ private:
+@@ -1060,6 +1407,10 @@ private:
      std::unique_ptr<QWaylandXdgShell> m_xdgShell;
      std::unique_ptr<InputMethodV1> m_inputMethod;
      std::unique_ptr<InputPanelV1> m_inputPanel;
@@ -3643,10 +3730,10 @@ index 0000000000000000000000000000000000000000..e9222c65a39ab3892302053d3a4304de
 +#include "panelstubgeometrytest.moc"
 diff --git a/autotests/pckeyboardtouchtest.cpp b/autotests/pckeyboardtouchtest.cpp
 new file mode 100644
-index 0000000000000000000000000000000000000000..d1e24549460c6d7279502c994e444aeb0744cd28
+index 0000000000000000000000000000000000000000..e909c99216e7ff2f266b6ec41c88175096ac0cf5
 --- /dev/null
 +++ b/autotests/pckeyboardtouchtest.cpp
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,132 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "touchdeliverypolicy.h"
 +#include <QColor>
@@ -3739,8 +3826,12 @@ index 0000000000000000000000000000000000000000..d1e24549460c6d7279502c994e444aeb
 +        QScopedPointer<QObject> object(component.create());auto* keyboard=qobject_cast<QQuickItem*>(object.data());QVERIFY2(keyboard,qPrintable(component.errorString()));
 +        keyboard->setParentItem(window.contentItem());keyboard->setSize(QSizeF(800,300));keyboard->setProperty("auxiliaryAllowed",true);
 +        window.show();QVERIFY(QTest::qWaitForWindowExposed(&window));QCoreApplication::processEvents();
-+        const auto item=[&](uint code){return keyboard->findChild<QQuickItem*>(QStringLiteral("ukeKey_%1").arg(code));};
-+        for(uint code:{30U,48U,125U,42U,103U,105U,108U,106U,104U,109U})QVERIFY(item(code));
++        const auto item=[&](uint code)->QQuickItem*{
++            const auto name=QStringLiteral("ukeKey_%1").arg(code);QList<QQuickItem*> pending{keyboard};
++            while(!pending.isEmpty()){auto* next=pending.takeLast();if(next->objectName()==name)return next;pending.append(next->childItems());}
++            return nullptr;
++        };
++        for(uint code:{30U,48U,125U,42U,103U,105U,108U,106U,104U,109U})QVERIFY2(item(code),qPrintable(QStringLiteral("Missing visual key %1").arg(code)));
 +        const auto* device=QTest::createTouchDevice();ulong timestamp=1;
 +        const auto centre=[&](uint code){auto* key=item(code);return key->mapToItem(window.contentItem(),QPointF(key->width()/2,key->height()/2));};
 +        const auto event=[&](std::initializer_list<std::tuple<int,QEventPoint::State,QPointF>> states){

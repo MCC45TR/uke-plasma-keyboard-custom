@@ -1421,10 +1421,10 @@ index 0000000000000000000000000000000000000000..4c66c3bb4c577d06deff13df8ca79c7b
 +}
 +}
 diff --git a/src/inputlisteneritem.cpp b/src/inputlisteneritem.cpp
-index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb41ca0358 100644
+index ca6bb6a44ca759666f3171b733b37bf3ae93947d..712b19b6681a38b2de83fb4f4c8e6b269a80e360 100644
 --- a/src/inputlisteneritem.cpp
 +++ b/src/inputlisteneritem.cpp
-@@ -7,25 +7,199 @@
+@@ -7,25 +7,201 @@
  */
  
  #include "inputlisteneritem.h"
@@ -1449,6 +1449,10 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +#include <QRegularExpression>
  #include <QTextFormat>
 +#include <QTimer>
++#include <QTouchEvent>
++#include <functional>
++#include <algorithm>
++#include <utility>
  
 +#include <atomic>
  #include <set>
@@ -1511,8 +1515,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +void InputListenerItem::requestAutomaticShow(bool force, bool completedHold)
 +{
 +    if (!m_input.hasContext() || !m_sessionLockState.allowsPredictions()) return;
-+    if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
-+        (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
++    if (auto *laptop = LaptopController::instance(); laptop && laptop->active()) return;
 +    if (!force && !completedHold && PlasmaKeyboardSettings::self()->showOnLongTap()) return;
 +    const auto generation = ++m_activationGeneration;
 +    if (force) {
@@ -1524,8 +1527,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +    UkeKeyboard::requestTouchActivation(this, [this, generation](bool allowed) {
 +        if (!allowed || generation != m_activationGeneration || !m_input.hasContext() ||
 +            !m_sessionLockState.allowsPredictions()) return;
-+        if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
-+            (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
++        if (auto *laptop = LaptopController::instance(); laptop && laptop->active()) return;
 +        m_hiddenByUser = false;
 +        showInputPanel(window());
 +    });
@@ -1624,7 +1626,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
  Q_GLOBAL_STATIC_WITH_ARGS(const std::set<int>,
                            IGNORED_KEYS,
                            {
-@@ -48,8 +222,12 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QList<Qt::Key>, KEYBOARD_NAVIGATION_ACTIVE_CAPTU
+@@ -48,8 +224,12 @@ Q_GLOBAL_STATIC_WITH_ARGS(const QList<Qt::Key>, KEYBOARD_NAVIGATION_ACTIVE_CAPTU
  
  InputListenerItem::InputListenerItem()
      : m_input(&(*s_im))
@@ -1637,21 +1639,26 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
      // Grab and listen to physical keyboard input
      m_input.setGrabbing(true);
  
-@@ -58,35 +236,175 @@ InputListenerItem::InputListenerItem()
+@@ -58,35 +238,181 @@ InputListenerItem::InputListenerItem()
      m_overlayController->registerTrigger(new PrefixQueryTrigger(m_overlayController));
      m_overlayController->registerTrigger(new TextExpansionTrigger(m_overlayController));
  
-+    m_modifierHoldTimer = new QTimer(this);
-+    m_modifierHoldTimer->setSingleShot(true);
-+    connect(m_modifierHoldTimer, &QTimer::timeout, this, [this] {
-+        // Still held past the threshold: a genuine physical hold, not a tap.
-+        // The uinput key is already pressed for real (it went down the
-+        // moment the tap latched it, in keyPressEvent()); just remember that
-+        // releasing the on-screen key now must end the hold for real (see
-+        // keyReleaseEvent()), instead of leaving it latched for whatever is
-+        // typed next.
-+        m_modifierHeldForReal = true;
-+    });
++    qApp->installEventFilter(this);
++    connect(&m_input, &InputPlugin::contextAboutToChange, this, &InputListenerItem::releaseNormalKeys);
++    if (auto *laptop = LaptopController::instance()) {
++        connect(laptop, &LaptopController::stateChanged, this, [this, laptop, wasActive = laptop->active()]() mutable {
++            if (wasActive == laptop->active()) return;
++            wasActive = laptop->active();
++            ++m_activationGeneration;
++            m_touchHold.disarm();
++            m_longPressNeedsHitTest = false;
++            releaseNormalKeys();
++            if (!laptop->active()) {
++                m_hiddenByUser = true;
++                QGuiApplication::inputMethod()->hide();
++            }
++        });
++    }
 +
 +    // Applications drop and re-take the text input for a moment on all kinds of
 +    // things (a click elsewhere in the window, a popup, a cursor move), so the
@@ -1673,6 +1680,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +    });
 +
 +    connect(&m_sessionLockState, &SessionLockState::unlocked, this, [this] {
++        releaseNormalKeys();
 +        ++m_activationGeneration;
 +        // The panel belongs to the lock-screen field, not the desktop field
 +        // which may acquire focus immediately after authentication.
@@ -1689,6 +1697,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +        // A lock notification is not an input-panel request. In particular,
 +        // the current context may still belong to an ordinary desktop field.
 +        if (!m_sessionLockState.isKnown() || m_sessionLockState.isPreparingLock()) {
++            releaseNormalKeys();
 +            ++m_activationGeneration;
 +            m_hideDelay->stop();
 +            m_touchHold.disarm();
@@ -1724,8 +1733,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +            return;
 +        }
 +
-+        if(auto *laptop=LaptopController::instance();laptop && (laptop->active() ||
-+           (laptop->available() && laptop->options().value("presentation")==QLatin1String("dynamic")))) {
++        if(auto *laptop=LaptopController::instance();laptop && laptop->active()) {
 +            m_hideDelay->stop();m_touchHold.disarm();m_longPressNeedsHitTest=false;
 +            m_hiddenByUser=!laptop->active();
 +            QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
@@ -1823,7 +1831,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
              }
  
              // Update vkbd input method only if the virtual keyboard panel is shown
-@@ -95,22 +413,81 @@ InputListenerItem::InputListenerItem()
+@@ -95,22 +421,82 @@ InputListenerItem::InputListenerItem()
              }
          }
      });
@@ -1884,6 +1892,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 -        window()->setVisible(QGuiApplication::inputMethod()->isVisible());
 +        const bool visible = QGuiApplication::inputMethod()->isVisible();
 +        if (!visible) {
++            releaseNormalKeys();
 +            ++m_activationGeneration;
 +            // The keyboard was hidden (by the user, or because the input
 +            // context went away). Remember it, so that a text field which keeps
@@ -1910,7 +1919,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
              keyEvent->accept();
              return;
          }
-@@ -134,6 +511,7 @@ InputListenerItem::InputListenerItem()
+@@ -134,6 +520,7 @@ InputListenerItem::InputListenerItem()
          }
      });
      connect(&m_input, &InputPlugin::keyReleased, this, [this](QKeyEvent *keyEvent) {
@@ -1918,7 +1927,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
          // qCDebug(PlasmaKeyboard) << "keyReleased. keycode:" << keyEvent->key() << "text:" << keyEvent->text();
  
          // Let the overlay controller handle release events (e.g. diacritics, emoji)
-@@ -187,9 +565,153 @@ OverlayController *InputListenerItem::overlayController() const
+@@ -187,9 +574,153 @@ OverlayController *InputListenerItem::overlayController() const
      return m_overlayController;
  }
  
@@ -2074,7 +2083,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
  }
  
  QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
-@@ -208,7 +730,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
+@@ -208,7 +739,7 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
          return m_input.surroundingText();
      case Qt::ImHints: {
          const auto imHints = m_input.contentHint();
@@ -2083,7 +2092,7 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
  
          // Disable Qt VirtualKeyboard's hunspell plugin
          // It deals poorly with current external cursor position change
-@@ -235,6 +757,12 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
+@@ -235,6 +766,12 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
          if (imHints & InputPlugin::content_hint_sensitive_data) {
              qtHints |= Qt::ImhSensitiveData;
          }
@@ -2096,22 +2105,108 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
          if (imHints & InputPlugin::content_hint_latin) {
              qtHints |= Qt::ImhPreferLatin;
          }
-@@ -330,12 +858,246 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
+@@ -330,12 +867,242 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
      return {};
  }
  
-+void InputListenerItem::armModifierHoldTimer(Qt::Key key)
++InputListenerItem::~InputListenerItem()
 +{
-+    m_pendingModifierKey = key;
-+    m_modifierHeldForReal = false;
-+    m_modifierHoldTimer->start(PlasmaKeyboardSettings::self()->modifierHoldThresholdMs());
++    releaseNormalKeys();
 +}
 +
-+void InputListenerItem::cancelModifierHoldTimer()
++void InputListenerItem::setNativePcInput(bool native)
 +{
-+    m_modifierHoldTimer->stop();
-+    m_pendingModifierKey = Qt::Key(0);
-+    m_modifierHeldForReal = false;
++    if (m_nativePcInput == native) return;
++    releaseNormalKeys();
++    m_nativePcInput = native;
++}
++
++bool InputListenerItem::touchHoldsModifier(int key) const
++{
++    return std::any_of(m_modifierTouches.cbegin(), m_modifierTouches.cend(), [key](int held) { return held == key; });
++}
++
++int InputListenerItem::modifierAt(const QPointF &position) const
++{
++    if (!window()) return 0;
++    std::function<int(QQuickItem *)> find = [&](QQuickItem *item) -> int {
++        if (!item->isVisible() || !item->isEnabled() || item->opacity() <= 0) return 0;
++        const auto local = item->mapFromScene(position);
++        if (item->clip() && !item->contains(local)) return 0;
++        const auto children = item->childItems();
++        for (auto it = children.crbegin(); it != children.crend(); ++it) {
++            if (const int key = find(*it)) return key;
++        }
++        const int key = item->property("key").toInt();
++        return (key == Qt::Key_Control || key == Qt::Key_Alt || key == Qt::Key_Meta) && item->contains(local) ? key : 0;
++    };
++    return find(window()->contentItem());
++}
++
++bool InputListenerItem::eventFilter(QObject *watched, QEvent *event)
++{
++    if (m_nativePcInput || watched != window()) return false;
++    if (event->type() == QEvent::TouchCancel) {
++        releaseNormalKeys();
++    } else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd) {
++        const auto *touch = static_cast<QTouchEvent *>(event);
++        for (const auto &point : touch->points()) {
++            if (point.state() == QEventPoint::State::Pressed) {
++                if (const int key = modifierAt(point.position())) {
++                    m_modifierTouches.insert(point.id(), key);
++                    m_touchOwnedModifiers.insert(key);
++                    setModifierHeld(static_cast<Qt::Key>(key), true);
++                }
++            } else if (point.state() == QEventPoint::State::Released && m_modifierTouches.contains(point.id())) {
++                const int key = m_modifierTouches.take(point.id());
++                if (!touchHoldsModifier(key)) {
++                    setModifierHeld(static_cast<Qt::Key>(key), false);
++                    if (!m_engineModifiers.contains(key)) m_touchOwnedModifiers.remove(key);
++                }
++            }
++        }
++    }
++    return false; // Observe ownership; Qt still delivers every touch normally.
++}
++
++void InputListenerItem::syncModifiers(Qt::KeyboardModifiers extra)
++{
++    if (m_uinput && m_uinput->isValid()) return;
++    const auto base = m_input.modifierState();
++    const auto *held = KeyboardModifiers::instance();
++    const uint32_t depressed = base[0] | (held->ctrl() ? m_input.controlMask() : 0)
++        | (held->alt() ? m_input.altMask() : 0) | (held->meta() ? m_input.metaMask() : 0)
++        | ((extra & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
++    m_input.sendModifiers(depressed, base[1], base[2], base[3]);
++}
++
++void InputListenerItem::setModifierHeld(Qt::Key key, bool held)
++{
++    auto *state = KeyboardModifiers::instance();
++    switch (key) {
++    case Qt::Key_Control: state->setCtrl(held); break;
++    case Qt::Key_Alt: state->setAlt(held); break;
++    case Qt::Key_Meta: state->setMeta(held); break;
++    default: return;
++    }
++    if (held) pressUinputModifier(key);
++    else releaseUinputModifierIfHeld(key);
++    syncModifiers();
++}
++
++void InputListenerItem::releaseNormalKeys()
++{
++    for (const auto &key : std::as_const(m_modifiedKeys)) {
++        if (key.uinput && m_uinput) m_uinput->releaseKey(key.code);
++        else m_input.key(InputPlugin::Released, key.code);
++    }
++    m_modifiedKeys.clear();
++    m_modifierTouches.clear();
++    m_touchOwnedModifiers.clear();
++    m_engineModifiers.clear();
++    releaseAllHeldUinputModifiers();
++    KeyboardModifiers::instance()->reset();
++    syncModifiers();
 +}
 +
 +void InputListenerItem::pressUinputModifier(Qt::Key key)
@@ -2181,66 +2276,27 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
 +
 +bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 +{
-+    auto *modifiers = KeyboardModifiers::instance();
-+    if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
-+        return false;
-+    }
-+
-+    const QList<xkb_keysym_t> keysyms = QXkbCommon::toKeysym(event);
-+    if (keysyms.isEmpty()) {
-+        return false;
-+    }
-+
-+    const uint32_t keycode = m_input.keycodeForKeysym(keysyms.first());
-+    if (keycode == 0) {
-+        return false;
-+    }
-+
-+    if (m_uinput && m_uinput->isValid()) {
-+        // Any Ctrl/Alt/Meta combination can be a compositor-global shortcut
-+        // (Alt+Tab, Meta+L, Meta+D, the application launcher...), which
-+        // input-method-v1's client-scoped key forwarding cannot reach -- see
-+        // UinputKeyboard's own documentation. Every latched modifier is
-+        // already held down for real through that same uinput device (see
-+        // keyPressEvent()); send the completing key the same way, so the
-+        // compositor sees a real hardware key combination -- this also still
-+        // reaches an ordinary application shortcut like Ctrl+C, since the
-+        // compositor forwards a real key to whichever client has keyboard
-+        // focus. keycodeForKeysym() already returns an evdev scancode (see
-+        // its own comment), so it can be sent as-is.
-+        if (press) {
-+            m_uinput->pressKey(keycode);
-+        } else {
-+            m_uinput->releaseKey(keycode);
-+            releaseAllHeldUinputModifiers();
-+            modifiers->reset();
-+            cancelModifierHoldTimer();
-+        }
++    // The release follows the original route even if the modifier finger was
++    // lifted first. Releasing a letter must never release other held keys.
++    if (!press) {
++        const auto found = m_modifiedKeys.find(event->key());
++        if (found == m_modifiedKeys.end()) return false;
++        const auto key = *found;
++        m_modifiedKeys.erase(found);
++        if (key.uinput && m_uinput) m_uinput->releaseKey(key.code);
++        else { m_input.key(InputPlugin::Released, key.code); syncModifiers(); }
 +        return true;
 +    }
-+
-+    // Fallback for when /dev/uinput could not be opened: the older
-+    // input-method-v1 path, which only reaches the focused client's own
-+    // shortcuts (e.g. Ctrl+C), not compositor-global ones.
-+    //
-+    // Shift can take part in the combination (e.g. Ctrl+Shift+key).
-+    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
-+        | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
-+
-+    if (press) {
-+        // Set the modifier state before pressing the key so the compositor
-+        // delivers the shortcut (e.g. Ctrl+C) to the client.
-+        m_input.sendModifiers(depressed, 0, 0, 0);
-+        m_input.key(InputPlugin::Pressed, keycode);
-+    } else {
-+        m_input.key(InputPlugin::Released, keycode);
-+        m_input.sendModifiers(0, 0, 0, 0);
-+        // The modifiers only apply to a single key press.
-+        modifiers->reset();
-+        // A hold timer may still be running for this modifier (it was pressed
-+        // just before this combination completed); it must not fire later.
-+        cancelModifierHoldTimer();
-+    }
++    if (m_modifiedKeys.contains(event->key())) return true;
++    const auto *held = KeyboardModifiers::instance();
++    if (!held->ctrl() && !held->alt() && !held->meta()) return false;
++    const auto symbols = QXkbCommon::toKeysym(event);
++    const uint32_t code = symbols.isEmpty() ? 0 : m_input.keycodeForKeysym(symbols.first());
++    if (!code) return false;
++    const bool uinput = m_uinput && m_uinput->isValid();
++    m_modifiedKeys.insert(event->key(), {code, uinput});
++    if (uinput) m_uinput->pressKey(code);
++    else { syncModifiers(event->modifiers()); m_input.key(InputPlugin::Pressed, code); }
 +    return true;
 +}
 +
@@ -2277,60 +2333,9 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
          return;
      }
  
-+    // Any other key being pressed while a modifier's hold timer is still
-+    // pending settles what the tap was for: a combination, not a hold. Stop
-+    // the timer so it cannot fire later and undo the latch out from under a
-+    // combination that just has not completed yet -- sliding a finger from
-+    // the modifier straight onto the next key without lifting it in between
-+    // (a normal, fast typing gesture) never reaches this item's own
-+    // keyReleaseEvent for the modifier, so that is not a reliable place to
-+    // rely on alone. The latch itself is left untouched.
-+    if (event->key() != Qt::Key_Control && event->key() != Qt::Key_Alt && event->key() != Qt::Key_Meta && m_modifierHoldTimer->isActive()) {
-+        m_modifierHoldTimer->stop();
-+    }
-+
-+    // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
-+    // tap toggles the latch, which stays engaged like a lock key -- applying
-+    // to whatever combination follows, however long that takes -- until it is
-+    // either completed (handleModifiedKey()) or cancelled by tapping the same
-+    // key again. Right away rather than waiting for a hold, the tap also
-+    // presses the modifier for real through the uinput device, so it already
-+    // behaves like a physical modifier held down, for games/apps that read
-+    // the raw key state and for compositor-global shortcuts alike (Alt+Tab,
-+    // Meta+L...), which only fire when the compositor sees a real key down
-+    // for the whole combination; see UinputKeyboard's and
-+    // handleModifiedKey()'s own documentation. If the key is still physically
-+    // held when the hold timer fires, that is a genuine hold rather than a
-+    // tap-then-latch, and keyReleaseEvent() ends it the moment the finger
-+    // lifts instead of leaving it latched.
-+    auto *modifiers = KeyboardModifiers::instance();
 +    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-+        const auto key = static_cast<Qt::Key>(event->key());
-+        bool nowLatched = false;
-+        switch (key) {
-+        case Qt::Key_Control:
-+            modifiers->setCtrl(!modifiers->ctrl());
-+            nowLatched = modifiers->ctrl();
-+            break;
-+        case Qt::Key_Alt:
-+            modifiers->setAlt(!modifiers->alt());
-+            nowLatched = modifiers->alt();
-+            break;
-+        case Qt::Key_Meta:
-+            modifiers->setMeta(!modifiers->meta());
-+            nowLatched = modifiers->meta();
-+            break;
-+        default:
-+            break;
-+        }
-+        if (nowLatched) {
-+            pressUinputModifier(key);
-+            armModifierHoldTimer(key);
-+        } else {
-+            // A second tap while already latched cancels it.
-+            releaseUinputModifierIfHeld(key);
-+            cancelModifierHoldTimer();
-+        }
++        m_engineModifiers.insert(event->key());
++        if (!m_touchOwnedModifiers.contains(event->key())) setModifierHeld(static_cast<Qt::Key>(event->key()), true);
 +        event->accept();
 +        return;
 +    }
@@ -2343,78 +2348,33 @@ index ca6bb6a44ca759666f3171b733b37bf3ae93947d..38eb708b8b4d0dcc592f52f61ffbe4eb
      const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);
      for (auto key : keys) {
          // Simulate key press only if it's not textual
-@@ -351,6 +1113,66 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
+@@ -351,6 +1118,21 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
          return;
      }
  
 +    if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-+        const auto key = static_cast<Qt::Key>(event->key());
-+        if (m_modifierHeldForReal && key == m_pendingModifierKey) {
-+            // A genuine hold (the timer fired while still touching, see
-+            // armModifierHoldTimer()): releasing the on-screen key now ends
-+            // it for real, instead of leaving it latched for whatever is
-+            // typed next.
-+            auto *modifiers = KeyboardModifiers::instance();
-+            switch (key) {
-+            case Qt::Key_Control:
-+                modifiers->setCtrl(false);
-+                break;
-+            case Qt::Key_Alt:
-+                modifiers->setAlt(false);
-+                break;
-+            case Qt::Key_Meta:
-+                modifiers->setMeta(false);
-+                break;
-+            default:
-+                break;
-+            }
-+            releaseUinputModifierIfHeld(key);
-+            m_pendingModifierKey = Qt::Key(0);
-+            m_modifierHeldForReal = false;
++        m_engineModifiers.remove(event->key());
++        if (m_touchOwnedModifiers.contains(event->key())) {
++            if (!touchHoldsModifier(event->key())) m_touchOwnedModifiers.remove(event->key());
 +        } else {
-+            // A quick tap: the toggle (and the uinput press it made, if it
-+            // latched) already happened on press -- see keyPressEvent(). The
-+            // hold timer must not fire later and mark this as a hold when
-+            // the finger already lifted, so stop it. The latch itself is
-+            // left alone: it stays engaged, like a lock key, until a
-+            // combination completes (handleModifiedKey()) or the same key is
-+            // tapped again to cancel it (keyPressEvent()) -- it does not
-+            // expire on its own.
-+            m_modifierHoldTimer->stop();
-+            m_pendingModifierKey = Qt::Key(0);
-+            m_modifierHeldForReal = false;
++            setModifierHeld(static_cast<Qt::Key>(event->key()), false);
 +        }
 +        event->accept();
 +        return;
 +    }
-+
-+    auto *modifiers = KeyboardModifiers::instance();
-+    const bool wasLatched = modifiers->ctrl() || modifiers->alt() || modifiers->meta();
-+
 +    if (handleModifiedKey(event, false)) {
 +        event->accept();
 +        return;
-+    }
-+
-+    if (wasLatched) {
-+        // The combination completes on release; clear the latch even if the key
-+        // could not be mapped, so the modifier never gets stuck.
-+        modifiers->reset();
-+        cancelModifierHoldTimer();
-+        // handleModifiedKey() declined (this key could not be mapped): if a
-+        // modifier was already pressed for real through uinput, release it
-+        // too, so it never gets stuck down.
-+        releaseAllHeldUinputModifiers();
 +    }
 +
      const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);
      for (auto key : keys) {
          if (event->text().isEmpty() || key == XKB_KEY_Return) { // (return is technically "\n")
 diff --git a/src/inputlisteneritem.h b/src/inputlisteneritem.h
-index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947ee6ef575 100644
+index 1478c67b92fda5f6bf44fbb674b68397d77251c0..35b963dbba71cdb799646c25f11c77bba686393e 100644
 --- a/src/inputlisteneritem.h
 +++ b/src/inputlisteneritem.h
-@@ -8,6 +8,10 @@
+@@ -8,16 +8,90 @@
  
  #pragma once
  
@@ -2424,8 +2384,11 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
 +#include "touchholdwatcher.h"
  #include <QQuickItem>
  #include <QQuickWindow>
++#include <QHash>
++#include <QSet>
  #include <QVirtualKeyboardInputEngine>
-@@ -16,8 +20,78 @@
+ #include <qqmlintegration.h>
+ 
  #include <xkbcommon/xkbcommon.h>
  
  #include "inputplugin.h"
@@ -2440,9 +2403,7 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
 +/**
 + * Global state for the on-screen Ctrl/Alt/Meta keys.
 + *
-+ * The keys in the layouts toggle these values. InputListenerItem consults
-+ * them when forwarding key events to the compositor, so that a latched
-+ * modifier is applied to the next key and then cleared.
++ * Modifiers remain active only while their key is physically held.
 + */
 +class KeyboardModifiers : public QObject
 +{
@@ -2508,11 +2469,11 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
  
      Q_PROPERTY(QVirtualKeyboardInputEngine *engine WRITE setEngine)
      Q_PROPERTY(bool keyboardNavigationActive MEMBER m_keyboardNavigationActive)
-+    Q_PROPERTY(bool nativePcInput MEMBER m_nativePcInput)
++    Q_PROPERTY(bool nativePcInput READ nativePcInput WRITE setNativePcInput)
  
      /**
       * Controller for overlay popups (diacritics, emoji, text expansion).
-@@ -34,8 +109,37 @@ class InputListenerItem : public QQuickItem
+@@ -34,8 +109,41 @@ class InputListenerItem : public QQuickItem
       */
      Q_PROPERTY(OverlayController *overlayController READ overlayController CONSTANT)
  
@@ -2546,11 +2507,15 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
 +
  public:
      InputListenerItem();
++    ~InputListenerItem() override;
++    bool nativePcInput() const { return m_nativePcInput; }
++    void setNativePcInput(bool native);
++    bool eventFilter(QObject *watched, QEvent *event) override;
 +    void requestAutomaticShow(bool force = false, bool completedHold = false);
  
      void setEngine(QVirtualKeyboardInputEngine *engine);
  
-@@ -45,17 +149,195 @@ public:
+@@ -45,17 +153,182 @@ public:
      void keyReleaseEvent(QKeyEvent *event) override;
      void inputMethodEvent(QInputMethodEvent *event) override;
  
@@ -2648,29 +2613,18 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
  private:
 +    /**
 +     * Sends the key described by @p event as a real key event with the
-+     * currently latched Ctrl/Alt/Meta modifiers applied.
++     * currently held Ctrl/Alt/Meta modifiers applied.
 +     *
 +     * Returns true if the event was handled, in which case the caller must
 +     * not process it any further.
 +     */
 +    bool handleModifiedKey(QKeyEvent *event, bool press);
 +
-+    //! Starts the hold-threshold timer for a just-latched Ctrl/Alt/Meta key.
-+    //! The tap already latched the modifier (it stays engaged, like a lock
-+    //! key, until a combination completes or the same key is tapped again to
-+    //! cancel it -- see keyPressEvent()/keyReleaseEvent()) and pressed it for
-+    //! real through uinput, so it already behaves like a physical modifier
-+    //! held down for games and applications that read the raw key state. If
-+    //! the key is still (physically) held when the timer fires, that is a
-+    //! genuine hold rather than a tap: keyReleaseEvent() then ends it (and
-+    //! the latch) the moment the finger lifts, instead of leaving it engaged
-+    //! for whatever is typed next.
-+    void armModifierHoldTimer(Qt::Key key);
-+
-+    //! Stops the hold timer and clears the state armModifierHoldTimer() set,
-+    //! so it cannot fire later for a modifier that a combination (or a reset
-+    //! elsewhere) already consumed.
-+    void cancelModifierHoldTimer();
++    void setModifierHeld(Qt::Key key, bool held);
++    void syncModifiers(Qt::KeyboardModifiers extra = Qt::NoModifier);
++    void releaseNormalKeys();
++    bool touchHoldsModifier(int key) const;
++    int modifierAt(const QPointF &position) const;
 +
 +    //! Re-reads the word being typed and the word before it, and tells QML
 +    //! when either of them changed.
@@ -2712,15 +2666,13 @@ index 1478c67b92fda5f6bf44fbb674b68397d77251c0..3dd8c09347cf1d2fc6ce01a4eb42f947
 +    //! momentary loss of focus does not hide it.
 +    QTimer *m_hideDelay = nullptr;
 +
-+    //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is latched; see
-+    //! armModifierHoldTimer().
-+    QTimer *m_modifierHoldTimer = nullptr;
-+    //! Which modifier key the hold timer above is currently running for, or 0.
-+    Qt::Key m_pendingModifierKey = Qt::Key(0);
-+    //! True once the hold timer has fired for m_pendingModifierKey: it is
-+    //! being genuinely held down (not just latched from a tap), so releasing
-+    //! it must end the hold for real instead of leaving it latched.
-+    bool m_modifierHeldForReal = false;
++    // Qt Virtual Keyboard may release its active key when a second finger
++    // presses a letter. Physical touch ownership keeps the modifier held.
++    QHash<int, int> m_modifierTouches;
++    QSet<int> m_touchOwnedModifiers;
++    QSet<int> m_engineModifiers;
++    struct ModifiedKey { uint32_t code; bool uinput; };
++    QHash<int, ModifiedKey> m_modifiedKeys;
 +
 +    //! Virtual keyboard used for Ctrl/Alt/Meta combinations; see
 +    //! UinputKeyboard's own documentation for why. Null (and every call
@@ -2887,7 +2839,7 @@ index 098fd69396a0079a590e5cc91f57048eeda72ba1..ad49f1219a69dcfda0fe18bc1bab14e7
  }
  
 diff --git a/src/inputplugin.cpp b/src/inputplugin.cpp
-index 9b14cbf2d860988f8f75aa0711ceec3bc0f602ff..f375d42216e988b1fefc295d58b197d950d41766 100644
+index 9b14cbf2d860988f8f75aa0711ceec3bc0f602ff..1b54e0969f7b412894eba495613b2383148d7f3a 100644
 --- a/src/inputplugin.cpp
 +++ b/src/inputplugin.cpp
 @@ -6,12 +6,59 @@
@@ -2991,7 +2943,7 @@ index 9b14cbf2d860988f8f75aa0711ceec3bc0f602ff..f375d42216e988b1fefc295d58b197d9
  void InputPlugin::key(KeyState state, quint32 scancode)
  {
      if (!m_context) {
-@@ -114,6 +186,47 @@ void InputPlugin::key(KeyState state, quint32 scancode)
+@@ -114,6 +186,52 @@ void InputPlugin::key(KeyState state, quint32 scancode)
      m_context->key(m_context->m_lastKeyboardSerial, m_context->m_lastKeyboardTime, scancode, static_cast<uint32_t>(state));
  }
  
@@ -3001,6 +2953,11 @@ index 9b14cbf2d860988f8f75aa0711ceec3bc0f602ff..f375d42216e988b1fefc295d58b197d9
 +        return;
 +    }
 +    m_context->modifiers(m_context->m_latestSerial, depressed, latched, locked, group);
++}
++
++std::array<uint32_t, 4> InputPlugin::modifierState() const
++{
++    return m_keyboard ? m_keyboard->modifierState() : std::array<uint32_t, 4>{};
 +}
 +
 +uint32_t InputPlugin::keycodeForKeysym(uint32_t keysym) const
@@ -3040,10 +2997,18 @@ index 9b14cbf2d860988f8f75aa0711ceec3bc0f602ff..f375d42216e988b1fefc295d58b197d9
  {
      if (!m_context) {
 diff --git a/src/inputplugin.h b/src/inputplugin.h
-index 9a511536263444ea579d2699480f4c543c0ddb00..150e57eba541ef874742059b64fb2d0d8148d93e 100644
+index 9a511536263444ea579d2699480f4c543c0ddb00..b5609bdc2d9943128aeb07dcc8313af5f02be48d 100644
 --- a/src/inputplugin.h
 +++ b/src/inputplugin.h
-@@ -77,8 +77,32 @@ public:
+@@ -9,6 +9,7 @@
+ 
+ #include <QKeyEvent>
+ #include <QObject>
++#include <array>
+ #include <memory>
+ 
+ class InputMethod;
+@@ -77,8 +78,33 @@ public:
          Repeated = 2
      };
      void keysym(uint timestamp, uint sym, KeyState state, uint modifiers);
@@ -3056,6 +3021,7 @@ index 9a511536263444ea579d2699480f4c543c0ddb00..150e57eba541ef874742059b64fb2d0d
 +     * forwarded key events are interpreted with these modifiers.
 +     */
 +    void sendModifiers(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group);
++    std::array<uint32_t, 4> modifierState() const;
 +
 +    /**
 +     * Looks up the evdev/scancode keycode that produces @p keysym in the
@@ -3076,7 +3042,7 @@ index 9a511536263444ea579d2699480f4c543c0ddb00..150e57eba541ef874742059b64fb2d0d
      ContentHint contentHint() const;
      ContentPurpose contentPurpose() const;
      uint32_t cursorPos() const;
-@@ -90,6 +114,8 @@ public:
+@@ -90,6 +116,8 @@ public:
      }
  
  Q_SIGNALS:
@@ -15919,10 +15885,10 @@ index 4f94ba67b131ee358198c37411f706922c7da44d..c089861661b9235364aa08096ea8de1c
                      key: Qt.Key_Period
                      weight: normalKeyWidth
 diff --git a/src/main.cpp b/src/main.cpp
-index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d341559a2c28a4 100644
+index 7f51c244023807892d9568931cafb2191c185bd1..728437938e6ee58d113ae41471155f081a19b42f 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -6,45 +6,1086 @@
+@@ -6,45 +6,1080 @@
  */
  
  #include "config-plasma-keyboard.h"
@@ -16758,12 +16724,6 @@ index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d34155
 +    {
 +        if (LaptopController::instance() && LaptopController::instance()->active()) { restorePanels(); return; }
 +        const bool compositorVisible = kwinVisible();
-+        if(auto *laptop=LaptopController::instance();laptop && laptop->available() &&
-+           laptop->options().value("presentation")==QLatin1String("dynamic")) {
-+            // Manual dynamic mode must not map the normal panel on text focus.
-+            m_bridge->setKwinVisible(compositorVisible);
-+            QGuiApplication::inputMethod()->hide();restorePanels();return;
-+        }
 +        const auto *lock = SessionLockState::instance();
 +        const auto visibilityChange = m_visibility.update(compositorVisible,
 +                                                          lock->isKnown(),
@@ -17013,7 +16973,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d34155
                           QStringLiteral(PLASMA_KEYBOARD_VERSION_STRING),
                           i18n("An on-screen keyboard for Plasma"),
                           KAboutLicense::GPL,
-@@ -52,13 +1093,55 @@ int main(int argc, char **argv)
+@@ -52,13 +1087,55 @@ int main(int argc, char **argv)
  
      aboutData.addAuthor(i18n("Aleix Pol Gonzalez"), i18n("Author"), QStringLiteral("aleixpol@kde.org"));
      aboutData.setOrganizationDomain("kde.org");
@@ -17071,7 +17031,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d34155
  
      {
          QCommandLineParser parser;
-@@ -75,35 +1158,234 @@ int main(int argc, char **argv)
+@@ -75,35 +1152,234 @@ int main(int argc, char **argv)
          PlasmaKeyboardSettings::self()->setVibrationEnabled(false);
      }
  
@@ -17312,7 +17272,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d34155
 +                const auto point=position.toPointF();if(point.x()<=0||point.y()<=0)return;
 +                QVariant label;QMetaObject::invokeMethod(root,"navigationLabel",Q_RETURN_ARG(QVariant,label));
 +                QJsonObject geometry{{QStringLiteral("x"),point.x()},{QStringLiteral("y"),point.y()},{QStringLiteral("navigation"),label.toString()}};
-+                for(const auto &entry:{std::pair{QStringLiteral("space"),int(Qt::Key_Space)},std::pair{QStringLiteral("backspace"),int(Qt::Key_Backspace)}}){
++                for(const auto &entry:{std::pair{QStringLiteral("space"),int(Qt::Key_Space)},std::pair{QStringLiteral("backspace"),int(Qt::Key_Backspace)},std::pair{QStringLiteral("ctrl"),int(Qt::Key_Control)},std::pair{QStringLiteral("alt"),int(Qt::Key_Alt)},std::pair{QStringLiteral("meta"),int(Qt::Key_Meta)}}){
 +                    QVariant value;
 +                    QMetaObject::invokeMethod(root,"editingKeyPosition",Q_RETURN_ARG(QVariant,value),Q_ARG(QVariant,QVariant(entry.second)));
 +                    const auto position=value.toPointF();geometry.insert(entry.first+QStringLiteral("X"),position.x());geometry.insert(entry.first+QStringLiteral("Y"),position.y());
@@ -17327,7 +17287,7 @@ index 7f51c244023807892d9568931cafb2191c185bd1..506ab8c4e7dd761f31f9ecbc03d34155
  
  #ifdef Q_OS_UNIX
      /**
-@@ -121,5 +1403,25 @@ int main(int argc, char **argv)
+@@ -121,5 +1397,25 @@ int main(int argc, char **argv)
  
      qCDebug(PlasmaKeyboard) << "Starting Plasma Keyboard application";
  
@@ -18199,6 +18159,40 @@ index 0000000000000000000000000000000000000000..c3b7dae5f5c9f85b0e57c02a5dc4284e
 +        z: -1
 +    }
 +}
+diff --git a/src/qml/FloatingPanelMetrics.js b/src/qml/FloatingPanelMetrics.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d10b189fdc6ce6565b50c91b5649a43598f2d0ec
+--- /dev/null
++++ b/src/qml/FloatingPanelMetrics.js
+@@ -0,0 +1,28 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++.pragma library
++
++function finite(value,fallback) { return Number.isFinite(value) ? value : fallback; }
++function packedHeight(items,width,spacing) {
++    width=Math.max(1,finite(width,1));spacing=Math.max(0,finite(spacing,0));
++    let x=0,y=0,row=0;
++    for(const item of items){
++        const w=Math.min(width,Math.max(0,finite(item.width,0))),h=Math.max(0,finite(item.height,0));
++        if(w===0||h===0)continue;
++        if(x>0&&x+spacing+w>width){y+=row+spacing;x=0;row=0;}
++        if(x>0)x+=spacing;
++        x+=w;row=Math.max(row,h);
++    }
++    return y+row;
++}
++function fit(viewWidth,viewHeight,padding,requested,comfortable,aspect,tools,actions,spacing,extraChrome) {
++    viewWidth=Math.max(1,finite(viewWidth,1));viewHeight=Math.max(1,finite(viewHeight,1));
++    padding=Math.max(0,finite(padding,0));aspect=Math.max(0.1,finite(aspect,2.6));
++    const available=Math.max(1,viewWidth-4*padding);
++    comfortable=Math.min(available,Math.max(1,finite(comfortable,available)));
++    // Use the most wrapped toolbar arrangement to bound taller, wider sizes.
++    // This avoids a width/Flow-height binding cycle while retaining the keys.
++    const chrome=packedHeight(tools,comfortable+2*padding,spacing)+packedHeight(actions,comfortable+2*padding,spacing)+Math.max(0,finite(extraChrome,0));
++    const maximum=Math.max(1,Math.min(available,Math.max(1,viewHeight-4*padding-chrome)*aspect));
++    const minimum=Math.min(comfortable,maximum);
++    return {width:Math.max(minimum,Math.min(maximum,finite(requested,minimum))),minimum:minimum,maximum:maximum,chrome:chrome};
++}
 diff --git a/src/qml/GamepadBadge.qml b/src/qml/GamepadBadge.qml
 new file mode 100644
 index 0000000000000000000000000000000000000000..41576a26c28ff28b0a62725f7eb4c4a6928ca094
@@ -18781,10 +18775,10 @@ index e0933e22678d7e734d99e803dde49f728a590d09..3bd9293465a6faa465111a1c80e49b75
      width: contentLoader.item ? contentLoader.item.implicitWidth : 100
 diff --git a/src/qml/PcKeyboard.qml b/src/qml/PcKeyboard.qml
 new file mode 100644
-index 0000000000000000000000000000000000000000..eb1bc14caf3f4ff2c40584ee9e35c42b2724e3a5
+index 0000000000000000000000000000000000000000..0af1655b55360801f2a8347db0afa1bf2907e0da
 --- /dev/null
 +++ b/src/qml/PcKeyboard.qml
-@@ -0,0 +1,240 @@
+@@ -0,0 +1,246 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +import QtQuick
 +import QtQuick.Controls as QQC2
@@ -18809,6 +18803,12 @@ index 0000000000000000000000000000000000000000..eb1bc14caf3f4ff2c40584ee9e35c42b
 +    property real keyHeight: Math.max(1,Math.min(Keyboard.Laptop.options.keyHeightMm * perMm, (height - gap * Math.max(0,rowCount-1)) / Math.max(1,rowCount)))
 +    readonly property real navigationWidth: navigationRows.length ? Math.min(width*0.24,3*Keyboard.Laptop.options.keyWidthMm*perMm+2*gap) : 0
 +    readonly property real mainWidth: Math.max(1,width-navigationWidth-(navigationWidth>0?2*gap:0))
++    readonly property real minimumComfortWidth: {
++        const key=Math.min(9,Keyboard.Laptop.options.keyWidthMm)*perMm;
++        let main=0;
++        for(const row of mainRows)main=Math.max(main,row.reduce((sum,k)=>sum+k.units,0)*key+Math.max(0,row.length-1)*gap);
++        return main+(navigationRows.length?3*key+4*gap:0);
++    }
 +    readonly property var layoutKeys: arrangeKeys()
 +    implicitHeight: rowCount*Keyboard.Laptop.options.keyHeightMm*perMm + Math.max(0,rowCount-1)*gap
 +    signal swipeAccepted(var words)
@@ -19618,10 +19618,10 @@ index 0000000000000000000000000000000000000000..fda9733cad641166ea88618655b4489e
 +    }
 +}
 diff --git a/src/qml/main.qml b/src/qml/main.qml
-index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e715247f1e6454 100644
+index 703f6750e351411995a350b2f3b99a9d9199425c..96a55098615bfdb97f86421a66218d72e3330f99 100644
 --- a/src/qml/main.qml
 +++ b/src/qml/main.qml
-@@ -6,13 +6,16 @@
+@@ -6,39 +6,494 @@
  */
  
  import QtQuick
@@ -19637,13 +19637,15 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
  
  import org.kde.kirigami as Kirigami
 +import "LocaleResolver.js" as LocaleResolver
++import "FloatingPanelMetrics.js" as PanelMetrics
  
  InputPanelWindow {
      id: root
-@@ -20,25 +23,468 @@ InputPanelWindow {
+     height: Screen.height
      width: Screen.width
      color: 'transparent'
- 
++    property bool wasLaptopActive: false
++
 +    readonly property bool useNativePc: PlasmaKeyboard.Laptop.nativeInputAllowed && PlasmaKeyboard.Laptop.options.nativePcLayout && (PlasmaKeyboard.Laptop.active || PlasmaKeyboard.Laptop.options.normalPcLayout) && PlasmaKeyboard.Laptop.options.syncLayout && !PlasmaKeyboard.Laptop.complexLayout && !PlasmaKeyboard.Modifiers.gamepadAvailable && !voiceMode
 +    readonly property var localEditor: PlasmaKeyboard.Laptop.active?(laptopDeck?laptopDeck.localEditor:null):(normalTools?normalTools.localEditor:null)
 +    function keyPosition(letter) {
@@ -19663,6 +19665,13 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +    Connections {
 +        target: PlasmaKeyboard.Laptop
 +        function onLayoutChanged() { inputPanel.updateLocales(); VirtualKeyboardSettings.locale=LocaleResolver.forIme(PlasmaKeyboard.Laptop.locale,VirtualKeyboardSettings.availableLocales); }
++        function onStateChanged() {
++            const active=PlasmaKeyboard.Laptop.active;
++            if(root.wasLaptopActive&&!active&&PlasmaKeyboardSettings.floatingKeyboard){
++                PlasmaKeyboardSettings.floatingKeyboard=false;PlasmaKeyboardSettings.save();
++            }
++            root.wasLaptopActive=active;
++        }
 +    }
 +    // The style sizes the panel from the screen size, but as a QtObject its own
 +    // Screen attached property does not follow this window (see style.qml).
@@ -19679,7 +19688,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        value: root.height
 +        when: inputPanel.keyboard && inputPanel.keyboard.style && inputPanel.keyboard.style.screenWidth !== undefined
 +    }
-+
+ 
      onVisibleChanged: {
 -        if (!visible) {
 +        // No Plasma OSD for the layout switches the keyboard makes itself;
@@ -20110,7 +20119,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
  
          onKeyNavigationPressed: (key) => {
              // HACK: invoke the Qt VirtualKeyboard keyboard navigation feature ourselves
-@@ -51,6 +497,286 @@ InputPanelWindow {
+@@ -51,6 +506,287 @@ InputPanelWindow {
          }
      }
  
@@ -20350,6 +20359,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +
 +    // Play the key click at full volume: the bundled sound is mastered quiet.
 +    Component.onCompleted: {
++        root.wasLaptopActive=PlasmaKeyboard.Laptop.active;
 +        VirtualKeyboardSettings.keySoundVolume = 100;
 +        root.updatePredictions();
 +
@@ -20397,7 +20407,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
      // Unified overlay system for diacritics, emoji, text expansion, etc.
      OverlayWindow {
          id: overlayWindow
-@@ -58,27 +784,147 @@ InputPanelWindow {
+@@ -58,27 +794,164 @@ InputPanelWindow {
          onCandidateSelected: (index) => thing.overlayController.commitCandidate(index)
      }
  
@@ -20424,14 +20434,27 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +                    root.showSettings();
 +                }
 +            }
-         }
- 
--        // Whether the panel takes the full width of the screen
--        readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth
++        }
++
 +        // Whether the panel takes the full width of the screen. The floating
 +        // panel is always detached from the edges, so it never fills the width.
 +        readonly property bool floating: PlasmaKeyboardSettings.floatingKeyboard && !PlasmaKeyboard.Laptop.active
 +        readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth && !floating
++        function flowMetrics(flow,fixedWidth) {
++            const result=[];
++            if(!flow)return result;
++            for(const child of flow.children)if(child.visible){
++                const w=fixedWidth?child.width:child.implicitWidth;
++                if(w>0&&child.height>0)result.push({width:w,height:child.height});
++            }
++            return result;
++        }
++        readonly property var floatingSize: PanelMetrics.fit(root.width,root.height,padding,
++            root.width*PlasmaKeyboardSettings.floatingKeyboardWidthPercent/100-2*padding,
++            root.useNativePc?normalPc.minimumComfortWidth:90*PlasmaKeyboard.Laptop.pixelsPerMm,
++            inputPanel.keyboard&&inputPanel.keyboard.style?inputPanel.keyboard.style.aspectRatio:2.6,
++            flowMetrics(normalTools,true),flowMetrics(normalActions,false),PlasmaKeyboard.Laptop.pixelsPerMm,
++            (functionKeyRow.visible?functionKeyRow.height:0)+(suggestionsRow.visible?suggestionsRow.height:0))
 +
 +        //! Position of the floating panel, in window coordinates. A negative
 +        //! value means it was never moved: the panel then starts at the bottom
@@ -20442,8 +20465,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        //! upwards and the bottom edge stays where the user put it.
 +        property real floatingX: -1
 +        property real floatingBottom: -1
- 
--        color: PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
++
 +        //! Set once the panel has its final size: a later size change (a row of
 +        //! suggestions appearing, the panel switching between the docked and the
 +        //! floating width) must not move a panel the user has placed.
@@ -20504,12 +20526,14 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        onYChanged: updatePanelStub()
 +        onWidthChanged: {
 +            placeFloatingPanel();
++            if(floating&&floatingX>=0)floatingX=clampFloatingX(floatingX);
 +            updatePanelStub();
 +        }
 +        onHeightChanged: {
 +            placeFloatingPanel();
++            if(floating&&floatingBottom>=0)floatingBottom=clampFloatingBottom(floatingBottom);
 +            updatePanelStub();
-+        }
+         }
 +        // The space reserved for the panel and the window anchors depend on the
 +        // mode: the compositor reserves it through the layer-shell exclusive zone.
 +        onFloatingChanged: {
@@ -20518,14 +20542,17 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        }
 +
 +        Component.onCompleted: updatePanelStub()
-+
+ 
+-        // Whether the panel takes the full width of the screen
+-        readonly property bool isFullScreenWidth: PlasmaKeyboardSettings.panelFillScreenWidth
 +        // The floating panel can be made translucent in the settings; the docked
 +        // panel always stays opaque. The voice mode keeps that translucency and
 +        // hides the keys instead, so the panel does not turn opaque when the
 +        // voice mode is entered.
 +        readonly property real floatingOpacity: floating ? PlasmaKeyboardSettings.floatingKeyboardOpacity / 100 : 1
 +        opacity: floatingOpacity
-+
+ 
+-        color: PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
 +        color: PlasmaKeyboard.Theme.current.backgroundType === "gradient" ? "transparent" : PlasmaKeyboard.BreezeConstants.keyboardBackgroundColor
 +
 +        // Themed gradient background, used when the theme asks for one. The
@@ -20551,7 +20578,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
              bottomLeftRadius: Kirigami.Units.cornerRadius
              bottomRightRadius: Kirigami.Units.cornerRadius
              topLeftRadius: isFullScreenWidth ? 0 : Kirigami.Units.cornerRadius
-@@ -89,28 +935,626 @@ InputPanelWindow {
+@@ -89,28 +962,662 @@ InputPanelWindow {
              color: Qt.rgba(0, 0, 0, 0.3)
          }
  
@@ -20578,45 +20605,6 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +                if (panelWrapper.floating && panelWrapper.floatingBottom >= 0) {
 +                    panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(panelWrapper.floatingBottom);
 +                }
-+            }
-+        }
-+
-+        // Dragging the free background of the panel moves it. The keys are
-+        // handled by Qt Virtual Keyboard itself, so the handler only sees the
-+        // parts of the panel that are not a key.
-+        DragHandler {
-+            id: panelDrag
-+
-+            target: null
-+            enabled: panelWrapper.floating
-+
-+            //! How far the pointer has to move before the panel follows: a plain
-+            //! tap must not move (or remember) anything.
-+            readonly property real moveThreshold: 12
-+
-+            property real startX: 0
-+            property real startBottom: 0
-+            property bool moved: false
-+
-+            onActiveChanged: {
-+                if (active) {
-+                    startX = panelWrapper.x;
-+                    startBottom = panelWrapper.y + panelWrapper.height;
-+                    moved = false;
-+                } else if (moved) {
-+                    panelWrapper.saveFloatingPosition();
-+                }
-+            }
-+            onTranslationChanged: {
-+                if (!active) {
-+                    return;
-+                }
-+                if (!moved && Math.hypot(translation.x, translation.y) < moveThreshold) {
-+                    return;
-+                }
-+                moved = true;
-+                panelWrapper.floatingX = panelWrapper.clampFloatingX(startX + translation.x);
-+                panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(startBottom + translation.y);
 +            }
 +        }
  
@@ -21114,7 +21102,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +            ? (inputPanel.height + padding * 2 + (functionKeyRow.visible ? functionKeyRow.height : 0) + (suggestionsRow.visible ? suggestionsRow.height : 0))
 +            + (!PlasmaKeyboard.Laptop.active ? normalTools.height + normalActions.height : 0)
 +            : 100
- 
++
 +        KeyboardTools {
 +            id: normalTools
 +            onLocalEditorChanged: {root.swipeAlternatives=[];root.updatePredictions();}
@@ -21124,20 +21112,96 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +            width: parent.width
 +            anchors.bottom: normalActions.top
 +        }
-+        RowLayout {
++        Flow {
 +            id: normalActions
 +            visible: !PlasmaKeyboard.Laptop.active
 +            width: parent.width
 +            anchors.bottom: parent.bottom
-+            height: 9*PlasmaKeyboard.Laptop.pixelsPerMm
++            spacing: PlasmaKeyboard.Laptop.pixelsPerMm
++            height: implicitHeight
 +            QQC2.Button { text: PlasmaKeyboard.Laptop.entryPending?i18nd("uke-plasma-keyboard-custom", "Cancel laptop mode"):i18nd("uke-plasma-keyboard-custom", "Laptop mode"); visible: PlasmaKeyboard.Laptop.canRequest||PlasmaKeyboard.Laptop.entryPending; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.toggle(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Voice"); visible: root.auxiliaryUiAllowed && PlasmaKeyboardSettings.sttEnabled; focusPolicy: Qt.NoFocus; onClicked: root.openVoiceMode(); }
 +            QQC2.Button { text: i18nd("uke-plasma-keyboard-custom", "Layout"); focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.nextLayout(); }
-+            Item { Layout.fillWidth: true; }
++            QQC2.Button {
++                objectName: "ukeFloatingToggle"
++                text: panelWrapper.floating?i18nd("uke-plasma-keyboard-custom","Dock keyboard"):i18nd("uke-plasma-keyboard-custom","Float keyboard")
++                icon.name: panelWrapper.floating?"view-split-top-bottom":"window-new"
++                focusPolicy: Qt.NoFocus
++                onClicked: {const floating=!PlasmaKeyboardSettings.floatingKeyboard;if(floating)PlasmaKeyboard.Laptop.leave();PlasmaKeyboardSettings.floatingKeyboard=floating;PlasmaKeyboardSettings.save();}
++            }
++            QQC2.ToolButton {
++                id: panelMoveHandle
++                objectName: "ukeFloatingMove"
++                visible: panelWrapper.floating
++                icon.name: "transform-move"
++                focusPolicy: Qt.NoFocus
++                Accessible.name: i18nd("uke-plasma-keyboard-custom","Move keyboard")
++                QQC2.ToolTip.text: Accessible.name
++                QQC2.ToolTip.visible: hovered
++                DragHandler {
++                    id: panelDrag
++
++                    target: null
++                    enabled: panelWrapper.floating
+ 
++                    //! How far the pointer has to move before the panel follows: a plain
++                    //! tap must not move (or remember) anything.
++                    readonly property real moveThreshold: 12
++
++                    property real startX: 0
++                    property real startBottom: 0
++                    property bool moved: false
++
++                    onActiveChanged: {
++                        if (active) {
++                            startX = panelWrapper.x;
++                            startBottom = panelWrapper.y + panelWrapper.height;
++                            moved = false;
++                        } else if (moved) {
++                            panelWrapper.saveFloatingPosition();
++                        }
++                    }
++                    onTranslationChanged: {
++                        if (!active) {
++                            return;
++                        }
++                        if (!moved && Math.hypot(translation.x, translation.y) < moveThreshold) {
++                            return;
++                        }
++                        moved = true;
++                        panelWrapper.floatingX = panelWrapper.clampFloatingX(startX + translation.x);
++                        panelWrapper.floatingBottom = panelWrapper.clampFloatingBottom(startBottom + translation.y);
++                    }
++                }
++            }
++            QQC2.ToolButton {
++                objectName: "ukeFloatingResize"
++                visible: panelWrapper.floating
++                icon.name: "transform-scale"
++                focusPolicy: Qt.NoFocus
++                Accessible.name: i18nd("uke-plasma-keyboard-custom","Resize keyboard")
++                QQC2.ToolTip.text: Accessible.name
++                QQC2.ToolTip.visible: hovered
++                DragHandler {
++                    target: null
++                    property real startingWidth: 0
++                    onActiveChanged: {
++                        if(active)startingWidth=panelWrapper.width;
++                        else {panelWrapper.saveFloatingPosition();PlasmaKeyboardSettings.save();}
++                    }
++                    onTranslationChanged: if(active){
++                        const vertical=translation.y*(inputPanel.keyboard&&inputPanel.keyboard.style?inputPanel.keyboard.style.aspectRatio:2.6);
++                        const delta=Math.abs(translation.x)>=Math.abs(vertical)?translation.x:vertical;
++                        const body=Math.max(panelWrapper.floatingSize.minimum,Math.min(panelWrapper.floatingSize.maximum,startingWidth+delta-2*panelWrapper.padding));
++                        PlasmaKeyboardSettings.floatingKeyboardWidthPercent=Math.max(20,Math.min(100,Math.round((body+2*panelWrapper.padding)/root.width*100)));
++                    }
++                }
++            }
 +            QQC2.ToolButton { icon.name: "configure"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Keyboard settings"); visible: root.auxiliaryUiAllowed; focusPolicy: Qt.NoFocus; onClicked: PlasmaKeyboard.Laptop.openPreferences(); }
 +            QQC2.ToolButton { icon.name: "go-down"; Accessible.name: i18nd("uke-plasma-keyboard-custom", "Hide keyboard"); focusPolicy: Qt.NoFocus; onClicked: Qt.inputMethod.hide(); }
 +        }
 +        PcKeyboard {
++            id: normalPc
 +            anchors.fill: inputPanel
 +            visible: root.useNativePc
 +            target: thing
@@ -21179,13 +21243,12 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +                if (!PlasmaKeyboardSettings.floatingKeyboard) {
 +                    return full;
 +                }
-+                const share = root.width * PlasmaKeyboardSettings.floatingKeyboardWidthPercent / 100;
-+                return Math.min(full, share - panelWrapper.padding * 2);
++                return panelWrapper.floatingSize.width;
 +            }
  
              focusPolicy: Qt.NoFocus
              externalLanguageSwitchEnabled: true
-@@ -119,17 +1563,27 @@ InputPanelWindow {
+@@ -119,17 +1626,27 @@ InputPanelWindow {
              }
  
              function updateLocales() {
@@ -21217,7 +21280,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
              }
  
              Connections {
-@@ -144,12 +1598,423 @@ InputPanelWindow {
+@@ -144,12 +1661,416 @@ InputPanelWindow {
                  function onEnabledLocalesChanged() {
                      inputPanel.updateLocales();
                  }
@@ -21590,12 +21653,7 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        function onPressed(touchPoints) {
 +            swipeInput.begin(touchPoints.length > 0 ? touchPoints[0] : null);
 +            editingTouch.begin(touchPoints.length>0?touchPoints[0]:null);
-+            // In the floating mode the whole panel can be dragged around. A
-+            // gesture that starts on a letter is a swipe, not a drag: without
-+            // this the window follows the finger and the swipe never happens.
-+            if (swipeInput.startKey !== null || editingTouch.code!==0) {
-+                panelDrag.enabled = false;
-+            }
++
 +        }
 +        function onUpdated(touchPoints) {
 +            if (touchPoints.length > 0) {
@@ -21606,12 +21664,10 @@ index 703f6750e351411995a350b2f3b99a9d9199425c..c648a00c068987937d423757c3e71524
 +        function onReleased(touchPoints) {
 +            swipeInput.end();
 +            editingTouch.end();
-+            panelDrag.enabled = panelWrapper.floating;
 +        }
 +        function onCanceled(touchPoints) {
 +            swipeInput.cancel();
 +            editingTouch.end();
-+            panelDrag.enabled = panelWrapper.floating;
 +        }
 +    }
 +
@@ -22063,10 +22119,10 @@ index 0000000000000000000000000000000000000000..e7264dccac5d9e7c4f137dc2f465cf5a
 +}
 diff --git a/src/qmlplugin/ModifierKey.qml b/src/qmlplugin/ModifierKey.qml
 new file mode 100644
-index 0000000000000000000000000000000000000000..9e2897bdeb04a2c59631225fd2426a61b71969f2
+index 0000000000000000000000000000000000000000..f9019c88eb00a376e6ab9ce779d97d3c21cbba02
 --- /dev/null
 +++ b/src/qmlplugin/ModifierKey.qml
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,34 @@
 +// SPDX-FileCopyrightText: 2026 Plasma Keyboard contributors
 +// SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 +
@@ -22075,12 +22131,10 @@ index 0000000000000000000000000000000000000000..9e2897bdeb04a2c59631225fd2426a61
 +import QtQuick.VirtualKeyboard.Components
 +
 +/**
-+ * A latching Ctrl/Alt/Meta modifier key.
++ * A momentary Ctrl/Alt/Meta modifier key.
 + *
-+ * It emits a plain Control/Alt/Meta key event; InputListenerItem turns that
-+ * into a latch toggle, so it works the same for touch and gamepad activation.
-+ * Tap to enable, tap again (or press a key, which completes the combination)
-+ * to clear. The latched state is shown by a lighter key background.
++ * InputListenerItem follows physical touch ownership so a second finger can
++ * type a chord without releasing the modifier. Lifting the finger releases it.
 + */
 +Key {
 +    id: root
@@ -22088,7 +22142,7 @@ index 0000000000000000000000000000000000000000..9e2897bdeb04a2c59631225fd2426a61
 +    /** Which modifier this key controls: "ctrl", "alt" or "meta". */
 +    property string modifier: "ctrl"
 +
-+    /** True while the modifier is latched; the key panel uses it for its color. */
++    /** Historical property name; true only while the modifier is held. */
 +    readonly property bool latched: {
 +        if (root.modifier === "alt") return Modifiers.alt;
 +        if (root.modifier === "meta") return Modifiers.meta;
@@ -23953,7 +24007,7 @@ zt||UNmL0TecA&>W{;&M~-^IzhgG9-l`TF;f{C~*IMYCd~8)FGDs{VI-yYK&aaNPLL
 g0H!~dos~6xMpmoF_s7qg`_%k_v3>fc^hyE#4(>%TD*ylh
 
 diff --git a/src/styles/breeze/style.qml b/src/styles/breeze/style.qml
-index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e357add97f 100644
+index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..decdfbb9dd862e8804646fc84f54a9741ac441bb 100644
 --- a/src/styles/breeze/style.qml
 +++ b/src/styles/breeze/style.qml
 @@ -12,20 +12,51 @@ import QtQuick.Effects
@@ -24012,7 +24066,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
  
      Kirigami.Theme.inherit: false
      Kirigami.Theme.colorSet: Kirigami.Theme.Window
-@@ -46,17 +77,28 @@ KeyboardStyle {
+@@ -46,32 +77,45 @@ KeyboardStyle {
          Kirigami.Icon {
              implicitWidth: 80 * theme.keyIconScale
              implicitHeight: 80 * theme.keyIconScale
@@ -24033,19 +24087,27 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
 +    property real screenHeight: Screen.height
 +
 +    // Always have the keyboard panel be 42% of the screen height, or 150px (whichever is larger)
++    readonly property int physicalRows: Math.max(PlasmaKeyboard.Laptop.rows.length,PlasmaKeyboard.Laptop.navigationRows.length)
 +    readonly property real targetKeyboardHeight: PlasmaKeyboard.Laptop.backendReady && PlasmaKeyboard.Laptop.options.nativePcLayout
-+        ? Math.min(screenHeight*0.68, (PlasmaKeyboard.Laptop.rows.length*PlasmaKeyboard.Laptop.options.keyHeightMm + (PlasmaKeyboard.Laptop.rows.length-1)*PlasmaKeyboard.Laptop.options.gapMm)*PlasmaKeyboard.Laptop.pixelsPerMm)
++        ? Math.min(screenHeight*0.68, (physicalRows*PlasmaKeyboard.Laptop.options.keyHeightMm + (physicalRows-1)*PlasmaKeyboard.Laptop.options.gapMm)*PlasmaKeyboard.Laptop.pixelsPerMm)
 +        : Math.max(screenHeight*(PlasmaKeyboardSettings.keyboardHeightPercent/100.0),150)
  
      // The value to multiply the height by to get the width
      readonly property real aspectRatio: {
++        const floating=PlasmaKeyboardSettings.floatingKeyboard&&!PlasmaKeyboard.Laptop.active;
          // Ratio to just fill the screen width
 -        const fillScreenWidth = Screen.width / targetKeyboardHeight;
+-        if (PlasmaKeyboardSettings.panelFillScreenWidth) {
 +        const fillScreenWidth = screenWidth / targetKeyboardHeight;
-         if (PlasmaKeyboardSettings.panelFillScreenWidth) {
++        if (PlasmaKeyboardSettings.panelFillScreenWidth && !floating) {
              return fillScreenWidth;
          }
-@@ -68,10 +110,10 @@ KeyboardStyle {
+ 
+-        const targetAspectRatio = 3.0; // Target width = 3 * height
++        const targetAspectRatio = floating ? 2.6 : 3.0;
+         return Math.min(fillScreenWidth, targetAspectRatio);
+     }
+ 
      // Calculate width based on the height so that the keyboard height is always targetKeyboardHeight
      keyboardDesignWidth: aspectRatio * keyboardDesignHeight;
      keyboardDesignHeight: {
@@ -24058,7 +24120,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
              // Wider
              return 600;
          }
-@@ -95,10 +137,12 @@ KeyboardStyle {
+@@ -95,10 +139,12 @@ KeyboardStyle {
      keyboardRelativeBottomMargin: 6 / keyboardDesignHeight
  
      keyboardBackground: Rectangle {
@@ -24072,7 +24134,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
          id: keyPanel
  
          Item {
-@@ -116,7 +160,7 @@ KeyboardStyle {
+@@ -116,7 +162,7 @@ KeyboardStyle {
                      family: theme.fontFamily
                      weight: Font.Light
                      pixelSize: 30 * scaleHint
@@ -24081,7 +24143,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  }
              }
              Loader {
-@@ -127,16 +171,19 @@ KeyboardStyle {
+@@ -127,16 +173,19 @@ KeyboardStyle {
              }
              QQC2.Label {
                  id: keyText
@@ -24106,7 +24168,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  }
              }
              states: [
-@@ -173,12 +220,20 @@ KeyboardStyle {
+@@ -173,12 +222,20 @@ KeyboardStyle {
          id: backspaceKeyPanel
  
          Item {
@@ -24128,7 +24190,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
              }
          }
  
-@@ -202,11 +257,19 @@ KeyboardStyle {
+@@ -202,11 +259,19 @@ KeyboardStyle {
          id: languageKeyPanel
  
          Item {
@@ -24149,7 +24211,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
              }
          }
  
-@@ -226,12 +289,54 @@ KeyboardStyle {
+@@ -226,12 +291,54 @@ KeyboardStyle {
          ]
      }
  
@@ -24204,7 +24266,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  id: enterKeyIcon
                  visible: enterKeyText.text.length === 0
                  anchors.centerIn: parent
-@@ -255,11 +360,11 @@ KeyboardStyle {
+@@ -255,11 +362,11 @@ KeyboardStyle {
                      case EnterKeyAction.Send:
                      case EnterKeyAction.Next:
                      case EnterKeyAction.Done:
@@ -24219,7 +24281,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                      }
                  }
              }
-@@ -271,7 +376,7 @@ KeyboardStyle {
+@@ -271,7 +378,7 @@ KeyboardStyle {
                  fontSizeMode: Text.HorizontalFit
                  horizontalAlignment: Text.AlignHCenter
                  verticalAlignment: Text.AlignVCenter
@@ -24228,7 +24290,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  font {
                      family: theme.fontFamily
                      weight: Font.Light
-@@ -307,11 +412,20 @@ KeyboardStyle {
+@@ -307,11 +414,20 @@ KeyboardStyle {
          id: hideKeyPanel
  
          Item {
@@ -24250,7 +24312,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
              }
          }
  
-@@ -335,17 +449,25 @@ KeyboardStyle {
+@@ -335,17 +451,25 @@ KeyboardStyle {
          id: shiftKeyPanel
  
          Item {
@@ -24279,7 +24341,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  }
              }
          }
-@@ -356,7 +478,7 @@ KeyboardStyle {
+@@ -356,7 +480,7 @@ KeyboardStyle {
                  when: InputContext.capsLockActive
                  PropertyChanges {
                      target: shiftKeyPanel
@@ -24288,7 +24350,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  }
              },
              State {
-@@ -378,17 +500,29 @@ KeyboardStyle {
+@@ -378,17 +502,29 @@ KeyboardStyle {
          id: spaceKeyPanel
  
          Item {
@@ -24321,7 +24383,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                  }
              }
          }
-@@ -409,16 +543,24 @@ KeyboardStyle {
+@@ -409,16 +545,24 @@ KeyboardStyle {
          id: symbolKeyPanel
  
          Item {
@@ -24348,7 +24410,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                      pixelSize: 40 * scaleHint
                      capitalization: Font.AllUppercase
                  }
-@@ -449,14 +591,14 @@ KeyboardStyle {
+@@ -449,14 +593,14 @@ KeyboardStyle {
              QQC2.Label {
                  id: modeKeyText
                  text: control.displayText
@@ -24365,7 +24427,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
                      pixelSize: 40 * scaleHint
                      capitalization: Font.AllUppercase
                  }
-@@ -498,9 +640,11 @@ KeyboardStyle {
+@@ -498,9 +642,11 @@ KeyboardStyle {
          Item {
              Kirigami.Icon {
                  id: hwrKeyIcon
@@ -24378,7 +24440,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
              }
          }
  
-@@ -534,6 +678,7 @@ KeyboardStyle {
+@@ -534,6 +680,7 @@ KeyboardStyle {
  
      characterPreviewMargin: 0
      characterPreviewDelegate: Item {
@@ -24386,7 +24448,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
          property string text
          property string flickLeft
          property string flickTop
-@@ -749,6 +894,10 @@ KeyboardStyle {
+@@ -749,6 +896,10 @@ KeyboardStyle {
      }
  
      navigationHighlight: Rectangle {
@@ -24397,7 +24459,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
          color: theme.navigationHighlightColor
          border.color: theme.navigationHighlightBorderColor
          border.width: 3
-@@ -1010,7 +1159,7 @@ KeyboardStyle {
+@@ -1010,7 +1161,7 @@ KeyboardStyle {
  
      selectionHandle: Kirigami.Icon {
          implicitWidth: 20
@@ -24406,7 +24468,7 @@ index 3c31aefddb6fb3583ea9d2cc14c44ea1f9e9e127..8f9b506e52c82008a9b42badfb0e03e3
      }
  
      fullScreenInputContainerBackground: Rectangle {
-@@ -1047,11 +1196,11 @@ KeyboardStyle {
+@@ -1047,11 +1198,11 @@ KeyboardStyle {
              source: {
                  switch (keyboardFunction) {
                  case QtVirtualKeyboard.KeyboardFunction.HideInputPanel:

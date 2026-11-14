@@ -990,6 +990,60 @@ private Q_SLOTS:
         QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
     }
 
+    void testNormalModifiersAreMomentary_data()
+    {
+        QTest::addColumn<QString>("name");
+        QTest::addColumn<uint>("mask");
+        QTest::addColumn<bool>("modifierReleasedFirst");
+        for (const auto &entry : {std::pair{QStringLiteral("ctrl"), 4u}, std::pair{QStringLiteral("alt"), 8u}, std::pair{QStringLiteral("meta"), 64u}}) {
+            for (bool first : {false, true}) {
+                const auto label = (entry.first + (first ? QStringLiteral("-modifier-first") : QStringLiteral("-letter-first"))).toLatin1();
+                QTest::newRow(label.constData()) << entry.first << entry.second << first;
+            }
+        }
+    }
+    void testNormalModifiersAreMomentary()
+    {
+        QFETCH(QString, name); QFETCH(uint, mask); QFETCH(bool, modifierReleasedFirst);
+        const auto modifier = editingPosition(name);
+        QVERIFY2(modifier.x()>0 && modifier.y()>0, qPrintable(QStringLiteral("Missing normal modifier: ")+name));
+        QFile file(m_runtimeDir.path()+QStringLiteral("/q-key.json"));QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto geometry=QJsonDocument::fromJson(file.readAll()).object();
+        const QPointF letter(geometry.value(QStringLiteral("x")).toDouble(-1),geometry.value(QStringLiteral("y")).toDouble(-1));
+        QVERIFY(letter.x()>0 && letter.y()>0);
+        auto *context=m_inputMethod->context();auto *surface=m_inputPanel->surface();QVERIFY(surface);
+        // Preserve an independent physical Shift and Caps lock, including when
+        // the modifier finger is released before the completing letter.
+        context->keyboard()->sendModifierState(1,0,2,0);
+        wl_display_flush_clients(m_compositor->display());QTest::qWait(80);
+        QSignalSpy modifiers(context,&InputMethodContext::modifiersReceived);
+        QSignalSpy keys(context,&InputMethodContext::keyReceived);
+        auto contact=[&](int id,const QPointF &point,bool pressed){
+            if(pressed)m_seat->sendTouchPointPressed(surface,id,point);
+            else m_seat->sendTouchPointReleased(surface,id,point);
+            m_seat->sendTouchFrameEvent(surface->client());wl_display_flush_clients(m_compositor->display());QTest::qWait(35);
+        };
+        for(int tap=0;tap<2;++tap){
+            modifiers.clear();contact(0,modifier,true);
+            QTRY_VERIFY(!modifiers.isEmpty());QCOMPARE(modifiers.last()[0].toUInt(),1u|mask);
+            contact(0,modifier,false);QTRY_COMPARE(modifiers.last()[0].toUInt(),1u);
+            QCOMPARE(modifiers.last()[2].toUInt(),2u); // Neither tap latches.
+        }
+        keys.clear();modifiers.clear();contact(0,modifier,true);contact(1,letter,true);
+        if(modifierReleasedFirst){contact(0,modifier,false);contact(1,letter,false);}
+        else {
+            contact(1,letter,false);
+            QTRY_VERIFY(!keys.isEmpty());QCOMPARE(modifiers.last()[0].toUInt(),1u|mask);
+            // A second letter with the same held modifier must remain a chord.
+            contact(1,letter,true);contact(1,letter,false);contact(0,modifier,false);
+        }
+        QTRY_COMPARE(keys.size(),modifierReleasedFirst?2:4);
+        for(int i=0;i<keys.size();++i){QCOMPARE(keys[i][0].toUInt(),uint(KEY_Q));QCOMPARE(keys[i][1].toUInt(),uint(i%2==0?WL_KEYBOARD_KEY_STATE_PRESSED:WL_KEYBOARD_KEY_STATE_RELEASED));}
+        QTRY_COMPARE(modifiers.last()[0].toUInt(),1u);
+        QCOMPARE(modifiers.last()[1].toUInt(),0u);QCOMPARE(modifiers.last()[2].toUInt(),2u);QCOMPARE(modifiers.last()[3].toUInt(),0u);
+        context->keyboard()->sendModifierState(0,0,0,0);wl_display_flush_clients(m_compositor->display());QTest::qWait(50);
+    }
+
     void testKeyboardNavigationCommitsCharacter()
     {
         if (!m_inputPanel->surface()) {

@@ -1142,10 +1142,36 @@ Typing protection now resumes the same touchpad finger after the guard ends,
 rebasing without a jump or accidental tap. Native tests are still pending for
 these changes; no device or physical acceptance is claimed.
 
-Remaining user requirements include returning from static mode to the normal
-bottom-docked keyboard, touch-only automatic text activation, an explicit float
-button and comfortable responsive resizing. They remain part of the full plan.
+Normal-mode source now returns to docked presentation after laptop-mode exit.
+It adds an explicit float/dock button, a separate movement handle and proportional
+resize handle. Floating bounds reserve wrapped toolbar space and keep a
+comfortable keyboard width; the actual production geometry functions pass Node
+invariants across landscape, portrait and narrow viewports. The whole panel no
+longer drags through the physical keys. Native app, compositor, touch-only mode
+transition and physical acceptance of this UI still remain open.
+
+Focused COPR11327469 stops at standalone CMake configuration because GuiPrivate
+was not explicitly requested.11327484 compiles both actual-QML fixtures; the
+continuous600-update and palm-guard-resume test passes. The PC fixture stops
+before touch delivery while looking for delegates through QObject parentage.
+Use the actual visual item tree and retain every expected key/chord/geometry
+assertion. No keyboard physical-key success or runtime RPM is claimed by these
+attempts. The product's ordinary CMake private dependency declarations remain.
 Current Control16 preserves the qualified closed-cover health fix; Motion1 must
 derive17 from its signed source. No frame/time capability is inferred from
 kernel26. The numeric provider, its admitted data and final signed DNF delivery
 remain separate gates;50 has not been installed or published as a normal update.
+
+Normal Qt layouts also contained a separate Ctrl/Alt/Meta tap latch.50 removes
+that latch and its hold timer. The input listener observes only its own window's
+modifier touch ownership, retaining a modifier while Qt's single active-key
+engine moves to a second finger. Every letter release follows its original
+route even if the modifier was lifted first; context replacement, hide, lock,
+cancel and native-PC transitions release outstanding keys. Protocol fallback
+preserves physical depressed, latched, locked and group state. No raw device
+access is added. Six real-compositor touch cases cover all three modifiers and
+both release orders, repeated chords and two short taps; native results pending.
+The inspected Qt6.10.0 components/Keyboard.qml explicitly releases its prior
+active key on a second touch (upstream tag v6.10.0); this ownership observation
+does not replace or rebuild Qt. Normal-mode automatic show still requires the
+existing current touch authorization; stale mode/context replies are invalidated.

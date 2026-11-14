@@ -194,6 +194,11 @@ void InputPlugin::sendModifiers(uint32_t depressed, uint32_t latched, uint32_t l
     m_context->modifiers(m_context->m_latestSerial, depressed, latched, locked, group);
 }
 
+std::array<uint32_t, 4> InputPlugin::modifierState() const
+{
+    return m_keyboard ? m_keyboard->modifierState() : std::array<uint32_t, 4>{};
+}
+
 uint32_t InputPlugin::keycodeForKeysym(uint32_t keysym) const
 {
     if (!m_keyboard) {

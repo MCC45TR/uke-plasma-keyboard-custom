@@ -4811,7 +4811,7 @@ index 8b7f68aa3ed2a3136e1b6a0d8ed3f543e5115b5c..58b8ee3378732feeb5b2c72a82aef5d5
 +    }
  }
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 8114b890df87972fd15efd61b4cbde823fec4c0b..a66df2cbbacb9c22fb7b1488c7df4cc1bb83f77a 100644
+index 8114b890df87972fd15efd61b4cbde823fec4c0b..e06eab71105a90ed36dc20368bb624a755e89373 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -6,17 +6,141 @@
@@ -5036,7 +5036,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..a66df2cbbacb9c22fb7b1488c7df4cc1
          vibration.cpp
          vibration.h
          vibrationevent.h
-@@ -60,45 +235,63 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
+@@ -60,45 +235,64 @@ if(PLASMA_KEYBOARD_VIBRATION_ENABLED)
  endif()
  
  if(PLASMA_KEYBOARD_SOUND_ENABLED)
@@ -5071,6 +5071,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..a66df2cbbacb9c22fb7b1488c7df4cc1
 +ecm_target_qml_sources(uke-plasma-keyboard-custom SOURCES
      qml/main.qml
 +    qml/LocaleResolver.js
++    qml/FloatingPanelMetrics.js
 +    qml/LaptopDeck.qml
 +    qml/PcKeyboard.qml
 +    qml/Touchpad.qml
@@ -5111,7 +5112,7 @@ index 8114b890df87972fd15efd61b4cbde823fec4c0b..a66df2cbbacb9c22fb7b1488c7df4cc1
      PRIVATE
      KF6::CoreAddons
      KF6::I18n
-@@ -106,29 +299,68 @@ target_link_libraries(plasma-keyboard
+@@ -106,29 +300,68 @@ target_link_libraries(plasma-keyboard
      KF6::ConfigCore
      KF6::ConfigGui
      KF6::Crash

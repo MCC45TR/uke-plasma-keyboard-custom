@@ -123,6 +123,7 @@ dbus-run-session -- ctest --test-dir %{_vpath_builddir} --output-on-failure --no
 - Use momentary physical modifiers and preserve overlapping touch press order.
 - Resume guarded touchpad motion without lifting and expose a right navigation cluster.
 - Qualify real QML multitouch, continuous motion and responsive key geometry.
+- Add explicit dock/float controls and comfortable, bounded floating resize.
 
 * Fri Nov 13 2026 Uke Linux contributors - 0.1.0-49
 - Accept typed replies on the pinned connection using Qt's public D-Bus API

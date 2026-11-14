@@ -9,6 +9,7 @@
 
 #include <QKeyEvent>
 #include <QObject>
+#include <array>
 #include <memory>
 
 class InputMethod;
@@ -86,6 +87,7 @@ public:
      * forwarded key events are interpreted with these modifiers.
      */
     void sendModifiers(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group);
+    std::array<uint32_t, 4> modifierState() const;
 
     /**
      * Looks up the evdev/scancode keycode that produces @p keysym in the

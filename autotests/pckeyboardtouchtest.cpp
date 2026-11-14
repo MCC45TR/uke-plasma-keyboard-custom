@@ -90,8 +90,12 @@ private Q_SLOTS:
         QScopedPointer<QObject> object(component.create());auto* keyboard=qobject_cast<QQuickItem*>(object.data());QVERIFY2(keyboard,qPrintable(component.errorString()));
         keyboard->setParentItem(window.contentItem());keyboard->setSize(QSizeF(800,300));keyboard->setProperty("auxiliaryAllowed",true);
         window.show();QVERIFY(QTest::qWaitForWindowExposed(&window));QCoreApplication::processEvents();
-        const auto item=[&](uint code){return keyboard->findChild<QQuickItem*>(QStringLiteral("ukeKey_%1").arg(code));};
-        for(uint code:{30U,48U,125U,42U,103U,105U,108U,106U,104U,109U})QVERIFY(item(code));
+        const auto item=[&](uint code)->QQuickItem*{
+            const auto name=QStringLiteral("ukeKey_%1").arg(code);QList<QQuickItem*> pending{keyboard};
+            while(!pending.isEmpty()){auto* next=pending.takeLast();if(next->objectName()==name)return next;pending.append(next->childItems());}
+            return nullptr;
+        };
+        for(uint code:{30U,48U,125U,42U,103U,105U,108U,106U,104U,109U})QVERIFY2(item(code),qPrintable(QStringLiteral("Missing visual key %1").arg(code)));
         const auto* device=QTest::createTouchDevice();ulong timestamp=1;
         const auto centre=[&](uint code){auto* key=item(code);return key->mapToItem(window.contentItem(),QPointF(key->width()/2,key->height()/2));};
         const auto event=[&](std::initializer_list<std::tuple<int,QEventPoint::State,QPointF>> states){

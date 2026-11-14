@@ -28,6 +28,10 @@
 #include <QRegularExpression>
 #include <QTextFormat>
 #include <QTimer>
+#include <QTouchEvent>
+#include <functional>
+#include <algorithm>
+#include <utility>
 
 #include <atomic>
 #include <set>
@@ -90,8 +94,7 @@ void requestInputPanelAutomaticShow()
 void InputListenerItem::requestAutomaticShow(bool force, bool completedHold)
 {
     if (!m_input.hasContext() || !m_sessionLockState.allowsPredictions()) return;
-    if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
-        (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
+    if (auto *laptop = LaptopController::instance(); laptop && laptop->active()) return;
     if (!force && !completedHold && PlasmaKeyboardSettings::self()->showOnLongTap()) return;
     const auto generation = ++m_activationGeneration;
     if (force) {
@@ -103,8 +106,7 @@ void InputListenerItem::requestAutomaticShow(bool force, bool completedHold)
     UkeKeyboard::requestTouchActivation(this, [this, generation](bool allowed) {
         if (!allowed || generation != m_activationGeneration || !m_input.hasContext() ||
             !m_sessionLockState.allowsPredictions()) return;
-        if (auto *laptop = LaptopController::instance(); laptop && (laptop->active() ||
-            (laptop->available() && laptop->options().value("presentation") == QLatin1String("dynamic")))) return;
+        if (auto *laptop = LaptopController::instance(); laptop && laptop->active()) return;
         m_hiddenByUser = false;
         showInputPanel(window());
     });
@@ -236,17 +238,22 @@ InputListenerItem::InputListenerItem()
     m_overlayController->registerTrigger(new PrefixQueryTrigger(m_overlayController));
     m_overlayController->registerTrigger(new TextExpansionTrigger(m_overlayController));
 
-    m_modifierHoldTimer = new QTimer(this);
-    m_modifierHoldTimer->setSingleShot(true);
-    connect(m_modifierHoldTimer, &QTimer::timeout, this, [this] {
-        // Still held past the threshold: a genuine physical hold, not a tap.
-        // The uinput key is already pressed for real (it went down the
-        // moment the tap latched it, in keyPressEvent()); just remember that
-        // releasing the on-screen key now must end the hold for real (see
-        // keyReleaseEvent()), instead of leaving it latched for whatever is
-        // typed next.
-        m_modifierHeldForReal = true;
-    });
+    qApp->installEventFilter(this);
+    connect(&m_input, &InputPlugin::contextAboutToChange, this, &InputListenerItem::releaseNormalKeys);
+    if (auto *laptop = LaptopController::instance()) {
+        connect(laptop, &LaptopController::stateChanged, this, [this, laptop, wasActive = laptop->active()]() mutable {
+            if (wasActive == laptop->active()) return;
+            wasActive = laptop->active();
+            ++m_activationGeneration;
+            m_touchHold.disarm();
+            m_longPressNeedsHitTest = false;
+            releaseNormalKeys();
+            if (!laptop->active()) {
+                m_hiddenByUser = true;
+                QGuiApplication::inputMethod()->hide();
+            }
+        });
+    }
 
     // Applications drop and re-take the text input for a moment on all kinds of
     // things (a click elsewhere in the window, a popup, a cursor move), so the
@@ -268,6 +275,7 @@ InputListenerItem::InputListenerItem()
     });
 
     connect(&m_sessionLockState, &SessionLockState::unlocked, this, [this] {
+        releaseNormalKeys();
         ++m_activationGeneration;
         // The panel belongs to the lock-screen field, not the desktop field
         // which may acquire focus immediately after authentication.
@@ -284,6 +292,7 @@ InputListenerItem::InputListenerItem()
         // A lock notification is not an input-panel request. In particular,
         // the current context may still belong to an ordinary desktop field.
         if (!m_sessionLockState.isKnown() || m_sessionLockState.isPreparingLock()) {
+            releaseNormalKeys();
             ++m_activationGeneration;
             m_hideDelay->stop();
             m_touchHold.disarm();
@@ -316,8 +325,7 @@ InputListenerItem::InputListenerItem()
             return;
         }
 
-        if(auto *laptop=LaptopController::instance();laptop && (laptop->active() ||
-           (laptop->available() && laptop->options().value("presentation")==QLatin1String("dynamic")))) {
+        if(auto *laptop=LaptopController::instance();laptop && laptop->active()) {
             m_hideDelay->stop();m_touchHold.disarm();m_longPressNeedsHitTest=false;
             m_hiddenByUser=!laptop->active();
             QGuiApplication::inputMethod()->update(Qt::ImQueryAll);
@@ -466,6 +474,7 @@ InputListenerItem::InputListenerItem()
     connect(QGuiApplication::inputMethod(), &QInputMethod::visibleChanged, this, [this] {
         const bool visible = QGuiApplication::inputMethod()->isVisible();
         if (!visible) {
+            releaseNormalKeys();
             ++m_activationGeneration;
             // The keyboard was hidden (by the user, or because the input
             // context went away). Remember it, so that a text field which keeps
@@ -858,18 +867,104 @@ QVariant InputListenerItem::inputMethodQuery(Qt::InputMethodQuery query) const
     return {};
 }
 
-void InputListenerItem::armModifierHoldTimer(Qt::Key key)
+InputListenerItem::~InputListenerItem()
 {
-    m_pendingModifierKey = key;
-    m_modifierHeldForReal = false;
-    m_modifierHoldTimer->start(PlasmaKeyboardSettings::self()->modifierHoldThresholdMs());
+    releaseNormalKeys();
 }
 
-void InputListenerItem::cancelModifierHoldTimer()
+void InputListenerItem::setNativePcInput(bool native)
 {
-    m_modifierHoldTimer->stop();
-    m_pendingModifierKey = Qt::Key(0);
-    m_modifierHeldForReal = false;
+    if (m_nativePcInput == native) return;
+    releaseNormalKeys();
+    m_nativePcInput = native;
+}
+
+bool InputListenerItem::touchHoldsModifier(int key) const
+{
+    return std::any_of(m_modifierTouches.cbegin(), m_modifierTouches.cend(), [key](int held) { return held == key; });
+}
+
+int InputListenerItem::modifierAt(const QPointF &position) const
+{
+    if (!window()) return 0;
+    std::function<int(QQuickItem *)> find = [&](QQuickItem *item) -> int {
+        if (!item->isVisible() || !item->isEnabled() || item->opacity() <= 0) return 0;
+        const auto local = item->mapFromScene(position);
+        if (item->clip() && !item->contains(local)) return 0;
+        const auto children = item->childItems();
+        for (auto it = children.crbegin(); it != children.crend(); ++it) {
+            if (const int key = find(*it)) return key;
+        }
+        const int key = item->property("key").toInt();
+        return (key == Qt::Key_Control || key == Qt::Key_Alt || key == Qt::Key_Meta) && item->contains(local) ? key : 0;
+    };
+    return find(window()->contentItem());
+}
+
+bool InputListenerItem::eventFilter(QObject *watched, QEvent *event)
+{
+    if (m_nativePcInput || watched != window()) return false;
+    if (event->type() == QEvent::TouchCancel) {
+        releaseNormalKeys();
+    } else if (event->type() == QEvent::TouchBegin || event->type() == QEvent::TouchUpdate || event->type() == QEvent::TouchEnd) {
+        const auto *touch = static_cast<QTouchEvent *>(event);
+        for (const auto &point : touch->points()) {
+            if (point.state() == QEventPoint::State::Pressed) {
+                if (const int key = modifierAt(point.position())) {
+                    m_modifierTouches.insert(point.id(), key);
+                    m_touchOwnedModifiers.insert(key);
+                    setModifierHeld(static_cast<Qt::Key>(key), true);
+                }
+            } else if (point.state() == QEventPoint::State::Released && m_modifierTouches.contains(point.id())) {
+                const int key = m_modifierTouches.take(point.id());
+                if (!touchHoldsModifier(key)) {
+                    setModifierHeld(static_cast<Qt::Key>(key), false);
+                    if (!m_engineModifiers.contains(key)) m_touchOwnedModifiers.remove(key);
+                }
+            }
+        }
+    }
+    return false; // Observe ownership; Qt still delivers every touch normally.
+}
+
+void InputListenerItem::syncModifiers(Qt::KeyboardModifiers extra)
+{
+    if (m_uinput && m_uinput->isValid()) return;
+    const auto base = m_input.modifierState();
+    const auto *held = KeyboardModifiers::instance();
+    const uint32_t depressed = base[0] | (held->ctrl() ? m_input.controlMask() : 0)
+        | (held->alt() ? m_input.altMask() : 0) | (held->meta() ? m_input.metaMask() : 0)
+        | ((extra & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
+    m_input.sendModifiers(depressed, base[1], base[2], base[3]);
+}
+
+void InputListenerItem::setModifierHeld(Qt::Key key, bool held)
+{
+    auto *state = KeyboardModifiers::instance();
+    switch (key) {
+    case Qt::Key_Control: state->setCtrl(held); break;
+    case Qt::Key_Alt: state->setAlt(held); break;
+    case Qt::Key_Meta: state->setMeta(held); break;
+    default: return;
+    }
+    if (held) pressUinputModifier(key);
+    else releaseUinputModifierIfHeld(key);
+    syncModifiers();
+}
+
+void InputListenerItem::releaseNormalKeys()
+{
+    for (const auto &key : std::as_const(m_modifiedKeys)) {
+        if (key.uinput && m_uinput) m_uinput->releaseKey(key.code);
+        else m_input.key(InputPlugin::Released, key.code);
+    }
+    m_modifiedKeys.clear();
+    m_modifierTouches.clear();
+    m_touchOwnedModifiers.clear();
+    m_engineModifiers.clear();
+    releaseAllHeldUinputModifiers();
+    KeyboardModifiers::instance()->reset();
+    syncModifiers();
 }
 
 void InputListenerItem::pressUinputModifier(Qt::Key key)
@@ -939,66 +1034,27 @@ void InputListenerItem::releaseAllHeldUinputModifiers()
 
 bool InputListenerItem::handleModifiedKey(QKeyEvent *event, bool press)
 {
-    auto *modifiers = KeyboardModifiers::instance();
-    if (!modifiers->ctrl() && !modifiers->alt() && !modifiers->meta()) {
-        return false;
-    }
-
-    const QList<xkb_keysym_t> keysyms = QXkbCommon::toKeysym(event);
-    if (keysyms.isEmpty()) {
-        return false;
-    }
-
-    const uint32_t keycode = m_input.keycodeForKeysym(keysyms.first());
-    if (keycode == 0) {
-        return false;
-    }
-
-    if (m_uinput && m_uinput->isValid()) {
-        // Any Ctrl/Alt/Meta combination can be a compositor-global shortcut
-        // (Alt+Tab, Meta+L, Meta+D, the application launcher...), which
-        // input-method-v1's client-scoped key forwarding cannot reach -- see
-        // UinputKeyboard's own documentation. Every latched modifier is
-        // already held down for real through that same uinput device (see
-        // keyPressEvent()); send the completing key the same way, so the
-        // compositor sees a real hardware key combination -- this also still
-        // reaches an ordinary application shortcut like Ctrl+C, since the
-        // compositor forwards a real key to whichever client has keyboard
-        // focus. keycodeForKeysym() already returns an evdev scancode (see
-        // its own comment), so it can be sent as-is.
-        if (press) {
-            m_uinput->pressKey(keycode);
-        } else {
-            m_uinput->releaseKey(keycode);
-            releaseAllHeldUinputModifiers();
-            modifiers->reset();
-            cancelModifierHoldTimer();
-        }
+    // The release follows the original route even if the modifier finger was
+    // lifted first. Releasing a letter must never release other held keys.
+    if (!press) {
+        const auto found = m_modifiedKeys.find(event->key());
+        if (found == m_modifiedKeys.end()) return false;
+        const auto key = *found;
+        m_modifiedKeys.erase(found);
+        if (key.uinput && m_uinput) m_uinput->releaseKey(key.code);
+        else { m_input.key(InputPlugin::Released, key.code); syncModifiers(); }
         return true;
     }
-
-    // Fallback for when /dev/uinput could not be opened: the older
-    // input-method-v1 path, which only reaches the focused client's own
-    // shortcuts (e.g. Ctrl+C), not compositor-global ones.
-    //
-    // Shift can take part in the combination (e.g. Ctrl+Shift+key).
-    const uint32_t depressed = (modifiers->ctrl() ? m_input.controlMask() : 0) | (modifiers->alt() ? m_input.altMask() : 0)
-        | (modifiers->meta() ? m_input.metaMask() : 0) | ((event->modifiers() & Qt::ShiftModifier) ? m_input.shiftMask() : 0);
-
-    if (press) {
-        // Set the modifier state before pressing the key so the compositor
-        // delivers the shortcut (e.g. Ctrl+C) to the client.
-        m_input.sendModifiers(depressed, 0, 0, 0);
-        m_input.key(InputPlugin::Pressed, keycode);
-    } else {
-        m_input.key(InputPlugin::Released, keycode);
-        m_input.sendModifiers(0, 0, 0, 0);
-        // The modifiers only apply to a single key press.
-        modifiers->reset();
-        // A hold timer may still be running for this modifier (it was pressed
-        // just before this combination completed); it must not fire later.
-        cancelModifierHoldTimer();
-    }
+    if (m_modifiedKeys.contains(event->key())) return true;
+    const auto *held = KeyboardModifiers::instance();
+    if (!held->ctrl() && !held->alt() && !held->meta()) return false;
+    const auto symbols = QXkbCommon::toKeysym(event);
+    const uint32_t code = symbols.isEmpty() ? 0 : m_input.keycodeForKeysym(symbols.first());
+    if (!code) return false;
+    const bool uinput = m_uinput && m_uinput->isValid();
+    m_modifiedKeys.insert(event->key(), {code, uinput});
+    if (uinput) m_uinput->pressKey(code);
+    else { syncModifiers(event->modifiers()); m_input.key(InputPlugin::Pressed, code); }
     return true;
 }
 
@@ -1035,60 +1091,9 @@ void InputListenerItem::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    // Any other key being pressed while a modifier's hold timer is still
-    // pending settles what the tap was for: a combination, not a hold. Stop
-    // the timer so it cannot fire later and undo the latch out from under a
-    // combination that just has not completed yet -- sliding a finger from
-    // the modifier straight onto the next key without lifting it in between
-    // (a normal, fast typing gesture) never reaches this item's own
-    // keyReleaseEvent for the modifier, so that is not a reliable place to
-    // rely on alone. The latch itself is left untouched.
-    if (event->key() != Qt::Key_Control && event->key() != Qt::Key_Alt && event->key() != Qt::Key_Meta && m_modifierHoldTimer->isActive()) {
-        m_modifierHoldTimer->stop();
-    }
-
-    // The on-screen Ctrl/Alt/Meta keys emit a plain Control/Alt/Meta event; a
-    // tap toggles the latch, which stays engaged like a lock key -- applying
-    // to whatever combination follows, however long that takes -- until it is
-    // either completed (handleModifiedKey()) or cancelled by tapping the same
-    // key again. Right away rather than waiting for a hold, the tap also
-    // presses the modifier for real through the uinput device, so it already
-    // behaves like a physical modifier held down, for games/apps that read
-    // the raw key state and for compositor-global shortcuts alike (Alt+Tab,
-    // Meta+L...), which only fire when the compositor sees a real key down
-    // for the whole combination; see UinputKeyboard's and
-    // handleModifiedKey()'s own documentation. If the key is still physically
-    // held when the hold timer fires, that is a genuine hold rather than a
-    // tap-then-latch, and keyReleaseEvent() ends it the moment the finger
-    // lifts instead of leaving it latched.
-    auto *modifiers = KeyboardModifiers::instance();
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-        const auto key = static_cast<Qt::Key>(event->key());
-        bool nowLatched = false;
-        switch (key) {
-        case Qt::Key_Control:
-            modifiers->setCtrl(!modifiers->ctrl());
-            nowLatched = modifiers->ctrl();
-            break;
-        case Qt::Key_Alt:
-            modifiers->setAlt(!modifiers->alt());
-            nowLatched = modifiers->alt();
-            break;
-        case Qt::Key_Meta:
-            modifiers->setMeta(!modifiers->meta());
-            nowLatched = modifiers->meta();
-            break;
-        default:
-            break;
-        }
-        if (nowLatched) {
-            pressUinputModifier(key);
-            armModifierHoldTimer(key);
-        } else {
-            // A second tap while already latched cancels it.
-            releaseUinputModifierIfHeld(key);
-            cancelModifierHoldTimer();
-        }
+        m_engineModifiers.insert(event->key());
+        if (!m_touchOwnedModifiers.contains(event->key())) setModifierHeld(static_cast<Qt::Key>(event->key()), true);
         event->accept();
         return;
     }
@@ -1114,63 +1119,18 @@ void InputListenerItem::keyReleaseEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_Control || event->key() == Qt::Key_Alt || event->key() == Qt::Key_Meta) {
-        const auto key = static_cast<Qt::Key>(event->key());
-        if (m_modifierHeldForReal && key == m_pendingModifierKey) {
-            // A genuine hold (the timer fired while still touching, see
-            // armModifierHoldTimer()): releasing the on-screen key now ends
-            // it for real, instead of leaving it latched for whatever is
-            // typed next.
-            auto *modifiers = KeyboardModifiers::instance();
-            switch (key) {
-            case Qt::Key_Control:
-                modifiers->setCtrl(false);
-                break;
-            case Qt::Key_Alt:
-                modifiers->setAlt(false);
-                break;
-            case Qt::Key_Meta:
-                modifiers->setMeta(false);
-                break;
-            default:
-                break;
-            }
-            releaseUinputModifierIfHeld(key);
-            m_pendingModifierKey = Qt::Key(0);
-            m_modifierHeldForReal = false;
+        m_engineModifiers.remove(event->key());
+        if (m_touchOwnedModifiers.contains(event->key())) {
+            if (!touchHoldsModifier(event->key())) m_touchOwnedModifiers.remove(event->key());
         } else {
-            // A quick tap: the toggle (and the uinput press it made, if it
-            // latched) already happened on press -- see keyPressEvent(). The
-            // hold timer must not fire later and mark this as a hold when
-            // the finger already lifted, so stop it. The latch itself is
-            // left alone: it stays engaged, like a lock key, until a
-            // combination completes (handleModifiedKey()) or the same key is
-            // tapped again to cancel it (keyPressEvent()) -- it does not
-            // expire on its own.
-            m_modifierHoldTimer->stop();
-            m_pendingModifierKey = Qt::Key(0);
-            m_modifierHeldForReal = false;
+            setModifierHeld(static_cast<Qt::Key>(event->key()), false);
         }
         event->accept();
         return;
     }
-
-    auto *modifiers = KeyboardModifiers::instance();
-    const bool wasLatched = modifiers->ctrl() || modifiers->alt() || modifiers->meta();
-
     if (handleModifiedKey(event, false)) {
         event->accept();
         return;
-    }
-
-    if (wasLatched) {
-        // The combination completes on release; clear the latch even if the key
-        // could not be mapped, so the modifier never gets stuck.
-        modifiers->reset();
-        cancelModifierHoldTimer();
-        // handleModifiedKey() declined (this key could not be mapped): if a
-        // modifier was already pressed for real through uinput, release it
-        // too, so it never gets stuck down.
-        releaseAllHeldUinputModifiers();
     }
 
     const QList<xkb_keysym_t> keys = QXkbCommon::toKeysym(event);

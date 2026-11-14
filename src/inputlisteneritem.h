@@ -14,6 +14,8 @@
 #include "touchholdwatcher.h"
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QHash>
+#include <QSet>
 #include <QVirtualKeyboardInputEngine>
 #include <qqmlintegration.h>
 
@@ -31,9 +33,7 @@ class QTimer;
 /**
  * Global state for the on-screen Ctrl/Alt/Meta keys.
  *
- * The keys in the layouts toggle these values. InputListenerItem consults
- * them when forwarding key events to the compositor, so that a latched
- * modifier is applied to the next key and then cleared.
+ * Modifiers remain active only while their key is physically held.
  */
 class KeyboardModifiers : public QObject
 {
@@ -100,7 +100,7 @@ class InputListenerItem : public QQuickItem
 
     Q_PROPERTY(QVirtualKeyboardInputEngine *engine WRITE setEngine)
     Q_PROPERTY(bool keyboardNavigationActive MEMBER m_keyboardNavigationActive)
-    Q_PROPERTY(bool nativePcInput MEMBER m_nativePcInput)
+    Q_PROPERTY(bool nativePcInput READ nativePcInput WRITE setNativePcInput)
 
     /**
      * Controller for overlay popups (diacritics, emoji, text expansion).
@@ -139,6 +139,10 @@ class InputListenerItem : public QQuickItem
 
 public:
     InputListenerItem();
+    ~InputListenerItem() override;
+    bool nativePcInput() const { return m_nativePcInput; }
+    void setNativePcInput(bool native);
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void requestAutomaticShow(bool force = false, bool completedHold = false);
 
     void setEngine(QVirtualKeyboardInputEngine *engine);
@@ -243,29 +247,18 @@ Q_SIGNALS:
 private:
     /**
      * Sends the key described by @p event as a real key event with the
-     * currently latched Ctrl/Alt/Meta modifiers applied.
+     * currently held Ctrl/Alt/Meta modifiers applied.
      *
      * Returns true if the event was handled, in which case the caller must
      * not process it any further.
      */
     bool handleModifiedKey(QKeyEvent *event, bool press);
 
-    //! Starts the hold-threshold timer for a just-latched Ctrl/Alt/Meta key.
-    //! The tap already latched the modifier (it stays engaged, like a lock
-    //! key, until a combination completes or the same key is tapped again to
-    //! cancel it -- see keyPressEvent()/keyReleaseEvent()) and pressed it for
-    //! real through uinput, so it already behaves like a physical modifier
-    //! held down for games and applications that read the raw key state. If
-    //! the key is still (physically) held when the timer fires, that is a
-    //! genuine hold rather than a tap: keyReleaseEvent() then ends it (and
-    //! the latch) the moment the finger lifts, instead of leaving it engaged
-    //! for whatever is typed next.
-    void armModifierHoldTimer(Qt::Key key);
-
-    //! Stops the hold timer and clears the state armModifierHoldTimer() set,
-    //! so it cannot fire later for a modifier that a combination (or a reset
-    //! elsewhere) already consumed.
-    void cancelModifierHoldTimer();
+    void setModifierHeld(Qt::Key key, bool held);
+    void syncModifiers(Qt::KeyboardModifiers extra = Qt::NoModifier);
+    void releaseNormalKeys();
+    bool touchHoldsModifier(int key) const;
+    int modifierAt(const QPointF &position) const;
 
     //! Re-reads the word being typed and the word before it, and tells QML
     //! when either of them changed.
@@ -307,15 +300,13 @@ private:
     //! momentary loss of focus does not hide it.
     QTimer *m_hideDelay = nullptr;
 
-    //! Fires modifierHoldThresholdMs after a Ctrl/Alt/Meta key is latched; see
-    //! armModifierHoldTimer().
-    QTimer *m_modifierHoldTimer = nullptr;
-    //! Which modifier key the hold timer above is currently running for, or 0.
-    Qt::Key m_pendingModifierKey = Qt::Key(0);
-    //! True once the hold timer has fired for m_pendingModifierKey: it is
-    //! being genuinely held down (not just latched from a tap), so releasing
-    //! it must end the hold for real instead of leaving it latched.
-    bool m_modifierHeldForReal = false;
+    // Qt Virtual Keyboard may release its active key when a second finger
+    // presses a letter. Physical touch ownership keeps the modifier held.
+    QHash<int, int> m_modifierTouches;
+    QSet<int> m_touchOwnedModifiers;
+    QSet<int> m_engineModifiers;
+    struct ModifiedKey { uint32_t code; bool uinput; };
+    QHash<int, ModifiedKey> m_modifiedKeys;
 
     //! Virtual keyboard used for Ctrl/Alt/Meta combinations; see
     //! UinputKeyboard's own documentation for why. Null (and every call

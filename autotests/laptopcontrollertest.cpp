@@ -112,12 +112,13 @@ private Q_SLOTS:
         controller.m_options[QStringLiteral("arrowRow")]=true;
         controller.m_options[QStringLiteral("navigationRow")]=false;
         controller.m_options[QStringLiteral("systemRow")]=false;
-        const auto navigation=controller.navigationRows();QCOMPARE(navigation.size(),4);
+        const auto navigation=controller.navigationRows();QCOMPARE(navigation.size(),5);
         const auto codes=[](const QVariant& row){QList<uint> result;for(const auto& key:row.toList())result.append(key.toMap().value(QStringLiteral("code")).toUInt());return result;};
         QCOMPARE(codes(navigation.at(0)),QList<uint>({110,102,104}));
         QCOMPARE(codes(navigation.at(1)),QList<uint>({111,107,109}));
-        QCOMPARE(codes(navigation.at(2)),QList<uint>({0,103,0}));
-        QCOMPARE(codes(navigation.at(3)),QList<uint>({105,108,106}));
+        QCOMPARE(codes(navigation.at(2)),QList<uint>({0,0,0}));
+        QCOMPARE(codes(navigation.at(3)),QList<uint>({0,103,0}));
+        QCOMPARE(codes(navigation.at(4)),QList<uint>({105,108,106}));
         for(const auto& row:controller.rows())for(uint code:codes(row))QVERIFY(!QList<uint>({102,103,104,105,106,107,108,109,110,111}).contains(code));
         controller.m_options[QStringLiteral("arrowRow")]=false;QVERIFY(controller.navigationRows().isEmpty());
         controller.m_options[QStringLiteral("navigationRow")]=true;QCOMPARE(controller.navigationRows().size(),2);
