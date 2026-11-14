@@ -1229,3 +1229,11 @@ version is compared with that RPM version before compilation. SRPM-only parsing
 may lack development dependencies, but a binary build with no pin fails. No KWin
 fork/rebuild, compositor restart, device update or behavior change is introduced
 by this source preparation. Native52 packaging/cohort verification is pending.
+
+51 also passes44/44 on Fedora44 ARM (62.16s) and Fedora45 ARM (61.64s), build
+11327664. The temporary input-check producer is retired after preserving its
+signed143108bf receipt, exact worker and source evidence. The complete package
+matrix now covers those fixtures. The API no longer lists that producer and
+refreshed custom-input primary metadata contains no receipt package. The normal
+45 source producer remains unchanged; Motion source checks are retained until
+full Control integration replaces their role. No runtime provider was retired.
